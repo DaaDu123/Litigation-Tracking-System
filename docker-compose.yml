@@ -1,0 +1,51 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_db
+    user: "0:0"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "1433:1433"
+    volumes:
+      - ./mssql_data:/var/opt/mssql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C -b
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./LTSBackend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost}
+      JwtSettings__SecretKey: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      EmailSettings__SenderEmail: ${SMTP_SENDER_EMAIL:?Set SMTP_SENDER_EMAIL in .env}
+      EmailSettings__AppPassword: ${SMTP_APP_PASSWORD:?Set SMTP_APP_PASSWORD in .env}
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=LitigationDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./LTSFrontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      ASPNETCORE_URLS: http://+:80
+      ApiSettings__BaseUrl: http://backend:8080
+    depends_on:
+      - backend
+

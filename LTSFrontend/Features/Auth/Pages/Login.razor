@@ -1,0 +1,112 @@
+@page "/login"
+@layout LTSFrontend.Layout.LoginLayout
+@using LTSFrontend.Core.Auth
+@using LTSFrontend.Features.Auth.DTOs
+@using LTSFrontend.Features.Auth.Services
+@using LTSFrontend.Features.Users.Services
+@inject IAuthService AuthService
+@inject IUserService UserService
+@inject UserSessionState Session
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Login - LTS</PageTitle>
+
+<h2>Welcome Back!</h2>
+<p class="auth-subtitle">Sign in to continue</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger py-2">@_errorMessage</div>
+}
+
+<EditForm Model="_model" FormName="LoginForm" OnValidSubmit="HandleLoginAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Email / Username</label>
+        <input type="email" class="form-control" placeholder="Enter your email address"
+               @bind="_model.Email" @bind:event="oninput" required />
+        <ValidationMessage For="() => _model.Email" class="text-danger small" />
+    </div>
+
+    <div class="mb-2">
+        <label class="form-label">Password</label>
+        <div class="password-toggle-wrap">
+            <input type="@(_showPassword ? "text" : "password")" class="form-control"
+                   placeholder="Enter your password"
+                   @bind="_model.Password" @bind:event="oninput" required />
+            <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
+                <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+            </button>
+        </div>
+        <ValidationMessage For="() => _model.Password" class="text-danger small" />
+    </div>
+
+    <div class="text-end mb-3">
+        <a class="auth-link" href="/forgot-password">Forgot Password?</a>
+    </div>
+
+    <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+        @if (_isBusy)
+        {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+        }
+        Sign In
+    </button>
+</EditForm>
+
+<div class="auth-divider">OR</div>
+
+<a href="/request-to-join" class="btn btn-outline-light">
+    <i class="bi bi-person-plus me-2"></i>Create New Account
+</a>
+
+<div class="auth-footer mt-3">
+    Starting a new firm? <a class="auth-link" href="/request-firm-admin">Sign up as Firm Admin</a>
+</div>
+
+<div class="auth-hero-terms mt-3">
+    By continuing, you agree to our Terms of Service and Privacy Policy.
+</div>
+
+@code {
+    private readonly LoginRequest _model = new();
+    private bool _isBusy;
+    private bool _showPassword;
+    private string? _errorMessage;
+
+    private async Task HandleLoginAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            var result = await AuthService.LoginAsync(_model);
+
+            var provider = (CustomAuthStateProvider)AuthStateProvider;
+
+            
+            await provider.MarkUserAsAuthenticatedAsync(result.UserID, result.FullName, result.Email, result.RoleName, result.AccessToken, result.AccessTokenExpiry);
+
+            // No forceLoad: the session is already live in this circuit
+            // (MarkUserAsAuthenticatedAsync above both set it in-memory and
+            // notified Blazor's auth infrastructure), so a normal SPA-style
+            // navigation is enough and avoids re-triggering the
+            // prerender-vs-JS-interop race a hard reload would risk.
+            Navigation.NavigateTo("/");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not Login. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

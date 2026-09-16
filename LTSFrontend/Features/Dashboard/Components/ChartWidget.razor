@@ -1,0 +1,49 @@
+@* Reusable horizontal-bar breakdown widget (e.g. "Cases by Status"). No JS charting
+   library in this project, so this renders plain CSS bars - lightweight and themeable.
+   Usage:
+     <ChartWidget Title="Cases by Status" Items="_statusBreakdown" IsLoading="_isLoading" /> *@
+@using LTSFrontend.Features.Dashboard.DTOs
+
+<div class="lts-card">
+    <div class="lts-chart-widget-title">@Title</div>
+
+    @if (IsLoading)
+    {
+        @for (var i = 0; i < 4; i++)
+        {
+            <div class="lts-chart-bar-row">
+                <div class="lts-skeleton lts-skeleton-text" style="width:110px;"></div>
+                <div class="lts-skeleton lts-skeleton-text" style="flex:1; height:0.6rem;"></div>
+            </div>
+        }
+    }
+    else if (Items.Count == 0)
+    {
+        <div class="lts-form-hint" style="margin-top:0;">@EmptyMessage</div>
+    }
+    else
+    {
+        var max = Items.Max(i => i.Value);
+        max = max <= 0 ? 1 : max;
+
+        @foreach (var item in Items.OrderByDescending(i => i.Value))
+        {
+            <div class="lts-chart-bar-row">
+                <div class="lts-chart-bar-label" title="@item.Label">@item.Label</div>
+                <div class="lts-chart-bar-track">
+                    <div class="lts-chart-bar-fill"
+                         style="width:@(item.Value * 100 / max)%; background:@(item.Color ?? DefaultColor);"></div>
+                </div>
+                <div class="lts-chart-bar-value">@item.Value</div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public List<ChartItem> Items { get; set; } = new();
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string DefaultColor { get; set; } = "#1b4fd6";
+    [Parameter] public string EmptyMessage { get; set; } = "No data to show yet.";
+}

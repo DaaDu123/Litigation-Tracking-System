@@ -1,0 +1,177 @@
+@* Embedded panel (tab) on CaseDetails for tracking deadlines.
+   SRS Reference: Case_SRS UC-06 "Monitor Deadlines" *@
+@using LTSFrontend.Features.Deadlines.DTOs
+@using LTSFrontend.Features.Deadlines.Services
+@inject IDeadlineService DeadlineService
+@inject ToastService Toast
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Deadlines</h6>
+    <div class="d-flex align-items-center gap-2">
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="hideCompleted" @bind="_hideCompleted" @bind:after="LoadAsync" />
+            <label class="form-check-label small" for="hideCompleted">Hide completed</label>
+        </div>
+        <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+            <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+                <i class="bi bi-plus-lg"></i> Add Deadline
+            </button>
+        </PermissionGate>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_deadlines.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">No deadlines to show.</div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="lts-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in _deadlines)
+                {
+                    <tr>
+                        <td class="fw-semibold">@d.DeadlineType</td>
+                        <td>@d.DueDate.ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (d.Completed)
+                            {
+                                <span class="lts-badge lts-badge-success">Completed</span>
+                            }
+                            else if (d.IsOverdue)
+                            {
+                                <span class="lts-badge lts-badge-danger">Overdue</span>
+                            }
+                            else
+                            {
+                                <span class="lts-badge lts-badge-warning">@d.DaysRemaining day(s) left</span>
+                            }
+                        </td>
+                        <td>@(d.Remarks ?? "-")</td>
+                        <td class="text-end">
+                            @if (!d.Completed)
+                            {
+                                <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleCompleteAsync(d)" title="Mark complete">
+                                        <i class="bi bi-check2-square"></i>
+                                    </button>
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEdit(d)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </PermissionGate>
+                            }
+                            <PermissionGate Roles="Partner,FirmAdmin,SuperAdmin">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteAsync(d)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </PermissionGate>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<DeadlineModal @ref="_deadlineModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private List<DeadlineDTO> _deadlines = new();
+    private bool _isLoading = true;
+    private bool _hideCompleted;
+
+    private DeadlineModal _deadlineModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _deadlines = await DeadlineService.GetByCaseAsync(CaseId, _hideCompleted ? false : null);
+            _deadlines = _deadlines.OrderBy(d => d.Completed).ThenBy(d => d.DueDate).ToList();
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load deadlines", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreate() => _deadlineModal.OpenForCreate(CaseId);
+    private void OpenEdit(DeadlineDTO d) => _deadlineModal.OpenForEdit(d);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "The deadline has been saved.");
+    }
+
+    private async Task HandleCompleteAsync(DeadlineDTO d)
+    {
+        try
+        {
+            await DeadlineService.CompleteAsync(d.DeadlineID);
+            await LoadAsync();
+            Toast.Success("Marked complete", $"\"{d.DeadlineType}\" has been marked complete.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't update deadline", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't update deadline", "Please try again.");
+        }
+    }
+
+    private async Task HandleDeleteAsync(DeadlineDTO d)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete deadline \"{d.DeadlineType}\"?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await DeadlineService.DeleteAsync(d.DeadlineID);
+            await LoadAsync();
+            Toast.Success("Deadline deleted", "The deadline has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete deadline", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete deadline", "Please try again.");
+        }
+    }
+}

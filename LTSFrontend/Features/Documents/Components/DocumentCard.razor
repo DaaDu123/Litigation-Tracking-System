@@ -1,0 +1,65 @@
+@* Small card representing a single document row, used by DocumentsPanel/DocumentList.
+   Usage: <DocumentCard Document="d" OnDownload="HandleDownloadAsync" OnDelete="HandleDeleteAsync" OnApprove="HandleApproveAsync" ShowDelete="canDelete" /> *@
+@using LTSFrontend.Features.Documents.DTOs
+
+<div class="lts-card d-flex align-items-center justify-content-between" style="padding: 0.75rem 1rem;">
+    <div class="d-flex align-items-center gap-3">
+        <div class="lts-stat-icon" style="--accent:#1b4fd6;">
+            <i class="bi @IconFor(Document.FileName)"></i>
+        </div>
+        <div>
+            <div class="fw-semibold d-flex align-items-center gap-2">
+                <a href="@($"/documents/{Document.DocumentID}")">@Document.DocumentName</a>
+                @if (Document.IsDraft)
+                {
+                    <span class="lts-badge lts-badge-warning" title="Pending approval by Partner/Firm Admin">Draft</span>
+                }
+            </div>
+            <div class="text-muted small">
+                @Document.DocumentType &middot; @Document.FormattedFileSize &middot;
+                v@(Document.VersionNo) &middot; @Document.UploadedBy, @Document.UploadedDate.ToString("dd MMM yyyy")
+            </div>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        @if (Document.IsDraft)
+        {
+            <PermissionGate Roles="Partner,FirmAdmin">
+                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OnApprove.InvokeAsync(Document)" title="Approve draft">
+                    <i class="bi bi-check2-circle"></i> Approve
+                </button>
+            </PermissionGate>
+        }
+        <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OnDownload.InvokeAsync(Document)" title="Download">
+            <i class="bi bi-download"></i>
+        </button>
+        @if (ShowDelete)
+        {
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OnDelete.InvokeAsync(Document)" title="Delete">
+                <i class="bi bi-trash"></i>
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DocumentDTO Document { get; set; } = default!;
+    [Parameter] public bool ShowDelete { get; set; }
+    [Parameter] public EventCallback<DocumentDTO> OnDownload { get; set; }
+    [Parameter] public EventCallback<DocumentDTO> OnDelete { get; set; }
+    [Parameter] public EventCallback<DocumentDTO> OnApprove { get; set; }
+
+    private static string IconFor(string fileName)
+    {
+        var ext = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "bi-file-earmark-pdf",
+            ".doc" or ".docx" => "bi-file-earmark-word",
+            ".xls" or ".xlsx" => "bi-file-earmark-excel",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => "bi-file-earmark-image",
+            ".zip" or ".rar" or ".7z" => "bi-file-earmark-zip",
+            _ => "bi-file-earmark"
+        };
+    }
+}

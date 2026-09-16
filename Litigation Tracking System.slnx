@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="LTSBackend/LTSBackend.csproj" />
+  <Project Path="LTSFrontend/LTSFrontend.csproj" Id="5b387d73-33d5-4703-bf58-d3f4a4b7850e" />
+</Solution>

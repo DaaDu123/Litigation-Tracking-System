@@ -1,0 +1,98 @@
+@* Reusable grid of permission checkboxes, grouped by the permission name's
+   leading word (e.g. "Manage", "View") for readability. Two-way binds a
+   HashSet<int> of selected PermissionIDs.
+   Usage:
+     <PermissionCheckboxGrid AllPermissions="_allPermissions"
+                              SelectedIds="_form.PermissionIds"
+                              Disabled="_isSaving" /> *@
+@using LTSFrontend.Features.Permissions.DTOs
+
+@if (AllPermissions.Count == 0)
+{
+    <div class="lts-form-hint">No permissions are available to assign.</div>
+}
+else
+{
+    <div class="lts-permission-grid">
+        @foreach (var group in GroupedPermissions)
+        {
+            <div class="lts-permission-group">
+                <div class="lts-permission-group-header">
+                    <span>@group.Key</span>
+                    <button type="button" class="lts-btn lts-btn-ghost lts-btn-sm" disabled="@Disabled"
+                            @onclick="() => ToggleGroup(group.Value)">
+                        @(AllSelected(group.Value) ? "Clear all" : "Select all")
+                    </button>
+                </div>
+                <div class="lts-permission-group-items">
+                    @foreach (var permission in group.Value)
+                    {
+                        <label class="lts-checkbox-item">
+                            <input type="checkbox" checked="@SelectedIds.Contains(permission.PermissionID)"
+                                   disabled="@Disabled"
+                                   @onchange="e => Toggle(permission.PermissionID, e.Value)" />
+                            <span>@permission.PermissionName</span>
+                        </label>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<PermissionDTO> AllPermissions { get; set; } = new();
+    [Parameter, EditorRequired] public HashSet<int> SelectedIds { get; set; } = new();
+    [Parameter] public bool Disabled { get; set; }
+
+    private IEnumerable<KeyValuePair<string, List<PermissionDTO>>> GroupedPermissions =>
+        AllPermissions
+            .GroupBy(p => GroupKeyFor(p.PermissionName))
+            .OrderBy(g => g.Key)
+            .Select(g => new KeyValuePair<string, List<PermissionDTO>>(
+                g.Key, g.OrderBy(p => p.PermissionName).ToList()));
+
+    // Groups by the leading word of the permission name (e.g. "ManageCases" -> "Manage",
+    // "ViewCases" -> "View"), falling back to the whole name if there's no word boundary.
+    private static string GroupKeyFor(string permissionName)
+    {
+        if (string.IsNullOrWhiteSpace(permissionName))
+            return "General";
+
+        var chars = permissionName.ToCharArray();
+        var boundary = 1;
+        while (boundary < chars.Length && !char.IsUpper(chars[boundary]))
+            boundary++;
+
+        return boundary >= chars.Length ? permissionName : permissionName[..boundary];
+    }
+
+    private bool AllSelected(List<PermissionDTO> group) =>
+        group.All(p => SelectedIds.Contains(p.PermissionID));
+
+    private void ToggleGroup(List<PermissionDTO> group)
+    {
+        if (Disabled) return;
+
+        if (AllSelected(group))
+        {
+            foreach (var p in group)
+                SelectedIds.Remove(p.PermissionID);
+        }
+        else
+        {
+            foreach (var p in group)
+                SelectedIds.Add(p.PermissionID);
+        }
+    }
+
+    private void Toggle(int permissionId, object? isChecked)
+    {
+        if (Disabled) return;
+
+        if (isChecked is bool @checked && @checked)
+            SelectedIds.Add(permissionId);
+        else
+            SelectedIds.Remove(permissionId);
+    }
+}

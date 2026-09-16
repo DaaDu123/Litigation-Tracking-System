@@ -1,0 +1,36 @@
+@* Wraps Blazor's built-in <ValidationSummary /> with the app's lts-form-error
+   styling, so every EditForm can show a consistent list of validation errors
+   without each page re-implementing the markup. Must be placed inside an
+   <EditForm> (it relies on the ambient EditContext via CascadingParameter).
+
+   Usage:
+     <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
+         <DataAnnotationsValidator />
+         <FormValidationSummary />
+         ...
+     </EditForm> *@
+@if (ShouldShow)
+{
+    <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <div>
+            @if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <div class="fw-semibold">@Title</div>
+            }
+            <ValidationSummary />
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>Optional heading shown above the list of errors (e.g. "Please fix the following:").</summary>
+    [Parameter] public string? Title { get; set; }
+
+    [CascadingParameter] private EditContext? CurrentEditContext { get; set; }
+
+    // Only render the wrapper once there's actually something to show -
+    // an empty ValidationSummary would otherwise leave stray styled markup
+    // on screen before the form has been touched/submitted.
+    private bool ShouldShow => CurrentEditContext is not null && CurrentEditContext.GetValidationMessages().Any();
+}

@@ -1,0 +1,47 @@
+@inherits LayoutComponentBase
+
+<div class="public-shell">
+    <PublicNavbar />
+
+    <div class="auth-hero-section">
+        <div class="auth-hero-left">
+            <div class="auth-hero-rule"></div>
+            <h1>Litigation Tracking System</h1>
+            <p class="auth-hero-lead">
+                Helping law firms and legal teams manage cases, hearings, documents, and
+                deadlines &mdash; all in one secure platform.
+            </p>
+
+            <div class="hero-feature-grid">
+                <div class="hero-feature-item">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <h4>Case Management</h4>
+                    <p>Track and manage cases efficiently</p>
+                </div>
+                <div class="hero-feature-item">
+                    <i class="bi bi-calendar-event"></i>
+                    <h4>Hearing &amp; Deadlines</h4>
+                    <p>Never miss a hearing or important date</p>
+                </div>
+                <div class="hero-feature-item">
+                    <i class="bi bi-folder2-open"></i>
+                    <h4>Document Management</h4>
+                    <p>Organize and access documents securely</p>
+                </div>
+                <div class="hero-feature-item">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <h4>Reports &amp; Analytics</h4>
+                    <p>Get insights and make better decisions</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-hero-right">
+            <div class="auth-form-card">
+                @Body
+            </div>
+        </div>
+    </div>
+
+    <PublicFooter />
+</div>

@@ -1,0 +1,51 @@
+@page "/login-history/my"
+@attribute [Authorize]
+@using LTSFrontend.Features.LoginHistory.Components
+@using LTSFrontend.Features.LoginHistory.DTOs
+@using LTSFrontend.Features.LoginHistory.Services
+@inject ILoginHistoryService LoginHistoryService
+@inject ToastService Toast
+
+<PageTitle>My Login History - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">My Login History</h1>
+        <p class="lts-page-subtitle">Recent sign-ins to your account.</p>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else
+    {
+        <LoginHistoryTable Rows="_rows" ShowUser="false" />
+    }
+</div>
+
+@code {
+    private List<LoginHistoryTable.LoginHistoryRow> _rows = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var history = await LoginHistoryService.GetMyHistoryAsync();
+            _rows = history.Select(LoginHistoryTable.LoginHistoryRow.From).ToList();
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load your login history", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

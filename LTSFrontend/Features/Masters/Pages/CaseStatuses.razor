@@ -1,0 +1,380 @@
+@page "/masters/case-statuses"
+@attribute [Authorize(Roles = "FirmAdmin,Partner")]
+@using LTSFrontend.Features.Masters.Components
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseStatusService CaseStatusService
+@inject ToastService Toast
+@inject UserSessionState Session
+
+<PageTitle>Case Statuses - Master Data - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/masters">Master Data</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Case Statuses</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Case Statuses</h1>
+        <p class="lts-page-subtitle">Define the statuses cases can move through.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <PermissionGate Roles="FirmAdmin,Partner">
+            <button class="lts-btn lts-btn-primary" @onclick="OpenCreate">
+                <i class="bi bi-plus-lg"></i> Add Status
+            </button>
+        </PermissionGate>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#1b4fd6;">
+        <div class="lts-stat-icon"><i class="bi bi-flag"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allStatuses.Count.ToString())</div>
+            <div class="lts-stat-label">Total Statuses</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#16a34a;">
+        <div class="lts-stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allStatuses.Count(c => c.IsActive).ToString())</div>
+            <div class="lts-stat-label">Active</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#d97706;">
+        <div class="lts-stat-icon"><i class="bi bi-lock"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allStatuses.Count(c => c.IsClosed).ToString())</div>
+            <div class="lts-stat-label">Closed-type</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#6b7280;">
+        <div class="lts-stat-icon"><i class="bi bi-slash-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allStatuses.Count(c => !c.IsActive).ToString())</div>
+            <div class="lts-stat-label">Inactive</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <SearchBox @bind-Value="_searchTerm" @bind-Value:after="ResetToFirstPage" Placeholder="Search by status name..." />
+            <select class="lts-select" @bind="_statusFilter" @bind:after="ResetToFirstPage">
+                <option value="all">All Statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+            </select>
+            <select class="lts-select" @bind="_closedFilter" @bind:after="ResetToFirstPage">
+                <option value="all">Open &amp; Closed</option>
+                <option value="closed">Closed-type only</option>
+                <option value="open">Open-type only</option>
+            </select>
+        </div>
+        <div class="lts-toolbar-right">
+            <select class="lts-select" @bind="_pageSize" @bind:after="ResetToFirstPage" style="min-width:110px;">
+                <option value="10">10 / page</option>
+                <option value="25">25 / page</option>
+                <option value="50">50 / page</option>
+            </select>
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
+                <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr><th>#</th><th>Status Name</th><th>Color</th><th>Type</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 5; i++)
+                        {
+                            <tr class="lts-skeleton-row">
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:70%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load case statuses</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (FilteredStatuses.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-flag"></i></div>
+                <div class="lts-state-title">
+                    @(_allStatuses.Count == 0 ? "No case statuses yet" : "No matching statuses")
+                </div>
+                <div class="lts-state-desc">
+                    @(_allStatuses.Count == 0
+                        ? "Add your first case status to define the litigation workflow."
+                        : "Try adjusting your search or filters.")
+                </div>
+                @if (_allStatuses.Count == 0)
+                {
+                    <PermissionGate Roles="FirmAdmin,Partner">
+                        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+                            <i class="bi bi-plus-lg"></i> Add Status
+                        </button>
+                    </PermissionGate>
+                }
+                else
+                {
+                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="ClearFilters">
+                        <i class="bi bi-x-lg"></i> Clear Filters
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable @(_sortField == "seq" ? "active" : "")" @onclick='() => Sort("seq")'>
+                                # <i class="bi @SortIcon("seq")"></i>
+                            </th>
+                            <th class="sortable @(_sortField == "name" ? "active" : "")" @onclick='() => Sort("name")'>
+                                Status Name <i class="bi @SortIcon("name")"></i>
+                            </th>
+                            <th>Color</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var status in PagedStatuses)
+                        {
+                            <tr @key="status.StatusID">
+                                <td class="lts-cell-muted" data-label="#">@status.SequenceNo</td>
+                                <td class="lts-cell-primary" data-label="Status Name">
+                                    @status.StatusName
+                                    @if (status.IsGlobal)
+                                    {
+                                        <span class="lts-badge lts-badge-muted" style="margin-left:0.4rem;" title="Shared system-wide status - managed by SuperAdmin only">
+                                            <i class="bi bi-globe2"></i> Global
+                                        </span>
+                                    }
+                                </td>
+                                <td data-label="Color">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="lts-color-chip" style="background:@status.ColorCode;"></span>
+                                        <span class="lts-cell-muted">@status.ColorCode</span>
+                                    </div>
+                                </td>
+                                <td data-label="Type">
+                                    @if (status.IsClosed)
+                                    {
+                                        <span class="lts-scope-pill"><i class="bi bi-lock"></i>Closed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="lts-scope-pill"><i class="bi bi-unlock"></i>Open</span>
+                                    }
+                                </td>
+                                <td data-label="Status"><StatusBadge IsActive="status.IsActive" /></td>
+                                <td data-label="Actions">
+                                    <div class="lts-row-actions">
+                                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="View" @onclick="() => OpenDetails(status)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        @if (CanManage(status))
+                                        {
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick="() => OpenEdit(status)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => HandleDeleteAsync(status)">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </button>
+                                        }
+                                        else if (status.IsGlobal)
+                                        {
+                                            <span class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" style="opacity:0.5;cursor:not-allowed;" title="Global status - only SuperAdmin can edit or deactivate this.">
+                                                <i class="bi bi-lock"></i>
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <Pagination CurrentPage="_currentPage" TotalItems="FilteredStatuses.Count" PageSize="_pageSize" PageChanged="OnPageChanged" />
+            </div>
+        }
+    </div>
+</div>
+
+<CaseStatusFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
+<CaseStatusDetailsModal @ref="_detailsModal" OnEditRequested="OpenEdit" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<CaseStatusDTO> _allStatuses = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    private string _searchTerm = string.Empty;
+    private string _statusFilter = "all";
+    private string _closedFilter = "all";
+    private string _sortField = "seq";
+    private bool _sortAsc = true;
+
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private CaseStatusFormModal _formModal = default!;
+    private CaseStatusDetailsModal _detailsModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _allStatuses = await CaseStatusService.GetAllAsync(activeOnly: false);
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Case statuses could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private List<CaseStatusDTO> FilteredStatuses
+    {
+        get
+        {
+            IEnumerable<CaseStatusDTO> query = _allStatuses;
+
+            if (_statusFilter == "active") query = query.Where(c => c.IsActive);
+            else if (_statusFilter == "inactive") query = query.Where(c => !c.IsActive);
+
+            if (_closedFilter == "closed") query = query.Where(c => c.IsClosed);
+            else if (_closedFilter == "open") query = query.Where(c => !c.IsClosed);
+
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                var term = _searchTerm.Trim();
+                query = query.Where(c => c.StatusName.Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+
+            query = _sortField switch
+            {
+                "name" => _sortAsc ? query.OrderBy(c => c.StatusName) : query.OrderByDescending(c => c.StatusName),
+                _ => _sortAsc ? query.OrderBy(c => c.SequenceNo) : query.OrderByDescending(c => c.SequenceNo),
+            };
+
+            return query.ToList();
+        }
+    }
+
+    private List<CaseStatusDTO> PagedStatuses =>
+        FilteredStatuses.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+    private void Sort(string field)
+    {
+        if (_sortField == field) _sortAsc = !_sortAsc;
+        else { _sortField = field; _sortAsc = true; }
+    }
+
+    private string SortIcon(string field) =>
+        _sortField != field ? "bi-arrow-down-up" : (_sortAsc ? "bi-sort-alpha-down" : "bi-sort-alpha-up");
+
+    private void ResetToFirstPage() => _currentPage = 1;
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _statusFilter = "all";
+        _closedFilter = "all";
+        _currentPage = 1;
+    }
+
+    private Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        return Task.CompletedTask;
+    }
+
+    private void OpenCreate() => _formModal.OpenForCreate();
+
+    private bool CanManage(CaseStatusDTO status) =>
+        !status.IsGlobal || string.Equals(Session.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+
+    private void OpenEdit(CaseStatusDTO status) => _formModal.OpenForEdit(status);
+
+    private void OpenDetails(CaseStatusDTO status) => _detailsModal.Open(status);
+
+    private async Task HandleSavedAsync(bool wasEdit)
+    {
+        await LoadAsync();
+        Toast.Success(wasEdit ? "Status updated" : "Status created",
+            wasEdit ? "The status's details have been saved." : "The new status is now available for cases.");
+    }
+
+    private async Task HandleDeleteAsync(CaseStatusDTO status)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete \"{status.StatusName}\"?",
+            "This cannot be undone. Statuses linked to existing cases cannot be deleted.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await CaseStatusService.DeleteAsync(status.StatusID);
+            await LoadAsync();
+            Toast.Success("Status deleted", $"\"{status.StatusName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete status", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete status", "Please try again.");
+        }
+    }
+}

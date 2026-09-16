@@ -1,0 +1,147 @@
+@page "/request-firm-admin"
+@layout LTSFrontend.Layout.LoginLayout
+@using LTSFrontend.Features.FirmAdminRequests.DTOs
+@using LTSFrontend.Features.FirmAdminRequests.Services
+@inject IFirmAdminRequestService FirmAdminRequestService
+@inject NavigationManager Navigation
+
+<PageTitle>Request Firm Admin Access - LTS</PageTitle>
+
+@if (_submitted)
+{
+    <h2>Request Submitted</h2>
+    <p class="auth-subtitle">Thank you, @_submittedAdminName.</p>
+
+    <div class="alert alert-success py-2">
+        Your request to create <strong>@_submittedFirmName</strong> has been sent to a Super Admin for review.
+        You'll receive an email once it's approved (or if it's declined). You can close this page now.
+    </div>
+
+    <div class="auth-footer">
+        <a class="auth-link" href="/login">Back to Login</a>
+    </div>
+}
+else
+{
+    <h2>Request Firm Admin Access</h2>
+    <p class="auth-subtitle">Propose a new firm workspace and become its first Firm Admin. A Super Admin will review and approve your request.</p>
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger py-2" style="white-space: pre-line;">@_errorMessage</div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
+        <DataAnnotationsValidator />
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Firm Name</label>
+            <input type="text" class="form-control" placeholder="e.g. Alpha Law Associates"
+                   @bind="_model.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.FirmName" class="text-danger small" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Firm Code</label>
+            <input type="text" class="form-control" placeholder="e.g. ALPHA-LAW"
+                   @bind="_model.FirmCode" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.FirmCode" class="text-danger small" />
+        </div>
+    </div>
+    <div class="form-text mb-3">This is the code your team members will use to register once approved.</div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Your Full Name</label>
+            <input type="text" class="form-control" placeholder="Enter your full name"
+                   @bind="_model.AdminFullName" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.AdminFullName" class="text-danger small" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Your Email</label>
+            <input type="email" class="form-control" placeholder="Enter your email address"
+                   @bind="_model.AdminEmail" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.AdminEmail" class="text-danger small" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Password</label>
+            <div class="password-toggle-wrap">
+                <input type="@(_showPassword ? "text" : "password")" class="form-control"
+                       placeholder="8+ chars, mixed case, number & symbol"
+                       @bind="_model.AdminPassword" @bind:event="oninput" disabled="@_isBusy" required />
+                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
+                    <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                </button>
+            </div>
+            <ValidationMessage For="() => _model.AdminPassword" class="text-danger small" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Confirm Password</label>
+            <div class="password-toggle-wrap">
+                <input type="@(_showConfirmPassword ? "text" : "password")" class="form-control"
+                       placeholder="Re-enter your password"
+                       @bind="_model.ConfirmPassword" @bind:event="oninput" disabled="@_isBusy" required />
+                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showConfirmPassword = !_showConfirmPassword">
+                    <i class="bi @(_showConfirmPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                </button>
+            </div>
+            <ValidationMessage For="() => _model.ConfirmPassword" class="text-danger small" />
+        </div>
+    </div>
+
+        <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+            @if (_isBusy)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Submit Request
+        </button>
+    </EditForm>
+
+    <div class="auth-footer">
+        <div class="auth-footer">
+            Already have an account? <a class="auth-link" href="/login">Sign in</a>
+        </div><br/>
+        Joining an existing firm instead? <a class="auth-link" href="/request-to-join">Request to join with a Firm Code</a>
+    </div>
+}
+
+@code {
+    private readonly SubmitFirmAdminRequest _model = new();
+    private bool _isBusy;
+    private bool _showPassword;
+    private bool _showConfirmPassword;
+    private string? _errorMessage;
+
+    private bool _submitted;
+    private string _submittedFirmName = string.Empty;
+    private string _submittedAdminName = string.Empty;
+
+    private async Task HandleSubmitAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            await FirmAdminRequestService.SubmitAsync(_model);
+            _submittedFirmName = _model.FirmName;
+            _submittedAdminName = _model.AdminFullName;
+            _submitted = true;
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Request nahi bhej saka. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

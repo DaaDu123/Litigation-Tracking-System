@@ -1,0 +1,221 @@
+@page "/user-join-requests"
+@attribute [Authorize(Roles = "FirmAdmin")]
+@using LTSFrontend.Core.Enums
+@using LTSFrontend.Features.UserJoinRequests.Components
+@using LTSFrontend.Features.UserJoinRequests.DTOs
+@using LTSFrontend.Features.UserJoinRequests.Services
+@inject IUserJoinRequestService UserJoinRequestService
+@inject ToastService Toast
+
+<PageTitle>Join Requests - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Join Requests</h1>
+        <p class="lts-page-subtitle">Review requests from people asking to join your firm as Partner, Associate Lawyer, Moharrir, or Intern/Paralegal.</p>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#d97706;">
+        <div class="lts-stat-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _all.Count(r => r.Status == "Pending").ToString())</div>
+            <div class="lts-stat-label">Pending</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#16a34a;">
+        <div class="lts-stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _all.Count(r => r.Status == "Approved").ToString())</div>
+            <div class="lts-stat-label">Approved</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#dc2626;">
+        <div class="lts-stat-icon"><i class="bi bi-x-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _all.Count(r => r.Status == "Rejected").ToString())</div>
+            <div class="lts-stat-label">Rejected</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-tabs mb-3">
+    @foreach (var tab in new[] { "Pending", "Approved", "Rejected", "All" })
+    {
+        <button type="button" class="lts-tab @(_activeTab == tab ? "active" : "")" @onclick="() => SwitchTabAsync(tab)">
+            @tab
+        </button>
+    }
+</div>
+
+<div class="lts-card p-0">
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else if (_filtered.Count == 0)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <div class="lts-state-icon"><i class="bi bi-inbox"></i></div>
+            <div class="lts-state-title">No @_activeTab.ToLower() requests</div>
+            <div class="lts-state-desc">Nothing to show here right now.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Requester</th>
+                        <th>Requested Role</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th>Reviewed</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _filtered)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@r.FullName</div>
+                                <div class="text-muted small">@r.Email</div>
+                            </td>
+                            <td>@(r.RequestedRoleName ?? UserRoleExtensions.NameOf(r.RequestedRoleID))</td>
+                            <td>
+                                @if (r.Status == "Pending")
+                                {
+                                    <span class="lts-badge lts-badge-warning">Pending</span>
+                                }
+                                else if (r.Status == "Approved")
+                                {
+                                    <span class="lts-badge lts-badge-success">Approved</span>
+                                }
+                                else
+                                {
+                                    <span class="lts-badge lts-badge-danger" title="@r.RejectionReason">Rejected</span>
+                                }
+                            </td>
+                            <td>@r.RequestedAt.ToString("dd MMM yyyy, h:mm tt")</td>
+                            <td>
+                                @if (r.ReviewedAt.HasValue)
+                                {
+                                    <div class="small">@r.ReviewedAt.Value.ToString("dd MMM yyyy")</div>
+                                    <div class="text-muted small">by @(r.ReviewedByName ?? "—")</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (r.Status == "Pending")
+                                {
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleApproveAsync(r)" title="Approve">
+                                        <i class="bi bi-check-circle"></i> Approve
+                                    </button>
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => _rejectModal.Open(r)" title="Reject">
+                                        <i class="bi bi-x-circle"></i> Reject
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<RejectUserJoinRequestModal @ref="_rejectModal" OnConfirmed="HandleRejectConfirmedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<UserJoinRequestDTO> _all = new();
+    private List<UserJoinRequestDTO> _filtered = new();
+    private string _activeTab = "Pending";
+    private bool _isLoading = true;
+
+    private RejectUserJoinRequestModal _rejectModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _all = await UserJoinRequestService.GetAllAsync();
+            ApplyFilter();
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load requests", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SwitchTabAsync(string tab)
+    {
+        _activeTab = tab;
+        ApplyFilter();
+        await Task.CompletedTask;
+    }
+
+    private void ApplyFilter()
+    {
+        _filtered = _activeTab == "All"
+            ? _all
+            : _all.Where(r => r.Status == _activeTab).ToList();
+    }
+
+    private async Task HandleApproveAsync(UserJoinRequestDTO r)
+    {
+        var confirmed = await _confirmDialog.ShowAsync($"Approve request from \"{r.FullName}\"?",
+            $"This creates and activates their account as {(r.RequestedRoleName ?? UserRoleExtensions.NameOf(r.RequestedRoleID))} in your firm. They'll be able to log in right away.","Approve", "primary");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await UserJoinRequestService.ApproveAsync(r.RequestID);
+            await LoadAsync();
+            Toast.Success("Request approved", $"{r.FullName} can now log in.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't approve request", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't approve request", "Please try again.");
+        }
+    }
+
+    private async Task HandleRejectConfirmedAsync((int RequestId, string? Reason) args)
+    {
+        try
+        {
+            await UserJoinRequestService.RejectAsync(args.RequestId, args.Reason);
+            await LoadAsync();
+            Toast.Success("Request rejected", "The requester has been notified by email.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't reject request", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't reject request", "Please try again.");
+        }
+    }
+}

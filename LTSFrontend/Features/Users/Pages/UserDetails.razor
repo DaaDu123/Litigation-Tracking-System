@@ -1,0 +1,126 @@
+@page "/users/details/{UserId:int}"
+@attribute [Authorize(Roles = "FirmAdmin,Partner")]
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IUserService UserService
+@inject UserSessionState Session
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>@(_user?.FullName ?? "User Details") - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/users">Users</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">@(_user?.FullName ?? "Details")</span>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-card">
+        <div class="lts-state">
+            <span class="lts-spinner lts-spinner-md"></span>
+            <div class="lts-state-title" style="margin-top:0.75rem;">Loading user...</div>
+        </div>
+    </div>
+}
+else if (_notFound || _user == null)
+{
+    <div class="lts-card">
+        <div class="lts-state is-error">
+            <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="lts-state-title">User not found</div>
+            <div class="lts-state-desc">It may have been removed, or you may not have access to it.</div>
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick='() => Nav.NavigateTo("/users")'>
+                <i class="bi bi-arrow-left"></i> Back to Users
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lts-page-header">
+        <div>
+            <h1 class="lts-page-title">@_user.FullName</h1>
+            <p class="lts-page-subtitle">
+                @_user.Email
+                <StatusBadge IsActive="_user.IsActive" />
+            </p>
+        </div>
+        @if (CanManage)
+        {
+            <div class="lts-page-header-actions">
+                <button class="lts-btn lts-btn-outline" @onclick='() => Nav.NavigateTo($"/users/edit/{UserId}")'>
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="lts-card">
+                <h6 class="fw-semibold mb-3">Profile Information</h6>
+                <dl class="mb-0">
+                    <div class="lts-detail-row"><dt>Full Name</dt><dd>@_user.FullName</dd></div>
+                    <div class="lts-detail-row"><dt>Email</dt><dd>@_user.Email</dd></div>
+                    <div class="lts-detail-row"><dt>Phone</dt><dd>@(_user.Phone ?? "-")</dd></div>
+                    <div class="lts-detail-row"><dt>Department</dt><dd>@(_user.Department ?? "-")</dd></div>
+                    <div class="lts-detail-row"><dt>Role</dt><dd>@(string.IsNullOrWhiteSpace(_user.RoleName) ? "-" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(_user.RoleName))</dd></div>
+                    <div class="lts-detail-row"><dt>Status</dt><dd><StatusBadge IsActive="_user.IsActive" /></dd></div>
+                </dl>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="lts-card">
+                <h6 class="fw-semibold mb-3">Account</h6>
+                <dl class="mb-0">
+                    <div class="lts-detail-row"><dt>Created</dt><dd>@_user.CreatedAt.ToString("dd MMM yyyy")</dd></div>
+                    <div class="lts-detail-row">
+                        <dt>Last Updated</dt>
+                        <dd>@(_user.UpdatedAt?.ToString("dd MMM yyyy") ?? "-")</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int UserId { get; set; }
+
+    private UserDTO? _user;
+    private bool _isLoading = true;
+    private bool _notFound;
+
+    /// <summary>Gates the "Edit" button. FirmAdmin-only - Partner can VIEW
+    /// this page (see the page's own [Authorize(Roles =
+    /// "FirmAdmin,Partner")] above) but has no Create/Update/Delete access
+    /// to users, matching EditUser.razor's [Authorize(Roles =
+    /// "FirmAdmin")].</summary>
+    private bool CanManage => Session.Role is "FirmAdmin";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        _notFound = false;
+        try
+        {
+            _user = await UserService.GetByIdAsync(UserId);
+            if (_user == null) _notFound = true;
+        }
+        catch (ApiException)
+        {
+            _notFound = true;
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load user", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

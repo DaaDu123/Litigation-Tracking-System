@@ -1,0 +1,213 @@
+@using LTSFrontend.Features.CaseAssignments.DTOs
+@using LTSFrontend.Features.CaseAssignments.Services
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject ICaseAssignmentService AssignmentService
+@inject IUserService UserService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-person-badge"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_isEdit ? "Edit Assignment" : "Assign Case")</h5>
+                <p class="lts-modal-subtitle mb-0">
+                    @(_isEdit ? "Update this counsel's assignment details." : "Assign a lawyer or counsel to this case.")
+                </p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            @if (!_isEdit)
+            {
+                <div class="lts-form-group">
+                    <label class="lts-form-label">User <span class="required">*</span></label>
+                    @if (_isLoadingUsers)
+                    {
+                        <div class="d-flex align-items-center gap-2"><span class="lts-spinner lts-spinner-sm"></span> <span>Loading users...</span></div>
+                    }
+                    else
+                    {
+                        <select class="lts-form-control" @bind="_form.UserID" disabled="@_isSaving">
+                            <option value="">Select user...</option>
+                            @foreach (var u in _users.Where(u => u.IsActive))
+                            {
+                                <option value="@u.UserID">@u.FullName (@LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(u.RoleName))</option>
+                            }
+                        </select>
+                    }
+                    @if (_showValidation && (_form.UserID is null or 0))
+                    {
+                        <div class="lts-form-error">Please select a user.</div>
+                    }
+                </div>
+            }
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Assignment Type <span class="required">*</span></label>
+                <select class="lts-form-control" @bind="_form.AssignmentType" disabled="@_isSaving">
+                    @foreach (var t in AssignCaseDTO.AssignmentTypes)
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+
+            <div class="lts-form-group form-check">
+                <input type="checkbox" class="form-check-input" id="leadCounsel" @bind="_form.LeadCounsel" disabled="@_isSaving" />
+                <label class="form-check-label" for="leadCounsel">Lead Counsel</label>
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Remarks</label>
+                <textarea class="lts-form-control" rows="2" @bind="_form.Remarks" disabled="@_isSaving"
+                          placeholder="Optional remarks..."></textarea>
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>@(_isEdit ? "Save Changes" : "Assign")</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isEdit;
+    private bool _isSaving;
+    private bool _isLoadingUsers;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private long _assignmentId;
+    private AssignCaseDTO _form = new();
+    private List<UserDTO> _users = new();
+
+    public async void OpenForCreate(long caseId)
+    {
+        _isEdit = false;
+        _assignmentId = 0;
+        _form = new AssignCaseDTO { CaseID = caseId };
+        ResetAndOpen();
+        await EnsureUsersLoadedAsync();
+    }
+
+    public void OpenForEdit(CaseAssignmentDTO assignment)
+    {
+        _isEdit = true;
+        _assignmentId = assignment.AssignmentID;
+        _form = new AssignCaseDTO
+        {
+            CaseID = assignment.CaseID,
+            UserID = assignment.UserID,
+            AssignmentType = assignment.AssignmentType,
+            LeadCounsel = assignment.LeadCounsel,
+            Remarks = assignment.Remarks
+        };
+        ResetAndOpen();
+    }
+
+    private void ResetAndOpen()
+    {
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task EnsureUsersLoadedAsync()
+    {
+        if (_users.Count > 0) return;
+        _isLoadingUsers = true;
+        StateHasChanged();
+        try
+        {
+            _users = await UserService.GetAllAsync();
+        }
+        catch (Exception)
+        {
+            _apiError = "Couldn't load the list of users. Please close and try again.";
+        }
+        finally
+        {
+            _isLoadingUsers = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (!_isEdit && (_form.UserID is null or 0))
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            if (_isEdit)
+            {
+                await AssignmentService.UpdateAsync(new UpdateAssignmentDTO
+                {
+                    AssignmentID = _assignmentId,
+                    AssignmentType = _form.AssignmentType,
+                    LeadCounsel = _form.LeadCounsel,
+                    Remarks = _form.Remarks
+                });
+            }
+            else
+            {
+                await AssignmentService.AssignAsync(_form);
+            }
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the assignment. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

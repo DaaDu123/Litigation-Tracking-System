@@ -1,0 +1,130 @@
+@* Generic, reusable data table matching the lts-table design system used across
+    list pages (see RoleList.razor). Handles loading (skeleton rows), error,
+    empty, and populated states; the caller supplies columns as markup via
+    <Columns> and owns pagination/filtering of the item list itself.
+
+    Usage:
+      <DataTable TItem="UserDTO" Items="PagedUsers" IsLoading="_isLoading"
+                 HasError="_hasError" ErrorMessage="_errorMessage" OnRetry="LoadAsync"
+                 EmptyTitle="No users yet" EmptyDescription="Add your first user to get started."
+                 SkeletonColumnCount="5">
+          <HeaderContent>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+          </HeaderContent>
+          <RowTemplate Context="user">
+              <td>@user.FullName</td>
+              <td>@user.Email</td>
+              <td>@user.RoleName</td>
+              <td><StatusBadge IsActive="user.IsActive" /></td>
+              <td class="text-end">...</td>
+          </RowTemplate>
+      </DataTable> *@
+@typeparam TItem
+
+<div class="lts-table-wrap">
+    @if (IsLoading)
+    {
+        <table class="lts-table">
+            <thead>
+                <tr>@HeaderContent</tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < SkeletonRowCount; i++)
+                {
+                    <tr class="lts-skeleton-row">
+                        @for (var c = 0; c < SkeletonColumnCount; c++)
+                        {
+                            <td><div class="lts-skeleton lts-skeleton-text" style="width:@(SkeletonWidthFor(c))%;"></div></td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else if (HasError)
+    {
+        <div class="lts-state is-error">
+            <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="lts-state-title">@ErrorTitle</div>
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div class="lts-state-desc">@ErrorMessage</div>
+            }
+            @if (OnRetry.HasDelegate)
+            {
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="() => OnRetry.InvokeAsync()">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            }
+        </div>
+    }
+    else if (Items is null || !Items.Any())
+    {
+        <div class="lts-state">
+            <div class="lts-state-icon"><i class="bi @EmptyIcon"></i></div>
+            <div class="lts-state-title">@EmptyTitle</div>
+            @if (!string.IsNullOrWhiteSpace(EmptyDescription))
+            {
+                <div class="lts-state-desc">@EmptyDescription</div>
+            }
+            @EmptyActionContent
+        </div>
+    }
+    else
+    {
+        <table class="lts-table">
+            <thead>
+                <tr>@HeaderContent</tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Items)
+                {
+                    <tr @key="RowKey is null ? (object)item! : RowKey(item)">
+                        @RowTemplate(item)
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    /// <summary>The already-filtered/paged items to render, one row each.</summary>
+    [Parameter, EditorRequired] public IEnumerable<TItem>? Items { get; set; }
+
+    /// <summary>Header row cells (a set of &lt;th&gt; elements).</summary>
+    [Parameter, EditorRequired] public RenderFragment HeaderContent { get; set; } = default!;
+
+    /// <summary>Body row cells (a set of &lt;td&gt; elements) for a single item.</summary>
+    [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string ErrorTitle { get; set; } = "Couldn't load data";
+    [Parameter] public EventCallback OnRetry { get; set; }
+
+    [Parameter] public string EmptyIcon { get; set; } = "bi-inbox";
+    [Parameter] public string EmptyTitle { get; set; } = "No records found";
+    [Parameter] public string? EmptyDescription { get; set; }
+    [Parameter] public RenderFragment? EmptyActionContent { get; set; }
+
+    /// <summary>Number of columns to show as skeleton placeholders while loading.</summary>
+    [Parameter] public int SkeletonColumnCount { get; set; } = 4;
+    [Parameter] public int SkeletonRowCount { get; set; } = 4;
+
+    /// <summary>Optional row key selector so Blazor can diff rows efficiently; defaults to the item itself.</summary>
+    [Parameter] public Func<TItem, object>? RowKey { get; set; }
+
+    // Vary skeleton widths slightly so loading rows don't look like a solid block.
+    private static int SkeletonWidthFor(int columnIndex) => (columnIndex % 3) switch
+    {
+        0 => 70,
+        1 => 55,
+        _ => 40
+    };
+}

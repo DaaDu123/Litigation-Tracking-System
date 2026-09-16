@@ -1,0 +1,306 @@
+@page "/cases/{CaseId:long}/edit"
+@attribute [Authorize(Roles = "Partner,FirmAdmin")]
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject ICaseService CaseService
+@inject ICourtService CourtService
+@inject IMasterDataService MasterDataService
+@inject IUserService UserService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Edit Case - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/cases">Cases</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Edit Case</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Edit Case</h1>
+        <p class="lts-page-subtitle">@(_original?.CaseNumber ?? "Loading...")</p>
+    </div>
+</div>
+
+<div class="lts-card">
+    @if (_isLoading)
+    {
+        <div class="lts-state">
+            <span class="lts-spinner lts-spinner-md"></span>
+            <div class="lts-state-title" style="margin-top:0.75rem;">Loading case...</div>
+        </div>
+    }
+    else if (_notFound)
+    {
+        <div class="lts-state is-error">
+            <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="lts-state-title">Case not found</div>
+            <div class="lts-state-desc">It may have been removed, or you may not have access to it.</div>
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick='() => Nav.NavigateTo("/cases")'>
+                <i class="bi bi-arrow-left"></i> Back to Cases
+            </button>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(_apiError))
+        {
+            <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span style="white-space: pre-line;">@_apiError</span>
+            </div>
+        }
+
+        <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <h6 class="fw-semibold mb-3">Basic Information</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Case Number</label>
+                        <InputText @bind-Value="_form.CaseNumber" class="lts-form-control" maxlength="100" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.CaseNumber" class="lts-form-error" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Priority</label>
+                        <InputSelect @bind-Value="_form.Priority" class="lts-form-control" disabled="@_isSaving">
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => _form.Priority" class="lts-form-error" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Case Title</label>
+                <InputText @bind-Value="_form.CaseTitle" class="lts-form-control" maxlength="255" disabled="@_isSaving" />
+                <ValidationMessage For="() => _form.CaseTitle" class="lts-form-error" />
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Case Description</label>
+                <InputTextArea @bind-Value="_form.CaseDescription" class="lts-form-control" rows="3" disabled="@_isSaving" />
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Subject Matter</label>
+                <InputText @bind-Value="_form.SubjectMatter" class="lts-form-control" maxlength="255" disabled="@_isSaving" />
+            </div>
+
+            <h6 class="fw-semibold mb-3 mt-4">Classification &amp; Progress</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Court</label>
+                        <InputSelect @bind-Value="_form.CourtID" class="lts-form-control" disabled="@_isSaving">
+                            @foreach (var court in _courts)
+                            {
+                                <option value="@court.CourtID">@court.CourtName</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Category</label>
+                        <InputSelect @bind-Value="_form.CategoryID" class="lts-form-control" disabled="@_isSaving">
+                            @foreach (var cat in _categories)
+                            {
+                                <option value="@cat.CategoryID">@cat.CategoryName</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Stage</label>
+                        <InputSelect @bind-Value="_form.StageID" class="lts-form-control" disabled="@_isSaving">
+                            @foreach (var stage in _stages)
+                            {
+                                <option value="@stage.StageID">@stage.StageName</option>
+                            }
+                        </InputSelect>
+                        <div class="lts-form-hint">To change the case Status, use "Update Status" from the case details page.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Assigned Legal Officer</label>
+                <InputSelect @bind-Value="_form.CurrentLegalOfficerID" class="lts-form-control" disabled="@_isSaving">
+                    <option value="">Unassigned</option>
+                    @foreach (var user in _legalOfficers)
+                    {
+                        <option value="@user.UserID">@user.FullName (@LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(user.RoleName))</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <h6 class="fw-semibold mb-3 mt-4">Dates &amp; Financials</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Expected Disposal Date</label>
+                        <InputDate @bind-Value="_form.ExpectedDisposalDate" class="lts-form-control" disabled="@_isSaving" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Claimed Amount</label>
+                        <InputNumber @bind-Value="_form.ClaimedAmount" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.ClaimedAmount" class="lts-form-error" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Potential Liability</label>
+                        <InputNumber @bind-Value="_form.PotentialLiability" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.PotentialLiability" class="lts-form-error" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="lts-switch-row">
+                <div>
+                    <div class="fw-semibold" style="font-size:0.88rem;color:var(--lts-text);">Archived</div>
+                    <div class="lts-form-hint" style="margin-top:0;">Archived cases are hidden from the default case list.</div>
+                </div>
+                <label class="lts-switch">
+                    <InputCheckbox @bind-Value="_isArchived" disabled="@_isSaving" />
+                    <span class="lts-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="lts-modal-footer" style="padding: 1.25rem 0 0; margin-top: 0.5rem; justify-content: flex-start; gap: 0.6rem;">
+                <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span class="lts-spinner lts-spinner-sm"></span>
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-lg"></i>
+                        <span>Save Changes</span>
+                    }
+                </button>
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick='() => Nav.NavigateTo($"/cases/{CaseId}")' disabled="@_isSaving">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public long CaseId { get; set; }
+
+    private CaseDTO? _original;
+    private UpdateCaseDTO _form = new();
+    private bool _isArchived;
+
+    private List<CourtDTO> _courts = new();
+    private List<CaseCategoryDTO> _categories = new();
+    private List<CaseStageDTO> _stages = new();
+    private List<UserDTO> _legalOfficers = new();
+
+    private bool _isLoading = true;
+    private bool _notFound;
+    private bool _isSaving;
+    private string? _apiError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+            _categories = await MasterDataService.GetCaseCategoriesAsync(activeOnly: true);
+            _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+            var users = await UserService.GetAllAsync();
+            _legalOfficers = users.Where(u => u.IsActive).OrderBy(u => u.FullName).ToList();
+
+            _original = await CaseService.GetByIdAsync(CaseId);
+            if (_original == null)
+            {
+                _notFound = true;
+            }
+            else
+            {
+                _form = UpdateCaseDTO.FromCaseDetails(CaseId, _original);
+                _isArchived = _original.IsArchived;
+                // Make sure the current values are selectable even if the active-only
+                // lookups above happened to exclude them (e.g. a now-inactive court).
+                EnsureOptionPresent(_courts, _original.CourtID, _original.CourtName);
+                EnsureCategoryPresent(_original.CategoryID, _original.CategoryName);
+                EnsureStagePresent(_original.StageID, _original.StageName);
+            }
+        }
+        catch (ApiException)
+        {
+            _notFound = true;
+        }
+        catch (Exception)
+        {
+            _apiError = "Couldn't load the case. Please refresh and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void EnsureOptionPresent(List<CourtDTO> list, int id, string name)
+    {
+        if (!list.Any(x => x.CourtID == id))
+            list.Add(new CourtDTO { CourtID = id, CourtName = name, IsActive = false });
+    }
+
+    private void EnsureCategoryPresent(int id, string name)
+    {
+        if (!_categories.Any(x => x.CategoryID == id))
+            _categories.Add(new CaseCategoryDTO { CategoryID = id, CategoryName = name, IsActive = false });
+    }
+
+    private void EnsureStagePresent(int id, string name)
+    {
+        if (!_stages.Any(x => x.StageID == id))
+            _stages.Add(new CaseStageDTO { StageID = id, StageName = name, IsActive = false });
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _isSaving = true;
+        _apiError = null;
+        _form.IsArchived = _isArchived;
+        try
+        {
+            await CaseService.UpdateAsync(_form);
+            Toast.Success("Case updated", "The case's details have been saved.");
+            Nav.NavigateTo($"/cases/{CaseId}");
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the case. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

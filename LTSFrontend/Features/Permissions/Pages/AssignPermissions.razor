@@ -1,0 +1,264 @@
+@page "/permissions/assign"
+@page "/permissions/assign/{RoleId:int}"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.Permissions.Components
+@using LTSFrontend.Features.Permissions.DTOs
+@using LTSFrontend.Features.Permissions.Services
+@using LTSFrontend.Features.Roles.DTOs
+@using LTSFrontend.Features.Roles.Services
+@inject IPermissionService PermissionService
+@inject IRoleService RoleService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Assign Permissions - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Assign Permissions</h1>
+        <p class="lts-page-subtitle">Pick a role and choose exactly which permissions it grants.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <button class="lts-btn lts-btn-outline" @onclick='() => Nav.NavigateTo("/permissions/matrix")'>
+            <i class="bi bi-grid-3x3"></i> View Matrix
+        </button>
+        <button class="lts-btn lts-btn-outline" @onclick='() => Nav.NavigateTo("/roles")'>
+            <i class="bi bi-shield-lock"></i> Manage Roles
+        </button>
+    </div>
+</div>
+
+<div class="lts-card">
+    <div class="lts-form-group" style="max-width: 420px;">
+        <label class="lts-form-label">Role <span class="required">*</span></label>
+        @if (_isLoadingRoles)
+        {
+            <div class="lts-skeleton lts-skeleton-text" style="width:100%; height:2.4rem;"></div>
+        }
+        else
+        {
+            <select class="lts-form-control" value="@_selectedRoleId"
+                    @onchange="OnRoleChangedAsync" disabled="@_isSaving">
+                <option value="0">-- Select a role --</option>
+                @foreach (var role in _roles)
+                {
+                    <option value="@role.RoleID">@role.RoleName@(IsProtected(role) ? " (System)" : "")</option>
+                }
+            </select>
+        }
+        <div class="lts-form-hint">Protected system roles (SuperAdmin, FirmAdmin) cannot be modified here.</div>
+    </div>
+
+    @if (_selectedRoleId > 0)
+    {
+        <hr class="my-4" />
+
+        @if (IsSelectedRoleProtected)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-lock-fill"></i></div>
+                <div class="lts-state-title">This is a protected system role</div>
+                <div class="lts-state-desc">Its permissions are fixed and cannot be changed through this screen.</div>
+            </div>
+        }
+        else if (_isLoadingPermissions || _isLoadingAllPermissions)
+        {
+            <div class="lts-permission-grid">
+                @for (var i = 0; i < 3; i++)
+                {
+                    <div class="lts-permission-group">
+                        <div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div>
+                        <div class="lts-skeleton lts-skeleton-text" style="width:90%; margin-top:.5rem;"></div>
+                        <div class="lts-skeleton lts-skeleton-text" style="width:70%; margin-top:.5rem;"></div>
+                    </div>
+                }
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load permissions</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="() => OnRoleChangedInternalAsync(_selectedRoleId)">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="lts-form-label" style="margin-bottom:0;">
+                    Permissions <span class="lts-badge lts-badge-info">@_selectedIds.Count selected</span>
+                </label>
+            </div>
+            <PermissionCheckboxGrid AllPermissions="_allPermissions" SelectedIds="_selectedIds" Disabled="_isSaving" />
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="button" class="lts-btn lts-btn-outline" disabled="@_isSaving" @onclick="ResetAsync">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </button>
+                <button type="button" class="lts-btn lts-btn-primary" disabled="@(_isSaving || _selectedIds.Count == 0)" @onclick="SaveAsync">
+                    @if (_isSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-lg"></i>
+                    }
+                    Save Permissions
+                </button>
+            </div>
+            @if (_selectedIds.Count == 0)
+            {
+                <div class="lts-form-hint text-danger">A role must have at least one permission.</div>
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int RoleId { get; set; }
+
+    private static readonly string[] ProtectedRoleNames = { "SuperAdmin", "FirmAdmin" };
+
+    private List<RoleDTO> _roles = new();
+    private List<PermissionDTO> _allPermissions = new();
+    private HashSet<int> _selectedIds = new();
+
+    private int _selectedRoleId;
+    private bool _isLoadingRoles = true;
+    private bool _isLoadingAllPermissions = true;
+    private bool _isLoadingPermissions;
+    private bool _isSaving;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoadingRoles = true;
+        _isLoadingAllPermissions = true;
+        try
+        {
+            var rolesTask = RoleService.GetAllAsync();
+            var permsTask = PermissionService.GetAllAsync();
+            await Task.WhenAll(rolesTask, permsTask);
+            _roles = rolesTask.Result;
+            _allPermissions = permsTask.Result;
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Roles or permissions could not be loaded.";
+        }
+        finally
+        {
+            _isLoadingRoles = false;
+            _isLoadingAllPermissions = false;
+        }
+
+        if (RoleId > 0)
+        {
+            await OnRoleChangedInternalAsync(RoleId);
+        }
+    }
+
+    private bool IsSelectedRoleProtected =>
+        _roles.FirstOrDefault(r => r.RoleID == _selectedRoleId) is { } role && IsProtected(role);
+
+    private static bool IsProtected(RoleDTO role) =>
+        ProtectedRoleNames.Contains(role.RoleName, StringComparer.OrdinalIgnoreCase);
+
+    private async Task OnRoleChangedAsync(ChangeEventArgs e)
+    {
+        var id = int.TryParse(e.Value?.ToString(), out var parsed) ? parsed : 0;
+        await OnRoleChangedInternalAsync(id);
+    }
+
+    private async Task OnRoleChangedInternalAsync(int roleId)
+    {
+        _selectedRoleId = roleId;
+        _selectedIds = new HashSet<int>();
+        _hasError = false;
+        _errorMessage = null;
+
+        if (roleId <= 0)
+            return;
+
+        var role = _roles.FirstOrDefault(r => r.RoleID == roleId);
+        if (role != null && IsProtected(role))
+            return;
+
+        _isLoadingPermissions = true;
+        try
+        {
+            var rolePermissions = await PermissionService.GetRolePermissionsAsync(roleId);
+            _selectedIds = rolePermissions.Select(p => p.PermissionID).ToHashSet();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "This role's permissions could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoadingPermissions = false;
+        }
+    }
+
+    private Task ResetAsync() => OnRoleChangedInternalAsync(_selectedRoleId);
+
+    private async Task SaveAsync()
+    {
+        if (_selectedRoleId <= 0 || _selectedIds.Count == 0)
+            return;
+
+        _isSaving = true;
+        try
+        {
+            var success = await PermissionService.AssignAsync(_selectedRoleId, _selectedIds);
+            if (success)
+            {
+                Toast.Success("Permissions saved", "The role's permissions were updated successfully.");
+
+                // Keep the in-memory roles list (used for the protected-role check
+                // and the dropdown labels) in sync with what was just saved.
+                var role = _roles.FirstOrDefault(r => r.RoleID == _selectedRoleId);
+                if (role != null)
+                {
+                    role.Permissions = _allPermissions
+                        .Where(p => _selectedIds.Contains(p.PermissionID))
+                        .Select(p => new RolePermissionDTO { PermissionID = p.PermissionID, PermissionName = p.PermissionName })
+                        .ToList();
+                }
+            }
+            else
+            {
+                Toast.Error("Save failed", "Permissions could not be saved. Please try again.");
+            }
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Save failed", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Save failed", "Please check your connection and try again.");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

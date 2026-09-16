@@ -1,0 +1,36 @@
+@* Reusable dashboard stat card. Usage:
+     <KpiCard Title="Total Cases" Value="@_stats.TotalCases.ToString()" Icon="bi-briefcase" Accent="#1b4fd6" IsLoading="_isLoading" /> *@
+
+<div class="lts-stat-card" style="--accent:@Accent;">
+    <div class="lts-stat-icon"><i class="bi @Icon"></i></div>
+    <div class="lts-stat-body">
+        @if (IsLoading)
+        {
+            <div class="lts-skeleton lts-skeleton-text" style="width:3rem; height:1.4rem;"></div>
+        }
+        else
+        {
+            <div class="lts-stat-value">@Value</div>
+        }
+        <div class="lts-stat-label">@Title</div>
+        @if (!string.IsNullOrWhiteSpace(SubLabel))
+        {
+            <div class="lts-stat-sublabel">@SubLabel</div>
+        }
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Href))
+    {
+        <a href="@Href" class="lts-stat-card-link" aria-label="@Title"></a>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = "0";
+    [Parameter] public string Icon { get; set; } = "bi-graph-up";
+    [Parameter] public string Accent { get; set; } = "#1b4fd6";
+    [Parameter] public string? SubLabel { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    /// <summary>Optional: makes the whole card a clickable link (e.g. to "/cases").</summary>
+    [Parameter] public string? Href { get; set; }
+}

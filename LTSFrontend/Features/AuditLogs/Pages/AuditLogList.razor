@@ -1,0 +1,99 @@
+@page "/audit-logs"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.AuditLogs.Components
+@using LTSFrontend.Features.AuditLogs.DTOs
+@using LTSFrontend.Features.AuditLogs.Services
+@inject IAuditLogService AuditLogService
+@inject ToastService Toast
+
+<PageTitle>Audit Logs - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Audit Logs</h1>
+        <p class="lts-page-subtitle">Every change made in the system, who made it, and when.</p>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <AuditLogFilterBar Filter="_filter" FilterChanged="LoadAsync" />
+
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else if (_logs.Count == 0)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <div class="lts-state-icon"><i class="bi bi-journal-check"></i></div>
+            <div class="lts-state-title">No audit log entries</div>
+            <div class="lts-state-desc">No activity matches this filter.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in _logs)
+                    {
+                        <tr>
+                            <td>@log.Timestamp.ToString("dd MMM yyyy HH:mm:ss")</td>
+                            <td>@log.UserName</td>
+                            <td>@(log.Action ?? "-")</td>
+                            <td>@(log.IPAddress ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding: 0 1.1rem 1.1rem;">
+            <Pagination CurrentPage="_filter.PageNumber" TotalItems="_totalRecords" PageSize="_filter.PageSize" PageChanged="OnPageChangedAsync" />
+        </div>
+    }
+</div>
+
+@code {
+    private AuditLogFilterDTO _filter = new();
+    private List<AuditLogDTO> _logs = new();
+    private int _totalRecords;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var result = await AuditLogService.GetAllAsync(_filter);
+            _logs = result.Items;
+            _totalRecords = result.TotalRecords;
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load audit logs", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnPageChangedAsync(int page)
+    {
+        _filter.PageNumber = page;
+        await LoadAsync();
+    }
+}

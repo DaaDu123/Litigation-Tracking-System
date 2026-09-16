@@ -1,0 +1,158 @@
+@* Embedded panel (tab) on CaseDetails for case milestones/outcomes.
+   SRS Reference: Case_SRS FR-09 "record case milestones and outcomes" *@
+@using LTSFrontend.Features.Milestones.DTOs
+@using LTSFrontend.Features.Milestones.Services
+@inject IMilestoneService MilestoneService
+@inject ToastService Toast
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Milestones</h6>
+    <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+            <i class="bi bi-plus-lg"></i> Add Milestone
+        </button>
+    </PermissionGate>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_milestones.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-flag"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">No milestones recorded for this case yet.</div>
+    </div>
+}
+else
+{
+    <div class="lts-timeline">
+        @foreach (var m in _milestones.OrderByDescending(x => x.MilestoneDate))
+        {
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="lts-stat-icon" style="--accent: @(m.IsCompleted ? "#16a34a" : "#6b7280"); flex-shrink:0;">
+                    <i class="bi @(m.IsCompleted ? "bi-check-circle-fill" : "bi-flag")"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="fw-semibold">@m.Milestone</div>
+                        <div>
+                            @if (!m.IsCompleted)
+                            {
+                                <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleCompleteAsync(m)" title="Mark complete">
+                                        <i class="bi bi-check2-square"></i>
+                                    </button>
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEdit(m)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </PermissionGate>
+                            }
+                            <PermissionGate Roles="Partner,FirmAdmin,SuperAdmin">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteAsync(m)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </PermissionGate>
+                        </div>
+                    </div>
+                    <div class="text-muted small">
+                        @m.MilestoneDate.ToString("dd MMM yyyy")
+                        @if (m.IsCompleted)
+                        {
+                            <span class="lts-badge lts-badge-success ms-2">Completed@(m.CompletedByName is null ? "" : $" by {m.CompletedByName}")</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(m.Description))
+                    {
+                        <div class="mt-1">@m.Description</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<MilestoneModal @ref="_milestoneModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private List<MilestoneDTO> _milestones = new();
+    private bool _isLoading = true;
+
+    private MilestoneModal _milestoneModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _milestones = await MilestoneService.GetByCaseAsync(CaseId);
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load milestones", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreate() => _milestoneModal.OpenForCreate(CaseId);
+    private void OpenEdit(MilestoneDTO m) => _milestoneModal.OpenForEdit(m);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "The milestone has been saved.");
+    }
+
+    private async Task HandleCompleteAsync(MilestoneDTO m)
+    {
+        try
+        {
+            await MilestoneService.CompleteAsync(m.MilestoneID);
+            await LoadAsync();
+            Toast.Success("Marked complete", $"\"{m.Milestone}\" has been marked complete.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't update milestone", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't update milestone", "Please try again.");
+        }
+    }
+
+    private async Task HandleDeleteAsync(MilestoneDTO m)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete milestone \"{m.Milestone}\"?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await MilestoneService.DeleteAsync(m.MilestoneID);
+            await LoadAsync();
+            Toast.Success("Milestone deleted", "The milestone has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete milestone", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete milestone", "Please try again.");
+        }
+    }
+}

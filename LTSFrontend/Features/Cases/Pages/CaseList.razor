@@ -1,0 +1,362 @@
+@page "/cases"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Core.DTOs
+@using LTSFrontend.Features.Cases.Components
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseService CaseService
+@inject ICourtService CourtService
+@inject IMasterDataService MasterDataService
+@inject ToastService Toast
+@inject NavigationManager Nav
+@inject CaseFilterState FilterState
+
+<PageTitle>Cases - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Cases</h1>
+        <p class="lts-page-subtitle">All litigation cases you have access to, across every court and status.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <PermissionGate Roles="Partner,FirmAdmin">
+            <button class="lts-btn lts-btn-primary" @onclick='() => Nav.NavigateTo("/cases/create")'>
+                <i class="bi bi-plus-lg"></i> New Case
+            </button>
+        </PermissionGate>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#1b4fd6;">
+        <div class="lts-stat-icon"><i class="bi bi-briefcase"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _totalRecords.ToString())</div>
+            <div class="lts-stat-label">Total Cases</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#dc2626;">
+        <div class="lts-stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _cases.Count(c => c.Priority == "High").ToString())</div>
+            <div class="lts-stat-label">High Priority (this page)</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#16a34a;">
+        <div class="lts-stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _cases.Count(c => !c.IsArchived).ToString())</div>
+            <div class="lts-stat-label">Active (this page)</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <CaseFilterPanel @bind-SearchTerm="_searchTerm" @bind-CourtFilter="_courtFilter"
+                      @bind-StatusFilter="_statusFilter" @bind-PriorityFilter="_priorityFilter"
+                      @bind-PageSize="_pageSize" @bind-ViewMode="_viewMode"
+                      Courts="_courts" Statuses="_statuses" IsLoading="_isLoading"
+                      OnFilterChanged="OnFilterChanged" OnRefresh="() => LoadAsync()" />
+
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th>Case No.</th><th>Title</th><th>Court</th><th>Category</th><th>Status</th><th>Priority</th><th>Next Steps</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 5; i++)
+                        {
+                            <tr class="lts-skeleton-row">
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:70%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:80%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:60%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:55%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:50%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:55%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load cases</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="() => LoadAsync()">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (_cases.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-briefcase"></i></div>
+                <div class="lts-state-title">
+                    @(_totalRecords == 0 && !HasActiveFilters ? "No cases yet" : "No matching cases")
+                </div>
+                <div class="lts-state-desc">
+                    @(_totalRecords == 0 && !HasActiveFilters
+                        ? "Register your first case to start tracking hearings and deadlines."
+                        : "Try adjusting your search or filters.")
+                </div>
+                @if (_totalRecords == 0 && !HasActiveFilters)
+                {
+                    <PermissionGate Roles="Partner,FirmAdmin">
+                        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick='() => Nav.NavigateTo("/cases/create")'>
+                            <i class="bi bi-plus-lg"></i> New Case
+                        </button>
+                    </PermissionGate>
+                }
+                else
+                {
+                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="ClearFilters">
+                        <i class="bi bi-x-lg"></i> Clear Filters
+                    </button>
+                }
+            </div>
+        }
+        else if (_viewMode == "table")
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th>Case No.</th>
+                            <th>Title</th>
+                            <th>Court</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Stage</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _cases)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="@($"/cases/{c.CaseID}")" class="fw-semibold">@c.CaseNumber</a>
+                                    <div class="lts-form-hint" style="margin-top:0;">@c.InternalReferenceNo</div>
+                                </td>
+                                <td>@c.CaseTitle</td>
+                                <td>@c.CourtName</td>
+                                <td>@c.CategoryName</td>
+                                <td><span class="lts-badge lts-badge-@StatusBadgeClass(c.StatusName)">@c.StatusName</span></td>
+                                <td><span class="lts-badge lts-badge-@PriorityBadgeClass(c.Priority)">@c.Priority</span></td>
+                                <td>@c.StageName</td>
+                                <td>
+                                    <div class="lts-row-actions">
+                                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="View" @onclick='() => Nav.NavigateTo($"/cases/{c.CaseID}")'>
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <PermissionGate Roles="Partner,FirmAdmin">
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick='() => Nav.NavigateTo($"/cases/{c.CaseID}/edit")'>
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </PermissionGate>
+                                        <PermissionGate Roles="FirmAdmin,Partner">
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => HandleDeleteAsync(c)">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </button>
+                                        </PermissionGate>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <Pagination CurrentPage="_pageNumber" TotalItems="_totalRecords" PageSize="_pageSize" PageChanged="OnPageChanged" />
+        }
+        else
+        {
+            <div class="lts-grid-view">
+                @foreach (var c in _cases)
+                {
+                    <CaseCard Case="c" OnView="ViewCase" OnEdit="EditCase" OnDelete="HandleDeleteAsync" />
+                }
+            </div>
+            <Pagination CurrentPage="_pageNumber" TotalItems="_totalRecords" PageSize="_pageSize" PageChanged="OnPageChanged" />
+        }
+    </div>
+</div>
+
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<CaseDTO> _cases = new();
+    private List<CourtDTO> _courts = new();
+    private List<CaseStatusDTO> _statuses = new();
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    // Seeded from CaseFilterState so a person who opens a case and comes
+    // back lands on the same search/filter/page instead of starting over.
+    private string _searchTerm = string.Empty;
+    private int _courtFilter = 0;
+    private int _statusFilter = 0;
+    private string _priorityFilter = string.Empty;
+    private string _viewMode = "table";
+
+    private int _pageNumber = 1;
+    private int _pageSize = 10;
+    private int _totalRecords = 0;
+
+    private ConfirmDialog _confirmDialog = default!;
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_searchTerm) || _courtFilter > 0 || _statusFilter > 0 || !string.IsNullOrWhiteSpace(_priorityFilter);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _searchTerm = FilterState.SearchTerm;
+        _courtFilter = FilterState.CourtFilter;
+        _statusFilter = FilterState.StatusFilter;
+        _priorityFilter = FilterState.PriorityFilter;
+        _viewMode = FilterState.ViewMode;
+        _pageNumber = FilterState.PageNumber;
+        _pageSize = FilterState.PageSize;
+
+        await LoadLookupsAsync();
+        await LoadAsync();
+    }
+
+    // Mirrors the current filter/page selections back into the scoped
+    // CaseFilterState so they survive navigating to a case and back.
+    private void PersistFilterState()
+    {
+        FilterState.SearchTerm = _searchTerm;
+        FilterState.CourtFilter = _courtFilter;
+        FilterState.StatusFilter = _statusFilter;
+        FilterState.PriorityFilter = _priorityFilter;
+        FilterState.ViewMode = _viewMode;
+        FilterState.PageNumber = _pageNumber;
+        FilterState.PageSize = _pageSize;
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        try
+        {
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+            _statuses = await MasterDataService.GetCaseStatusesAsync(activeOnly: true);
+        }
+        catch (Exception)
+        {
+            // Filters are a convenience - if lookups fail to load, the list itself still works.
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            var result = await CaseService.GetAllAsync(
+                searchText: string.IsNullOrWhiteSpace(_searchTerm) ? null : _searchTerm,
+                courtID: _courtFilter > 0 ? _courtFilter : null,
+                statusID: _statusFilter > 0 ? _statusFilter : null,
+                priority: string.IsNullOrWhiteSpace(_priorityFilter) ? null : _priorityFilter,
+                pageNumber: _pageNumber,
+                pageSize: _pageSize);
+
+            _cases = result.Items;
+            _totalRecords = result.TotalRecords;
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Cases could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnFilterChanged()
+    {
+        _pageNumber = 1;
+        PersistFilterState();
+        await LoadAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _courtFilter = 0;
+        _statusFilter = 0;
+        _priorityFilter = string.Empty;
+        _pageNumber = 1;
+        PersistFilterState();
+        await LoadAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _pageNumber = page;
+        PersistFilterState();
+        await LoadAsync();
+    }
+
+    private void ViewCase(CaseDTO c) => Nav.NavigateTo($"/cases/{c.CaseID}");
+
+    private void EditCase(CaseDTO c) => Nav.NavigateTo($"/cases/{c.CaseID}/edit");
+
+    private async Task HandleDeleteAsync(CaseDTO c)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete case \"{c.CaseNumber}\"?",
+            "This cannot be undone. Cases with linked hearings, deadlines, or documents cannot be deleted.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await CaseService.DeleteAsync(c.CaseID);
+            await LoadAsync();
+            Toast.Success("Case deleted", $"\"{c.CaseNumber}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete case", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete case", "Please try again.");
+        }
+    }
+
+    private static string PriorityBadgeClass(string priority) => priority switch
+    {
+        "High" => "danger",
+        "Medium" => "warning",
+        _ => "muted"
+    };
+
+    private static string StatusBadgeClass(string status) =>
+        status.Contains("Closed", StringComparison.OrdinalIgnoreCase) ? "muted" : "success";
+}

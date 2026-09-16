@@ -1,0 +1,88 @@
+@page "/cases/my-assigned"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Features.CaseAssignments.DTOs
+@using LTSFrontend.Features.CaseAssignments.Services
+@inject ICaseAssignmentService AssignmentService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>My Assigned Cases - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">My Assigned Cases</h1>
+        <p class="lts-page-subtitle">Cases you are currently, actively assigned to.</p>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else if (_assignments.Count == 0)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <div class="lts-state-icon"><i class="bi bi-person-check"></i></div>
+            <div class="lts-state-title">No cases assigned</div>
+            <div class="lts-state-desc">You don't have any active case assignments right now.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Case Number</th>
+                        <th>Case Title</th>
+                        <th>Assignment Type</th>
+                        <th>Lead</th>
+                        <th>Assigned Since</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in _assignments)
+                    {
+                        <tr style="cursor:pointer;" @onclick="() => GoToCase(a.CaseID)">
+                            <td class="fw-semibold">@a.CaseNumber</td>
+                            <td>@a.CaseTitle</td>
+                            <td>@a.AssignmentType</td>
+                            <td>@(a.LeadCounsel ? "Yes" : "-")</td>
+                            <td>@a.AssignedDate.ToString("dd MMM yyyy")</td>
+                            <td class="text-end">
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CaseAssignmentDTO> _assignments = new();
+    private bool _isLoading = true;
+
+    private void GoToCase(long caseId) => Nav.NavigateTo($"/cases/{caseId}");
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _assignments = await AssignmentService.GetMyAssignedCasesAsync();
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load your assigned cases", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

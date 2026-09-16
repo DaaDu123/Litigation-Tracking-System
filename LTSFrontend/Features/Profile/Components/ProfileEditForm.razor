@@ -1,0 +1,92 @@
+@* Reusable "edit my profile" form (photo, full name, phone, department;
+   email/role shown read-only). Extracted from MyProfile.razor's inline form
+   so the same editing UI can be reused elsewhere (e.g. inside a modal) -
+   MyProfile.razor itself still owns loading the profile and the overall
+   page chrome; this component only owns the form fields and validation.
+   Usage:
+     <ProfileEditForm Profile="_profile" Form="_form" IsSaving="_isSaving"
+                       ApiError="_apiError" FileSelected="OnFileSelected"
+                       OnValidSubmit="HandleSubmitAsync" /> *@
+@using LTSFrontend.Features.Profile.DTOs
+
+@if (!string.IsNullOrWhiteSpace(ApiError))
+{
+    <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span style="white-space: pre-line;">@ApiError</span>
+    </div>
+}
+
+<EditForm Model="Form" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="lts-form-group">
+        <label class="lts-form-label">Profile Photo</label>
+        <FileUploadInput CurrentImageUrl="@CurrentImageUrl" Disabled="@IsSaving" FileSelected="FileSelected" />
+    </div>
+
+    <div class="lts-form-group">
+        <label class="lts-form-label">Full Name <span class="required">*</span></label>
+        <InputText @bind-Value="Form.FullName" class="lts-form-control" maxlength="150" disabled="@IsSaving" />
+        <ValidationMessage For="() => Form.FullName" class="lts-form-error" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Email</label>
+                <input type="email" class="lts-form-control" value="@Profile?.Email" disabled />
+                <div class="lts-form-hint">Email cannot be changed here.</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Role</label>
+                <input type="text" class="lts-form-control" value="@(string.IsNullOrWhiteSpace(Profile?.RoleName) ? "-" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(Profile?.RoleName))" disabled />
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Phone</label>
+                <InputText @bind-Value="Form.Phone" class="lts-form-control" maxlength="20"
+                           placeholder="e.g. +92 300 1234567" disabled="@IsSaving" />
+                <ValidationMessage For="() => Form.Phone" class="lts-form-error" />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Department</label>
+                <InputText @bind-Value="Form.Department" class="lts-form-control" maxlength="100" disabled="@IsSaving" />
+                <ValidationMessage For="() => Form.Department" class="lts-form-error" />
+            </div>
+        </div>
+    </div>
+
+    <div class="lts-modal-footer" style="padding: 1.25rem 0 0; margin-top: 0.5rem; justify-content: flex-start; gap: 0.6rem;">
+        <button type="submit" class="lts-btn lts-btn-primary" disabled="@IsSaving">
+            @if (IsSaving)
+            {
+                <span class="lts-spinner lts-spinner-sm"></span>
+                <span>Saving...</span>
+            }
+            else
+            {
+                <i class="bi bi-check-lg"></i>
+                <span>Save Changes</span>
+            }
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public ProfileDTO? Profile { get; set; }
+    [Parameter, EditorRequired] public UpdateProfileDTO Form { get; set; } = new();
+    [Parameter] public bool IsSaving { get; set; }
+    [Parameter] public string? ApiError { get; set; }
+    [Parameter] public string? CurrentImageUrl { get; set; }
+    [Parameter] public EventCallback<IBrowserFile?> FileSelected { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+}

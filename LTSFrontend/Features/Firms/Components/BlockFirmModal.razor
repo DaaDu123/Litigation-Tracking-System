@@ -1,0 +1,62 @@
+@* Modal for blocking a firm workspace with an optional reason.
+   Usage: <BlockFirmModal @ref="_blockModal" OnConfirmed="HandleBlockedAsync" />
+          _blockModal.Open(firm); *@
+@using LTSFrontend.Features.Firms.DTOs
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-danger">
+                <i class="bi bi-slash-circle"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Block "@_firm?.FirmName"?</h5>
+                <p class="lts-modal-subtitle mb-0">All users in this firm will immediately be unable to log in.</p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Reason (optional)</label>
+                <textarea class="lts-form-control" rows="3" @bind="_reason" placeholder="e.g. Non-payment, policy violation..."></textarea>
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-danger" @onclick="Confirm">
+                <i class="bi bi-slash-circle"></i> Block Firm
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<(int FirmId, string? Reason)> OnConfirmed { get; set; }
+
+    private bool _isOpen;
+    private FirmDTO? _firm;
+    private string? _reason;
+
+    public void Open(FirmDTO firm)
+    {
+        _firm = firm;
+        _reason = null;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        if (_firm == null) return;
+        _isOpen = false;
+        await OnConfirmed.InvokeAsync((_firm.FirmID, _reason));
+    }
+}

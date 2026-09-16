@@ -1,0 +1,133 @@
+@page "/register"
+@layout LTSFrontend.Layout.LoginLayout
+@using LTSFrontend.Features.Auth.DTOs
+@using LTSFrontend.Features.Auth.Services
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Register - LTS</PageTitle>
+
+<h2>Create Account</h2>
+<p class="auth-subtitle">Register to start tracking your firm's litigation</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger py-2" style="white-space: pre-line;">@_errorMessage</div>
+}
+
+<EditForm Model="_model" OnValidSubmit="HandleRegisterAsync">
+    <DataAnnotationsValidator />
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-control" placeholder="Enter your full name"
+                   @bind="_model.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.FullName" class="text-danger small" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" placeholder="Enter your email address"
+                   @bind="_model.Email" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.Email" class="text-danger small" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Password</label>
+            <div class="password-toggle-wrap">
+                <input type="@(_showPassword ? "text" : "password")" class="form-control"
+                       placeholder="8+ chars, mixed case, number & symbol"
+                       @bind="_model.Password" @bind:event="oninput" disabled="@_isBusy" required />
+                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
+                    <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                </button>
+            </div>
+            <ValidationMessage For="() => _model.Password" class="text-danger small" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Confirm Password</label>
+            <div class="password-toggle-wrap">
+                <input type="@(_showConfirmPassword ? "text" : "password")" class="form-control"
+                       placeholder="Re-enter your password"
+                       @bind="_model.ConfirmPassword" @bind:event="oninput" disabled="@_isBusy" required />
+                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showConfirmPassword = !_showConfirmPassword">
+                    <i class="bi @(_showConfirmPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                </button>
+            </div>
+            <ValidationMessage For="() => _model.ConfirmPassword" class="text-danger small" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Phone <span class="text-muted fw-normal">(optional)</span></label>
+            <input type="text" class="form-control" placeholder="03xx-xxxxxxx"
+                   @bind="_model.Phone" @bind:event="oninput" disabled="@_isBusy" />
+            <ValidationMessage For="() => _model.Phone" class="text-danger small" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Department <span class="text-muted fw-normal">(optional)</span></label>
+            <input type="text" class="form-control" placeholder="e.g. Litigation"
+                   @bind="_model.Department" @bind:event="oninput" disabled="@_isBusy" />
+            <ValidationMessage For="() => _model.Department" class="text-danger small" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Firm Code</label>
+        <input type="text" class="form-control" placeholder="Ask your Firm Admin for the code"
+               @bind="_model.FirmCode" @bind:event="oninput" disabled="@_isBusy" required />
+        <ValidationMessage For="() => _model.FirmCode" class="text-danger small" />
+    </div>
+
+    <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+        @if (_isBusy)
+        {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+        }
+        Register
+    </button>
+</EditForm>
+
+<div class="auth-footer">
+    Already have an account? <a class="auth-link" href="/login">Sign in</a>
+</div>
+<div class="auth-footer">
+    Joining as Partner, Associate Lawyer, Moharrir, or Intern/Paralegal? <a class="auth-link" href="/request-to-join">Request to join a firm</a>
+</div>
+<div class="auth-footer">
+    Starting a new firm? <a class="auth-link" href="/request-firm-admin">Request Firm Admin access</a>
+</div>
+
+@code {
+    private readonly RegisterRequest _model = new();
+    private bool _isBusy;
+    private bool _showPassword;
+    private bool _showConfirmPassword;
+    private string? _errorMessage;
+
+    private async Task HandleRegisterAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            var result = await AuthService.RegisterAsync(_model);
+            Navigation.NavigateTo($"/verify-otp?email={Uri.EscapeDataString(result.Email)}");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Registration nahi ho saki. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

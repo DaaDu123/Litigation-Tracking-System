@@ -1,0 +1,50 @@
+@page "/"
+@attribute [Authorize]
+@inject UserSessionState Session
+@inject NavigationManager Nav
+
+<PageTitle>Dashboard - LTS</PageTitle>
+
+@if (_role is null)
+{
+    <div class="lts-card">
+        <h4>Welcome, @Session.FullName!</h4>
+        <p class="text-muted mb-0">
+            You're signed in as <strong>@(string.IsNullOrWhiteSpace(Session.Role) ? "User" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(Session.Role))</strong>, but your role isn't
+            recognised for a dedicated dashboard yet. You can head to
+            <a href="/cases">Cases</a> or <a href="/users">User Management</a> if your role allows it.
+        </p>
+    </div>
+}
+
+@code {
+    // Maps each backend UserRole to its dashboard page (see LTSBackend.Comman.Enum.UserRole
+    // doc comments for what each role actually does):
+    //   SuperAdmin       -> Admin Dashboard            (system-wide management)
+    //   FirmAdmin        -> Management Dashboard       (firm-wide oversight)
+    //   Partner          -> Supervisor Dashboard       (supervises case teams)
+    //   AssociateLawyer  -> Lawyer Dashboard            (day-to-day case work)
+    //   Moharrir         -> Legal Officer Dashboard     (court diary / clerical)
+    //   InternParalegal  -> External Counsel Dashboard  (restricted, read-only)
+    private static readonly Dictionary<string, string> RoleDashboardRoutes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["SuperAdmin"] = "/dashboard/admin",
+        ["FirmAdmin"] = "/dashboard/management",
+        ["Partner"] = "/dashboard/supervisor",
+        ["AssociateLawyer"] = "/dashboard/lawyer",
+        ["Moharrir"] = "/dashboard/legal-officer",
+        ["InternParalegal"] = "/dashboard/external-counsel",
+    };
+
+    private string? _role;
+
+    protected override void OnInitialized()
+    {
+        _role = Session.Role;
+
+        if (_role != null && RoleDashboardRoutes.TryGetValue(_role, out var route))
+        {
+            Nav.NavigateTo(route, forceLoad: false);
+        }
+    }
+}

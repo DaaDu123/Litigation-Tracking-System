@@ -1,0 +1,249 @@
+@page "/firms"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.Firms.Components
+@using LTSFrontend.Features.Firms.DTOs
+@using LTSFrontend.Features.Firms.Services
+@inject IFirmService FirmService
+@inject ToastService Toast
+
+<PageTitle>Firm Workspaces - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Firm Workspaces</h1>
+        <p class="lts-page-subtitle">Provision, block, and manage every law firm workspace on the platform.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <button class="lts-btn lts-btn-primary" @onclick="() => _formModal.OpenForCreate()">
+            <i class="bi bi-building-add"></i> Provision Firm
+        </button>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#1b4fd6;">
+        <div class="lts-stat-icon"><i class="bi bi-building"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _firms.Count.ToString())</div>
+            <div class="lts-stat-label">Total Firms</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#16a34a;">
+        <div class="lts-stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _firms.Count(f => !f.IsBlocked).ToString())</div>
+            <div class="lts-stat-label">Active</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#dc2626;">
+        <div class="lts-stat-icon"><i class="bi bi-slash-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _firms.Count(f => f.IsBlocked).ToString())</div>
+            <div class="lts-stat-label">Blocked</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else if (_firms.Count == 0)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <div class="lts-state-icon"><i class="bi bi-building"></i></div>
+            <div class="lts-state-title">No firm workspaces yet</div>
+            <div class="lts-state-desc">Provision the first firm workspace to get started.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Firm</th>
+                        <th>Code</th>
+                        <th>Users</th>
+                        <th>Cases</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in _firms)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@f.FirmName</div>
+                                <div class="text-muted small">@(f.ContactEmail ?? "-")</div>
+                            </td>
+                            <td>@f.FirmCode</td>
+                            <td>@f.UserCount</td>
+                            <td>@f.CaseCount</td>
+                            <td>
+                                @if (f.IsBlocked)
+                                {
+                                    <span class="lts-badge lts-badge-danger" title="@f.BlockedReason">Blocked</span>
+                                }
+                                else
+                                {
+                                    <span class="lts-badge lts-badge-success">Active</span>
+                                }
+                            </td>
+                            <td>@f.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td class="text-end">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => _formModal.OpenForEdit(f)" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleExportAsync(f)" title="Export firm data">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                @if (f.IsBlocked)
+                                {
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleUnblockAsync(f)" title="Unblock">
+                                        <i class="bi bi-unlock"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => _blockModal.Open(f)" title="Block">
+                                        <i class="bi bi-slash-circle"></i>
+                                    </button>
+                                }
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteAsync(f)" title="Remove workspace">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<FirmFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
+<BlockFirmModal @ref="_blockModal" OnConfirmed="HandleBlockConfirmedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<FirmDTO> _firms = new();
+    private bool _isLoading = true;
+
+    private FirmFormModal _formModal = default!;
+    private BlockFirmModal _blockModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _firms = await FirmService.GetAllAsync();
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load firms", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "Firm workspace has been saved.");
+    }
+
+    private async Task HandleBlockConfirmedAsync((int FirmId, string? Reason) args)
+    {
+        try
+        {
+            await FirmService.BlockAsync(args.FirmId, args.Reason);
+            await LoadAsync();
+            Toast.Success("Firm blocked", "All of that firm's users will be unable to log in.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't block firm", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't block firm", "Please try again.");
+        }
+    }
+
+    private async Task HandleUnblockAsync(FirmDTO f)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Unblock \"{f.FirmName}\"?", "Users in this firm will be able to log in again.", "Unblock", "primary");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await FirmService.UnblockAsync(f.FirmID);
+            await LoadAsync();
+            Toast.Success("Firm unblocked", $"\"{f.FirmName}\" can access the system again.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't unblock firm", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't unblock firm", "Please try again.");
+        }
+    }
+
+    private async Task HandleExportAsync(FirmDTO f)
+    {
+        try
+        {
+            await FirmService.ExportAsync(f.FirmID);
+            Toast.Success("Export ready", $"Data export for \"{f.FirmName}\" has started downloading.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't export firm data", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't export firm data", "Please try again.");
+        }
+    }
+
+    private async Task HandleDeleteAsync(FirmDTO f)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Permanently remove \"{f.FirmName}\"?",
+            "This will remove the firm's workspace entirely. Consider exporting its data first. This cannot be undone.",
+            "Remove Workspace", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await FirmService.DeleteAsync(f.FirmID);
+            await LoadAsync();
+            Toast.Success("Workspace removed", $"\"{f.FirmName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't remove firm", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't remove firm", "Please try again.");
+        }
+    }
+}

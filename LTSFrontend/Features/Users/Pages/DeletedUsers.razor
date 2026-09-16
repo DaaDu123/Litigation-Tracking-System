@@ -1,0 +1,151 @@
+@page "/users/deleted"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IUserService UserService
+@inject ToastService Toast
+
+<PageTitle>Deleted Users - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/users">Users</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Deleted</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Deleted Users</h1>
+        <p class="lts-page-subtitle">
+            Soft-deleted accounts across every firm. Their email stays reserved for
+            the original firm until released - release it here to let another firm
+            reuse that email for a new account.
+        </p>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-card">
+        <div class="lts-state">
+            <span class="lts-spinner lts-spinner-md"></span>
+            <div class="lts-state-title" style="margin-top:0.75rem;">Loading deleted users...</div>
+        </div>
+    </div>
+}
+else if (_users.Count == 0)
+{
+    <div class="lts-card">
+        <div class="lts-state">
+            <div class="lts-state-icon"><i class="bi bi-person-x"></i></div>
+            <div class="lts-state-title">No deleted users</div>
+            <div class="lts-state-desc">Nothing here - no accounts have been soft-deleted.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lts-card">
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Firm</th>
+                        <th>Role</th>
+                        <th>Email Status</th>
+                        <th>Last Updated</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in _users)
+                    {
+                        <tr>
+                            <td>@u.FullName</td>
+                            <td>@u.Email</td>
+                            <td>@(u.FirmName ?? "-")</td>
+                            <td>@(string.IsNullOrWhiteSpace(u.RoleName) ? "-" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(u.RoleName))</td>
+                            <td>
+                                @if (u.IsReleasedForReuse)
+                                {
+                                    <span class="lts-badge lts-badge-success">Released</span>
+                                }
+                                else
+                                {
+                                    <span class="lts-badge lts-badge-muted">Reserved</span>
+                                }
+                            </td>
+                            <td>@(u.UpdatedAt?.ToString("dd MMM yyyy") ?? "-")</td>
+                            <td class="text-end">
+                                @if (!u.IsReleasedForReuse)
+                                {
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleReleaseAsync(u)">
+                                        <i class="bi bi-unlock"></i> Release Email
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<DeletedUserDTO> _users = new();
+    private bool _isLoading = true;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _users = await UserService.GetDeletedAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't load deleted users", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load deleted users", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleReleaseAsync(DeletedUserDTO u)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Release \"{u.Email}\" for reassignment?",
+            $"Any firm will then be able to reuse this email for a new account. \"{u.FirmName}\" loses its reservation on it.",
+            "Release", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await UserService.ReleaseAsync(u.UserID);
+            await LoadAsync();
+            Toast.Success("Email released", $"\"{u.Email}\" can now be reused by any firm.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't release email", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't release email", "Please try again.");
+        }
+    }
+}

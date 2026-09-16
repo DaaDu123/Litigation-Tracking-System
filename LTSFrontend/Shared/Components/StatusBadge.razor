@@ -1,0 +1,11 @@
+@* Small colored pill for boolean active/inactive state, reused across master-data modules. *@
+<span class="lts-badge @(IsActive ? "lts-badge-success" : "lts-badge-muted")">
+    <span class="lts-badge-dot"></span>
+    @(IsActive ? ActiveText : InactiveText)
+</span>
+
+@code {
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public string ActiveText { get; set; } = "Active";
+    [Parameter] public string InactiveText { get; set; } = "Inactive";
+}

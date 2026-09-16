@@ -1,0 +1,184 @@
+@inject UserSessionState Session
+
+<nav>
+    <div class="nav-item">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <i class="bi bi-speedometer2"></i> <span class="nav-label">Dashboard</span>
+        </NavLink>
+    </div>
+
+    @* Firm-operational area - every role except SuperAdmin. SuperAdmin is a
+       platform-level role (Firms + system Audit Logs only) and must not see
+       case/hearing/deadline/user/master-data screens - see RoleNames.cs and
+       DocumentPermissionService for the backend side of this same policy. *@
+    <AuthorizeView Roles="FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal">
+        <Authorized>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="cases">
+                    <i class="bi bi-briefcase"></i> <span class="nav-label">Cases</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="cases/my-assigned">
+                    <i class="bi bi-person-check"></i> <span class="nav-label">My Assigned Cases</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="hearings">
+                    <i class="bi bi-calendar-event"></i> <span class="nav-label">Hearings</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="deadlines">
+                    <i class="bi bi-hourglass-split"></i> <span class="nav-label">Deadlines</span>
+                </NavLink>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    @* Firm staff directory - FirmAdmin AND Partner can VIEW (matches
+       RoleNames.PartnerAndAbove on UsersController's GetAll/GetById -
+       Partner needs this e.g. to pick a lawyer when assigning a case).
+       Create/Update/Delete are still FirmAdmin-only underneath - see
+       UserList.razor's CanCreateUsers/CanManageUsers flags. *@
+    <AuthorizeView Roles="FirmAdmin,Partner">
+        <Authorized>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="users">
+                    <i class="bi bi-people"></i> <span class="nav-label">Users</span>
+                </NavLink>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    @* Join Requests - FirmAdmin ONLY. Pending self-service requests from
+       people who want to join THIS firm as Partner/Associate/Moharrir/
+       Intern (see Features/UserJoinRequests). Distinct from the FirmAdmin's
+       own direct "Create User" flow above, which still adds users
+       immediately with no approval step. Partner has ZERO access here too
+       - view, approve, AND reject are all FirmAdmin-only, matching
+       UserJoinRequestsController's [Authorize(Roles =
+       RoleNames.FirmAdminOnly)] on GetAll/Approve/Reject. *@
+    <AuthorizeView Roles="FirmAdmin">
+        <Authorized>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="user-join-requests">
+                    <i class="bi bi-person-plus"></i> <span class="nav-label">Join Requests</span>
+                </NavLink>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    @* Login History - FirmAdmin sees only their own firm (enforced by the
+       AppDbContext global query filter on LoginHistory); SuperAdmin sees
+       every firm's (same handler, unrestricted for SuperAdmin - see
+       GetAllLoginHistoryHandler). Everyone still gets "My Login History"
+       further down for their own account regardless of role. *@
+    <AuthorizeView Roles="FirmAdmin,SuperAdmin">
+        <Authorized>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="login-history">
+                    <i class="bi bi-clock-history"></i> <span class="nav-label">Login History</span>
+                </NavLink>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    @* SuperAdmin area - platform-level only: firm workspace provisioning and
+       system-wide audit logs. Roles & Permissions stay here too
+       (RolesController/PermissionsController are deliberately SuperAdmin-only
+       - Role and RolePermission are GLOBAL, non-tenant-scoped tables, so
+       this is a pre-existing architectural constraint, not scope creep). *@
+    <AuthorizeView Roles="SuperAdmin">
+        <Authorized>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="firms">
+                    <i class="bi bi-building"></i> <span class="nav-label">Firm Workspaces</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="firm-admin-requests">
+                    <i class="bi bi-person-check"></i> <span class="nav-label">Firm Admin Requests</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="audit-logs">
+                    <i class="bi bi-journal-check"></i> <span class="nav-label">Audit Logs</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="roles">
+                    <i class="bi bi-shield-lock"></i> <span class="nav-label">Roles</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="permissions/matrix">
+                    <i class="bi bi-grid-3x3-gap"></i> <span class="nav-label">Permissions</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="users/deleted">
+                    <i class="bi bi-person-x"></i> <span class="nav-label">Deleted Users</span>
+                </NavLink>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    @* Master Data configuration - FirmAdmin AND Partner (per policy,
+       Partner has FirmAdmin-equivalent access everywhere in the firm
+       except creating a new user). Matches [Authorize(Roles =
+       "FirmAdmin,Partner")] now on every page under Features/Masters. *@
+    <AuthorizeView Roles="FirmAdmin,Partner">
+        <Authorized>
+            <div class="nav-section-title">Configuration</div>
+
+            <div class="nav-item">
+                <NavLink class="nav-link" href="masters" Match="NavLinkMatch.All">
+                    <i class="bi bi-diagram-3"></i> <span class="nav-label">Master Data</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="masters/courts">
+                    <i class="bi bi-bank"></i> <span class="nav-label">Courts</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="masters/case-categories">
+                    <i class="bi bi-diagram-2"></i> <span class="nav-label">Case Categories</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="masters/case-stages">
+                    <i class="bi bi-signpost-split"></i> <span class="nav-label">Case Stages</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="masters/case-statuses">
+                    <i class="bi bi-flag"></i> <span class="nav-label">Case Statuses</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="masters/departments">
+                    <i class="bi bi-diagram-3"></i> <span class="nav-label">Departments</span>
+                </NavLink>
+            </div>
+            <div class="nav-item nav-item-sub">
+                <NavLink class="nav-link" href="masters/document-types">
+                    <i class="bi bi-file-earmark-text"></i> <span class="nav-label">Document Types</span>
+                </NavLink>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <div class="nav-item">
+        <NavLink class="nav-link" href="profile">
+            <i class="bi bi-person-circle"></i> <span class="nav-label">My Profile</span>
+        </NavLink>
+    </div>
+    <div class="nav-item">
+        <NavLink class="nav-link" href="login-history/my">
+            <i class="bi bi-clock-history"></i> <span class="nav-label">My Login History</span>
+        </NavLink>
+    </div>
+</nav>
+

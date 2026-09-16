@@ -1,0 +1,107 @@
+@page "/dashboard/external-counsel"
+@attribute [Authorize(Roles = "InternParalegal")]
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Dashboard.Components
+@using LTSFrontend.Features.Dashboard.DTOs
+@inject ICaseService CaseService
+@inject UserSessionState Session
+
+<PageTitle>Dashboard - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">
+            My Dashboard
+            <span class="lts-badge lts-badge-muted ms-2" title="You have read-only access to your assigned cases.">
+                <i class="bi bi-eye"></i> Read-only access
+            </span>
+        </h1>
+        <p class="lts-page-subtitle">Welcome back, @Session.FullName. Cases you've been given visibility into.</p>
+    </div>
+</div>
+
+@if (_hasError)
+{
+    <div class="lts-state is-error">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-title">Couldn't load your cases</div>
+        <div class="lts-state-desc">@_errorMessage</div>
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Try Again
+        </button>
+    </div>
+}
+else
+{
+    <div class="lts-stat-grid">
+        <KpiCard Title="Cases I Can View" Value="@_totalCases.ToString()" Icon="bi-eye" Accent="#1b4fd6" IsLoading="_isLoading" Href="/cases" />
+        <KpiCard Title="Active" Value="@_activeCount.ToString()" Icon="bi-check-circle" Accent="#16a34a" IsLoading="_isLoading" SubLabel="Not archived" />
+    </div>
+
+    <RecentActivityPanel Title="Recently Updated" Items="_recentCases" IsLoading="_isLoading" EmptyMessage="No cases have been shared with you yet." />
+
+    <div class="lts-card" style="margin-top:1rem;">
+        <div class="lts-chart-widget-title">Quick Links</div>
+        <div class="lts-quicklink-grid">
+            <a class="lts-quicklink" href="/cases"><i class="bi bi-briefcase"></i> View Cases</a>
+            <a class="lts-quicklink" href="/profile"><i class="bi bi-person-circle"></i> My Profile</a>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CaseDTO> _cases = new();
+    private int _totalCases;
+    private int _activeCount;
+    private List<ActivityItem> _recentCases = new();
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            // GetAllCases already returns only cases this user is actively
+            // assigned to (server-side scoping) - i.e. what they're allowed to see.
+            var paged = await CaseService.GetAllAsync(pageSize: 100);
+            _cases = paged.Items;
+            _totalCases = paged.TotalRecords;
+            _activeCount = _cases.Count(c => !c.IsArchived);
+
+            _recentCases = _cases
+                .OrderByDescending(c => c.CreatedDate)
+                .Take(6)
+                .Select(c => new ActivityItem
+                {
+                    Title = c.CaseTitle,
+                    Subtitle = $"{c.CourtName} · {c.StatusName}",
+                    Timestamp = c.CreatedDate,
+                    Icon = "bi-briefcase",
+                    Href = $"/cases/{c.CaseID}"
+                })
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Your cases could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

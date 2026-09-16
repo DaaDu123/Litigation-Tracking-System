@@ -1,0 +1,130 @@
+@* Embedded panel (tab) on CaseDetails for the case's document repository.
+   SRS Reference: Case_SRS Section 4 "Document Management" *@
+@using LTSFrontend.Features.Documents.DTOs
+@using LTSFrontend.Features.Documents.Services
+@inject IDocumentService DocumentService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Documents</h6>
+    <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin,Moharrir,InternParalegal">
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="GoToUpload">
+            <i class="bi bi-cloud-arrow-up"></i> Upload Document
+        </button>
+    </PermissionGate>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_documents.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-folder2-open"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">
+            No documents uploaded yet, or you don't currently have view access to any that exist.
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-2">
+        @foreach (var d in _documents)
+        {
+            <DocumentCard Document="d" ShowDelete="CanDelete" OnDownload="HandleDownloadAsync" OnDelete="HandleDeleteAsync" OnApprove="HandleApproveAsync" />
+        }
+    </div>
+}
+
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+    [Parameter] public bool CanDelete { get; set; } = true;
+
+    private List<DocumentDTO> _documents = new();
+    private bool _isLoading = true;
+    private ConfirmDialog _confirmDialog = default!;
+
+    private void GoToUpload() => Nav.NavigateTo($"/cases/{CaseId}/documents/upload");
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    public async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _documents = await DocumentService.GetByCaseAsync(CaseId);
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load documents", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleDownloadAsync(DocumentDTO d)
+    {
+        try
+        {
+            await DocumentService.DownloadAsync(d.DocumentID);
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't download document", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't download document", "Please try again.");
+        }
+    }
+
+    private async Task HandleDeleteAsync(DocumentDTO d)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete document \"{d.DocumentName}\"?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await DocumentService.DeleteAsync(d.DocumentID);
+            await LoadAsync();
+            Toast.Success("Document deleted", $"\"{d.DocumentName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete document", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete document", "Please try again.");
+        }
+    }
+
+    private async Task HandleApproveAsync(DocumentDTO d)
+    {
+        try
+        {
+            await DocumentService.ApproveAsync(d.DocumentID);
+            await LoadAsync();
+            Toast.Success("Document approved", $"\"{d.DocumentName}\" is now published.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't approve document", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't approve document", "Please try again.");
+        }
+    }
+}

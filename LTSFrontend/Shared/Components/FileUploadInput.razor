@@ -1,0 +1,77 @@
+@* Reusable image picker with a circular preview - used for profile pictures
+   and anywhere else a single image upload is needed.
+   Usage:
+     <FileUploadInput CurrentImageUrl="_previewUrl" Disabled="_isSaving"
+                       FileSelected="OnFileSelected" /> *@
+
+<div class="lts-file-upload">
+    <div class="lts-file-upload-preview">
+        @if (!string.IsNullOrWhiteSpace(_localPreviewUrl))
+        {
+            <img src="@_localPreviewUrl" alt="Preview" />
+        }
+        else if (!string.IsNullOrWhiteSpace(CurrentImageUrl))
+        {
+            <img src="@CurrentImageUrl" alt="Current" />
+        }
+        else
+        {
+            <i class="bi @PlaceholderIcon"></i>
+        }
+    </div>
+    <div>
+        <InputFile OnChange="HandleFileChangedAsync" accept="@Accept" disabled="@Disabled" class="lts-file-upload-input" />
+        <div class="lts-form-hint" style="margin-top:0.35rem;">@HintText</div>
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <div class="lts-form-error">@_errorMessage</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? CurrentImageUrl { get; set; }
+    [Parameter] public string Accept { get; set; } = "image/png,image/jpeg,image/webp";
+    [Parameter] public long MaxSizeBytes { get; set; } = 5 * 1024 * 1024; // 5 MB, mirrors backend rule
+    [Parameter] public string HintText { get; set; } = "JPG, PNG, or WebP - up to 5 MB.";
+    [Parameter] public string PlaceholderIcon { get; set; } = "bi-person-circle";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<IBrowserFile?> FileSelected { get; set; }
+
+    private string? _localPreviewUrl;
+    private string? _errorMessage;
+
+    private async Task HandleFileChangedAsync(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+        var file = e.File;
+
+        if (file == null)
+        {
+            _localPreviewUrl = null;
+            await FileSelected.InvokeAsync(null);
+            return;
+        }
+
+        if (file.Size > MaxSizeBytes)
+        {
+            _errorMessage = $"File size is too large. Please reduce the image size to {MaxSizeBytes / (1024 * 1024)} MB or less.";
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(MaxSizeBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            _localPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}";
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Couldn't read the selected file. Please try another one.";
+            return;
+        }
+
+        await FileSelected.InvokeAsync(file);
+    }
+}

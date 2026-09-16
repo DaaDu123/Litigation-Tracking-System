@@ -1,0 +1,136 @@
+@* Embedded panel (tab) on CaseDetails for managing plaintiff/defendant/etc parties.
+   SRS Reference: Case_SRS Section 5.4 "Party Information" *@
+@using LTSFrontend.Features.CaseParties.DTOs
+@using LTSFrontend.Features.CaseParties.Services
+@inject ICasePartyService PartyService
+@inject ToastService Toast
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Case Parties</h6>
+    <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+            <i class="bi bi-plus-lg"></i> Add Party
+        </button>
+    </PermissionGate>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_parties.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-people"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">No parties have been added to this case yet.</div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="lts-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Organization</th>
+                    <th>Lawyer</th>
+                    <th>Contact</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in _parties)
+                {
+                    <tr>
+                        <td><span class="lts-badge lts-badge-muted">@p.PartyType</span></td>
+                        <td class="fw-semibold">@p.PartyName</td>
+                        <td>@(p.Organization ?? "-")</td>
+                        <td>@(p.LawyerName ?? "-")</td>
+                        <td>
+                            @(p.ContactNo ?? p.Email ?? "-")
+                        </td>
+                        <td class="text-end">
+                            <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEdit(p)" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </PermissionGate>
+                            <PermissionGate Roles="Partner,FirmAdmin,SuperAdmin">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteAsync(p)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </PermissionGate>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<CasePartyModal @ref="_partyModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private List<CasePartyDTO> _parties = new();
+    private bool _isLoading = true;
+
+    private CasePartyModal _partyModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _parties = await PartyService.GetByCaseAsync(CaseId);
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load parties", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreate() => _partyModal.OpenForCreate(CaseId);
+    private void OpenEdit(CasePartyDTO p) => _partyModal.OpenForEdit(p);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "The party has been saved.");
+    }
+
+    private async Task HandleDeleteAsync(CasePartyDTO p)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete party \"{p.PartyName}\"?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await PartyService.DeleteAsync(p.CaseID, p.PartyID);
+            await LoadAsync();
+            Toast.Success("Party deleted", $"\"{p.PartyName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete party", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete party", "Please try again.");
+        }
+    }
+}

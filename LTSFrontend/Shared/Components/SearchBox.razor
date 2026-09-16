@@ -1,0 +1,56 @@
+@* Debounced search input used across list pages. *@
+@implements IDisposable
+
+<div class="lts-search-box">
+    <i class="bi bi-search"></i>
+    <input type="text" class="lts-search-input" placeholder="@Placeholder"
+           value="@Value" @oninput="OnInput" />
+    @if (!string.IsNullOrEmpty(Value))
+    {
+        <button type="button" class="lts-search-clear" title="Clear" @onclick="Clear">
+            <i class="bi bi-x-circle-fill"></i>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Search...";
+    [Parameter] public int DebounceMs { get; set; } = 300;
+
+    private CancellationTokenSource? _cts;
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var text = e.Value?.ToString() ?? string.Empty;
+        Value = text;
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        try
+        {
+            await Task.Delay(DebounceMs, token);
+            if (!token.IsCancellationRequested)
+                await ValueChanged.InvokeAsync(text);
+        }
+        catch (TaskCanceledException)
+        {
+            // superseded by a newer keystroke - ignore
+        }
+    }
+
+    private async Task Clear()
+    {
+        Value = string.Empty;
+        await ValueChanged.InvokeAsync(string.Empty);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

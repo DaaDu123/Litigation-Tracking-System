@@ -1,0 +1,120 @@
+@* Shared table for rendering login history rows.
+   Usage: <LoginHistoryTable Rows="_rows" ShowUser="true" /> *@
+@using LTSFrontend.Features.LoginHistory.DTOs
+
+@if (Rows.Count == 0)
+{
+    <div class="lts-state" style="padding: 2rem;">
+        <div class="lts-state-icon"><i class="bi bi-clock-history"></i></div>
+        <div class="lts-state-title">No login history</div>
+        <div class="lts-state-desc">There's nothing to show for this filter.</div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="lts-table">
+            <thead>
+                <tr>
+                    @if (ShowUser)
+                    {
+                        <th>User</th>
+                        <th>Firm</th>
+                    }
+                    <th>Login Time</th>
+                    <th>Logout Time</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Rows)
+                {
+                    <tr>
+                        @if (ShowUser)
+                        {
+                            <td>
+                                <div class="fw-semibold">@row.FullName</div>
+                                <div class="text-muted small">@row.Email</div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(row.FirmName) ? "-" : row.FirmName)</td>
+                        }
+                        <td>@row.LoginTime.ToString("dd MMM yyyy HH:mm:ss")</td>
+                        <td>@(row.LogoutTime?.ToString("dd MMM yyyy HH:mm:ss") ?? "-")</td>
+                        <td>@(row.IPAddress ?? "-")</td>
+                        <td>
+                            @if (row.IsLoggedOut)
+                            {
+                                <span class="lts-badge lts-badge-muted">@row.Status</span>
+                            }
+                            else
+                            {
+                                <span class="lts-badge lts-badge-success">@row.Status</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<LoginHistoryRow> Rows { get; set; } = new();
+    [Parameter] public bool ShowUser { get; set; } = true;
+
+    /// <summary>
+    /// A single normalized row shape so this table can render both the
+    /// admin-facing LoginHistoryDTO (all users) and the self-service
+    /// MyLoginHistoryDTO (current user only, no FullName/Email/FirmName)
+    /// without two nearly-identical table components.
+    ///
+    /// Login history is treated as a permanent, immutable audit trail -
+    /// there is deliberately no delete action anywhere in this table (or
+    /// its backing API) for any role, including SuperAdmin.
+    /// </summary>
+    public class LoginHistoryRow
+    {
+        public int LoginID { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Which firm this login belongs to. Only meaningful/populated on
+        /// the admin-facing "All Login History" table - null for "My Login
+        /// History" (the viewer obviously already knows it's their own).
+        /// Matters most for SuperAdmin, whose view spans every firm at
+        /// once, so this is how they tell entries apart.
+        /// </summary>
+        public string? FirmName { get; set; }
+
+        public DateTime LoginTime { get; set; }
+        public DateTime? LogoutTime { get; set; }
+        public string? IPAddress { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public bool IsLoggedOut { get; set; }
+
+        public static LoginHistoryRow From(LoginHistoryDTO d) => new()
+        {
+            LoginID = d.LoginID,
+            FullName = d.FullName,
+            Email = d.Email,
+            FirmName = d.FirmName,
+            LoginTime = d.LoginTime,
+            LogoutTime = d.LogoutTime,
+            IPAddress = d.IPAddress,
+            Status = d.Status,
+            IsLoggedOut = d.IsLoggedOut
+        };
+
+        public static LoginHistoryRow From(MyLoginHistoryDTO d) => new()
+        {
+            LoginID = d.LoginID,
+            LoginTime = d.LoginTime,
+            LogoutTime = d.LogoutTime,
+            IPAddress = d.IPAddress,
+            Status = d.Status,
+            IsLoggedOut = d.IsLoggedOut
+        };
+    }
+}

@@ -1,0 +1,192 @@
+@* Create / Edit modal for Roles. Handles the role's name, description, and
+   its full permission set in one save, matching LTSBackend's
+   CreateRoleCommand / UpdateRoleCommand (both replace the whole permission
+   list in a single call). Opened imperatively from RoleList.razor via @ref:
+     _formModal.OpenForCreateAsync() / OpenForEditAsync(role); *@
+@using LTSFrontend.Features.Permissions.Components
+@using LTSFrontend.Features.Permissions.DTOs
+@using LTSFrontend.Features.Permissions.Services
+@using LTSFrontend.Features.Roles.DTOs
+@using LTSFrontend.Features.Roles.Services
+@inject IRoleService RoleService
+@inject IPermissionService PermissionService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-lg" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi @(_form.IsEditMode ? "bi-pencil-square" : "bi-shield-plus")"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_form.IsEditMode ? "Edit Role" : "Add New Role")</h5>
+                <p class="lts-modal-subtitle mb-0">
+                    @(_form.IsEditMode ? "Update this role's name and permissions." : "Define a new role and choose the permissions it grants.")
+                </p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span style="white-space: pre-line;">@_apiError</span>
+                </div>
+            }
+
+            @if (_isLoadingPermissions)
+            {
+                <div class="d-flex align-items-center gap-2" style="padding: 1rem 0;">
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Loading permissions...</span>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Role Name <span class="required">*</span></label>
+                                <InputText @bind-Value="_form.RoleName" class="lts-form-control" maxlength="50"
+                                           placeholder="e.g. Senior Associate" disabled="@_isSaving" />
+                                <ValidationMessage For="() => _form.RoleName" class="lts-form-error" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Description</label>
+                                <InputText @bind-Value="_form.Description" class="lts-form-control" maxlength="255"
+                                           placeholder="Brief note about this role..." disabled="@_isSaving" />
+                                <ValidationMessage For="() => _form.Description" class="lts-form-error" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Permissions <span class="required">*</span></label>
+                        <PermissionCheckboxGrid AllPermissions="_allPermissions" SelectedIds="_form.PermissionIds" Disabled="_isSaving" />
+                        @if (_showPermissionValidation && _form.PermissionIds.Count == 0)
+                        {
+                            <div class="lts-form-error">At least one permission is required.</div>
+                        }
+                    </div>
+
+                    <div class="lts-modal-footer" style="padding: 1rem 0 0; margin-top: 0.5rem;">
+                        <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">
+                            Cancel
+                        </button>
+                        <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="lts-spinner lts-spinner-sm"></span>
+                                <span>Saving...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-check-lg"></i>
+                                <span>@(_form.IsEditMode ? "Save Changes" : "Create Role")</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+
+    private bool _isOpen;
+    private bool _isSaving;
+    private bool _isLoadingPermissions;
+    private bool _showPermissionValidation;
+    private string? _apiError;
+    private RoleFormDTO _form = new();
+    private List<PermissionDTO> _allPermissions = new();
+
+    public async Task OpenForCreateAsync()
+    {
+        _form = new RoleFormDTO();
+        await OpenAsync();
+    }
+
+    public async Task OpenForEditAsync(RoleDTO role)
+    {
+        _form = RoleFormDTO.FromDto(role);
+        await OpenAsync();
+    }
+
+    private async Task OpenAsync()
+    {
+        _apiError = null;
+        _showPermissionValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+
+        if (_allPermissions.Count == 0)
+        {
+            _isLoadingPermissions = true;
+            StateHasChanged();
+            try
+            {
+                _allPermissions = await PermissionService.GetAllAsync();
+            }
+            catch (Exception)
+            {
+                _apiError = "Couldn't load the list of permissions. Please close and try again.";
+            }
+            finally
+            {
+                _isLoadingPermissions = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (_form.PermissionIds.Count == 0)
+        {
+            _showPermissionValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            var wasEdit = _form.IsEditMode;
+            if (wasEdit)
+                await RoleService.UpdateAsync(_form);
+            else
+                await RoleService.CreateAsync(_form);
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync(wasEdit);
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the role. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

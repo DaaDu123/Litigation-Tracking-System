@@ -1,0 +1,273 @@
+@page "/roles"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.Roles.Components
+@using LTSFrontend.Features.Roles.DTOs
+@using LTSFrontend.Features.Roles.Services
+@inject IRoleService RoleService
+@inject ToastService Toast
+
+<PageTitle>Roles & Permissions - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Roles &amp; Permissions</h1>
+        <p class="lts-page-subtitle">Manage system roles and the permissions each one grants.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <button class="lts-btn lts-btn-primary" @onclick="OpenCreateAsync">
+            <i class="bi bi-plus-lg"></i> New Role
+        </button>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#1b4fd6;">
+        <div class="lts-stat-icon"><i class="bi bi-shield-lock"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _roles.Count.ToString())</div>
+            <div class="lts-stat-label">Total Roles</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#6b7280;">
+        <div class="lts-stat-icon"><i class="bi bi-shield-fill-check"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _roles.Count(IsProtected).ToString())</div>
+            <div class="lts-stat-label">System Roles</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <SearchBox @bind-Value="_searchTerm" @bind-Value:after="ResetToFirstPage"
+                       Placeholder="Search by role name..." />
+        </div>
+        <div class="lts-toolbar-right">
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
+                <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th><th>Description</th><th>Permissions</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 4; i++)
+                        {
+                            <tr class="lts-skeleton-row">
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:60%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:80%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load roles</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (FilteredRoles.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-shield-lock"></i></div>
+                <div class="lts-state-title">
+                    @(_roles.Count == 0 ? "No roles yet" : "No matching roles")
+                </div>
+                <div class="lts-state-desc">
+                    @(_roles.Count == 0
+                        ? "Create your first custom role to start assigning fine-grained permissions."
+                        : "Try adjusting your search.")
+                </div>
+                @if (_roles.Count == 0)
+                {
+                    <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreateAsync">
+                        <i class="bi bi-plus-lg"></i> New Role
+                    </button>
+                }
+                else
+                {
+                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="ClearFilters">
+                        <i class="bi bi-x-lg"></i> Clear Search
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Description</th>
+                            <th>Permissions</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in PagedRoles)
+                        {
+                            <tr @key="role.RoleID">
+                                <td class="lts-cell-primary">
+                                    @role.RoleName
+                                    @if (IsProtected(role))
+                                    {
+                                        <span class="lts-badge lts-badge-muted ms-2" title="System roles cannot be modified or deleted.">
+                                            <i class="bi bi-lock-fill"></i> System
+                                        </span>
+                                    }
+                                </td>
+                                <td class="lts-cell-muted">@(string.IsNullOrWhiteSpace(role.Description) ? "—" : role.Description)</td>
+                                <td>
+                                    <span class="lts-badge lts-badge-info">@role.Permissions.Count permission@(role.Permissions.Count == 1 ? "" : "s")</span>
+                                </td>
+                                <td>
+                                    <div class="lts-row-actions">
+                                        @if (IsProtected(role))
+                                        {
+                                            <span class="lts-form-hint" style="margin-top:0;">Protected</span>
+                                        }
+                                        else
+                                        {
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick="() => OpenEditAsync(role)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => HandleDeleteAsync(role)">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <Pagination CurrentPage="_currentPage" TotalItems="FilteredRoles.Count" PageSize="_pageSize" PageChanged="OnPageChanged" />
+            </div>
+        }
+    </div>
+</div>
+
+<RoleFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<RoleDTO> _roles = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    private string _searchTerm = string.Empty;
+    private int _currentPage = 1;
+    private readonly int _pageSize = 10;
+
+    private RoleFormModal _formModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    // Mirrors LTSBackend's ProtectedRoles list in UpdateRoleHandler/DeleteRoleHandler -
+    // SuperAdmin and FirmAdmin cannot be edited or deleted through this UI.
+    private static readonly string[] ProtectedRoleNames = { "SuperAdmin", "FirmAdmin" };
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _roles = await RoleService.GetAllAsync();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Roles could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static bool IsProtected(RoleDTO role) =>
+        ProtectedRoleNames.Contains(role.RoleName, StringComparer.OrdinalIgnoreCase);
+
+    private List<RoleDTO> FilteredRoles =>
+        string.IsNullOrWhiteSpace(_searchTerm)
+            ? _roles
+            : _roles.Where(r => r.RoleName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private List<RoleDTO> PagedRoles =>
+        FilteredRoles.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+    private void ResetToFirstPage() => _currentPage = 1;
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        ResetToFirstPage();
+    }
+
+    private void OnPageChanged(int page) => _currentPage = page;
+
+    private Task OpenCreateAsync() => _formModal.OpenForCreateAsync();
+
+    private Task OpenEditAsync(RoleDTO role) => _formModal.OpenForEditAsync(role);
+
+    private async Task HandleSavedAsync(bool wasEdit)
+    {
+        await LoadAsync();
+        Toast.Success(wasEdit ? "Role updated" : "Role created",
+            wasEdit ? "The role's details have been saved." : "The new role is ready to be assigned to users.");
+    }
+
+    private async Task HandleDeleteAsync(RoleDTO role)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete role \"{role.RoleName}\"?",
+            "This cannot be undone. Roles with users still assigned cannot be deleted.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await RoleService.DeleteAsync(role.RoleID);
+            await LoadAsync();
+            Toast.Success("Role deleted", $"\"{role.RoleName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete role", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete role", "Please try again.");
+        }
+    }
+}

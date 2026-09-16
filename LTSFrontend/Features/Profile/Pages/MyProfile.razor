@@ -1,0 +1,132 @@
+@page "/profile"
+@attribute [Authorize]
+@using LTSFrontend.Core.Http
+@using LTSFrontend.Features.Profile.Components
+@using LTSFrontend.Features.Profile.DTOs
+@using LTSFrontend.Features.Profile.Services
+@inject IProfileService ProfileService
+@inject ApiClient Api
+@inject UserSessionState Session
+@inject ToastService Toast
+
+<PageTitle>My Profile - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">My Profile</h1>
+        <p class="lts-page-subtitle">View and update your personal account details.</p>
+    </div>
+</div>
+
+<div class="lts-card" style="max-width: 640px;">
+    @if (_isLoading)
+    {
+        <div class="lts-state">
+            <span class="lts-spinner lts-spinner-md"></span>
+            <div class="lts-state-title" style="margin-top:0.75rem;">Loading your profile...</div>
+        </div>
+    }
+    else if (_hasError)
+    {
+        <div class="lts-state is-error">
+            <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="lts-state-title">Couldn't load your profile</div>
+            <div class="lts-state-desc">@_errorMessage</div>
+            <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+                <i class="bi bi-arrow-clockwise"></i> Try Again
+            </button>
+        </div>
+    }
+    else
+    {
+        <ProfileEditForm Profile="_profile" Form="_form" IsSaving="_isSaving" ApiError="@_apiError"
+                         CurrentImageUrl="@_currentImageUrl" FileSelected="OnFileSelected"
+                         OnValidSubmit="HandleSubmitAsync" />
+    }
+</div>
+
+<div class="lts-card mt-3" style="max-width: 640px;">
+    <h6 class="fw-semibold mb-2">Password</h6>
+    <p class="lts-page-subtitle" style="margin-bottom: 0.75rem;">Update the password used to sign in to your account.</p>
+    <a href="/change-password" class="lts-btn lts-btn-outline lts-btn-sm">
+        <i class="bi bi-shield-lock"></i> Change Password
+    </a>
+</div>
+
+@code {
+    private ProfileDTO? _profile;
+    private UpdateProfileDTO _form = new();
+    private IBrowserFile? _selectedImage;
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private bool _isSaving;
+    private string? _errorMessage;
+    private string? _apiError;
+
+    private string? _currentImageUrl =>
+        string.IsNullOrWhiteSpace(_profile?.ProfileImage)
+            ? null
+            : new Uri(Api.Http.BaseAddress!, _profile.ProfileImage).ToString();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _profile = await ProfileService.GetMyProfileAsync();
+            if (_profile != null)
+                _form = UpdateProfileDTO.FromDto(_profile);
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Your profile could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OnFileSelected(IBrowserFile? file) => _selectedImage = file;
+
+    private async Task HandleSubmitAsync()
+    {
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            await ProfileService.UpdateAsync(_form, _selectedImage);
+            Session.UpdateFullName(_form.FullName);
+            Toast.Success("Profile updated", "Your changes have been saved.");
+            await LoadAsync();
+            _selectedImage = null;
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _apiError = ex.Message;
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving your profile. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

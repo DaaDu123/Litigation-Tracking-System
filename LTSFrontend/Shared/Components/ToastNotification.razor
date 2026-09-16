@@ -1,0 +1,51 @@
+@* Global toast stack - mounted once in MainLayout, driven by ToastService. *@
+@implements IDisposable
+@inject ToastService Toast
+
+<div class="lts-toast-stack" aria-live="polite">
+    @foreach (var toast in Toast.Toasts)
+    {
+        <div class="lts-toast lts-toast-@toast.Type.ToString().ToLowerInvariant()" @key="toast.Id">
+            <div class="lts-toast-icon">
+                <i class="bi @IconFor(toast.Type)"></i>
+            </div>
+            <div class="lts-toast-body">
+                <div class="lts-toast-title">@toast.Title</div>
+                @if (!string.IsNullOrWhiteSpace(toast.Detail))
+                {
+                    <div class="lts-toast-detail">@toast.Detail</div>
+                }
+            </div>
+            <button type="button" class="lts-toast-close" aria-label="Dismiss" @onclick="() => Dismiss(toast.Id)">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Toast.OnChange += HandleChanged;
+    }
+
+    private void Dismiss(Guid id) => Toast.Dismiss(id);
+
+    private async void HandleChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string IconFor(ToastType type) => type switch
+    {
+        ToastType.Success => "bi-check-circle-fill",
+        ToastType.Error => "bi-x-circle-fill",
+        ToastType.Warning => "bi-exclamation-triangle-fill",
+        _ => "bi-info-circle-fill"
+    };
+
+    public void Dispose()
+    {
+        Toast.OnChange -= HandleChanged;
+    }
+}

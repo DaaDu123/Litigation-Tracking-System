@@ -1,0 +1,353 @@
+@page "/cases/create"
+@attribute [Authorize(Roles = "Partner,FirmAdmin")]
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject ICaseService CaseService
+@inject ICourtService CourtService
+@inject IMasterDataService MasterDataService
+@inject IUserService UserService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>New Case - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/cases">Cases</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">New Case</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Register New Case</h1>
+        <p class="lts-page-subtitle">Enter the core details to create a new litigation case record.</p>
+    </div>
+</div>
+
+<div class="lts-card">
+    @if (_isLoadingLookups)
+    {
+        <div class="lts-state">
+            <span class="lts-spinner lts-spinner-md"></span>
+            <div class="lts-state-title" style="margin-top:0.75rem;">Loading form data...</div>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(_apiError))
+        {
+            <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span style="white-space: pre-line;">@_apiError</span>
+            </div>
+        }
+
+        <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
+            <DataAnnotationsValidator />
+
+            <h6 class="fw-semibold mb-3">Basic Information</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Case Number <span class="required">*</span></label>
+                        <InputText @bind-Value="_form.CaseNumber" class="lts-form-control" maxlength="100"
+                                   placeholder="e.g. CIV-2026-0451" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.CaseNumber" class="lts-form-error" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Priority <span class="required">*</span></label>
+                        <InputSelect @bind-Value="_form.Priority" class="lts-form-control" disabled="@_isSaving">
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => _form.Priority" class="lts-form-error" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Case Title <span class="required">*</span></label>
+                <InputText @bind-Value="_form.CaseTitle" class="lts-form-control" maxlength="255"
+                           placeholder="e.g. ABC Textiles Ltd. vs. Federal Board of Revenue" disabled="@_isSaving" />
+                <ValidationMessage For="() => _form.CaseTitle" class="lts-form-error" />
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Case Description</label>
+                <InputTextArea @bind-Value="_form.CaseDescription" class="lts-form-control" rows="3"
+                               placeholder="Brief summary of the matter..." disabled="@_isSaving" />
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Subject Matter <span class="required">*</span></label>
+                <InputText @bind-Value="_form.SubjectMatter" class="lts-form-control" maxlength="255"
+                           placeholder="e.g. Tax assessment dispute" disabled="@_isSaving" />
+                <ValidationMessage For="() => _form.SubjectMatter" class="lts-form-error" />
+            </div>
+
+            <h6 class="fw-semibold mb-3 mt-4">Classification</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Court <span class="required">*</span></label>
+                        <input class="lts-form-control" list="courtOptions" placeholder="Type or select a court..."
+                               value="@_courtText" disabled="@_isSaving"
+                               @oninput="OnCourtInput" />
+                        <datalist id="courtOptions">
+                            @foreach (var court in _courts)
+                            {
+                                <option value="@court.CourtName" />
+                            }
+                        </datalist>
+                        <div class="lts-form-hint">Pick an existing court, or type a new name to add it.</div>
+                        @if (_showCourtError)
+                        {
+                            <div class="lts-form-error">Court is required</div>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Category <span class="required">*</span></label>
+                        <input class="lts-form-control" list="categoryOptions" placeholder="Type or select a category..."
+                               value="@_categoryText" disabled="@_isSaving"
+                               @oninput="OnCategoryInput" />
+                        <datalist id="categoryOptions">
+                            @foreach (var cat in _categories)
+                            {
+                                <option value="@cat.CategoryName" />
+                            }
+                        </datalist>
+                        <div class="lts-form-hint">Pick an existing category, or type a new name to add it.</div>
+                        @if (_showCategoryError)
+                        {
+                            <div class="lts-form-error">Category is required</div>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Responsible Department <span class="required">*</span></label>
+                        <input class="lts-form-control" list="departmentOptions" placeholder="Type or select a department..."
+                               value="@_departmentText" disabled="@_isSaving"
+                               @oninput="OnDepartmentInput" />
+                        <datalist id="departmentOptions">
+                            @foreach (var dept in _departments)
+                            {
+                                <option value="@dept.DepartmentName" />
+                            }
+                        </datalist>
+                        <div class="lts-form-hint">Pick an existing department, or type a new name to add it.</div>
+                        @if (_showDepartmentError)
+                        {
+                            <div class="lts-form-error">Department is required</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Assigned Legal Officer <span class="required">*</span></label>
+                <InputSelect @bind-Value="_form.CurrentLegalOfficerID" class="lts-form-control" disabled="@_isSaving">
+                    <option value="0">Select legal officer...</option>
+                    @foreach (var user in _legalOfficers)
+                    {
+                        <option value="@user.UserID">@user.FullName (@LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(user.RoleName))</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => _form.CurrentLegalOfficerID" class="lts-form-error" />
+            </div>
+
+            <h6 class="fw-semibold mb-3 mt-4">Important Dates</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Filing Date <span class="required">*</span></label>
+                        <InputDate @bind-Value="_form.FilingDate" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.FilingDate" class="lts-form-error" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Institution Date <span class="required">*</span></label>
+                        <InputDate @bind-Value="_form.InstitutionDate" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.InstitutionDate" class="lts-form-error" />
+                        <div class="lts-form-hint">On or after the Filing Date.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Registration Date <span class="required">*</span></label>
+                        <InputDate @bind-Value="_form.RegistrationDate" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.RegistrationDate" class="lts-form-error" />
+                        <div class="lts-form-hint">On or after the Institution Date.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="lts-form-group" style="max-width: 33%;">
+                <label class="lts-form-label">Expected Disposal Date</label>
+                <InputDate @bind-Value="_form.ExpectedDisposalDate" class="lts-form-control" disabled="@_isSaving" />
+                <ValidationMessage For="() => _form.ExpectedDisposalDate" class="lts-form-error" />
+            </div>
+
+            <h6 class="fw-semibold mb-3 mt-4">Financial Information</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Claimed Amount</label>
+                        <InputNumber @bind-Value="_form.ClaimedAmount" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.ClaimedAmount" class="lts-form-error" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Potential Liability</label>
+                        <InputNumber @bind-Value="_form.PotentialLiability" class="lts-form-control" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.PotentialLiability" class="lts-form-error" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Financial Implication</label>
+                        <InputText @bind-Value="_form.FinancialImplication" class="lts-form-control"
+                                   placeholder="e.g. Contingent liability" disabled="@_isSaving" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="lts-modal-footer" style="padding: 1.25rem 0 0; margin-top: 0.5rem; justify-content: flex-start; gap: 0.6rem;">
+                <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
+                    @if (_isSaving)
+                    {
+                        <span class="lts-spinner lts-spinner-sm"></span>
+                        <span>Creating...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-lg"></i>
+                        <span>Create Case</span>
+                    }
+                </button>
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick='() => Nav.NavigateTo("/cases")' disabled="@_isSaving">
+                    Cancel
+                </button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private CreateCaseDTO _form = new() { FilingDate = DateTime.Today, InstitutionDate = DateTime.Today, RegistrationDate = DateTime.Today };
+
+    private List<CourtDTO> _courts = new();
+    private List<CaseCategoryDTO> _categories = new();
+    private List<DepartmentDTO> _departments = new();
+    private List<UserDTO> _legalOfficers = new();
+
+    private string _courtText = string.Empty;
+    private string _categoryText = string.Empty;
+    private string _departmentText = string.Empty;
+    private bool _showCourtError;
+    private bool _showCategoryError;
+    private bool _showDepartmentError;
+
+    private bool _isLoadingLookups = true;
+    private bool _isSaving;
+    private string? _apiError;
+
+    // Type-or-select combo boxes: whatever the user types is matched
+    // (case-insensitively) against the loaded list. A match resolves to
+    // that record's ID; no match keeps ID at 0 and sends the typed text
+    // as *Name instead, so the backend creates it as a new record.
+    private void OnCourtInput(ChangeEventArgs e)
+    {
+        _courtText = e.Value?.ToString() ?? string.Empty;
+        var match = _courts.FirstOrDefault(c => string.Equals(c.CourtName, _courtText.Trim(), StringComparison.OrdinalIgnoreCase));
+        _form.CourtID = match?.CourtID ?? 0;
+        _form.CourtName = match == null ? _courtText.Trim() : null;
+        _showCourtError = false;
+    }
+
+    private void OnCategoryInput(ChangeEventArgs e)
+    {
+        _categoryText = e.Value?.ToString() ?? string.Empty;
+        var match = _categories.FirstOrDefault(c => string.Equals(c.CategoryName, _categoryText.Trim(), StringComparison.OrdinalIgnoreCase));
+        _form.CategoryID = match?.CategoryID ?? 0;
+        _form.CategoryName = match == null ? _categoryText.Trim() : null;
+        _showCategoryError = false;
+    }
+
+    private void OnDepartmentInput(ChangeEventArgs e)
+    {
+        _departmentText = e.Value?.ToString() ?? string.Empty;
+        var match = _departments.FirstOrDefault(d => string.Equals(d.DepartmentName, _departmentText.Trim(), StringComparison.OrdinalIgnoreCase));
+        _form.ResponsibleDepartmentID = match?.DepartmentID ?? 0;
+        _form.DepartmentName = match == null ? _departmentText.Trim() : null;
+        _showDepartmentError = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoadingLookups = true;
+        try
+        {
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+            _categories = await MasterDataService.GetCaseCategoriesAsync(activeOnly: true);
+            _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+            var users = await UserService.GetAllAsync();
+            _legalOfficers = users.Where(u => u.IsActive).OrderBy(u => u.FullName).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Couldn't load form data (courts, categories, departments, or officers). Please refresh and try again.";
+        }
+        finally
+        {
+            _isLoadingLookups = false;
+        }
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _showCourtError = _form.CourtID <= 0 && string.IsNullOrWhiteSpace(_form.CourtName);
+        _showCategoryError = _form.CategoryID <= 0 && string.IsNullOrWhiteSpace(_form.CategoryName);
+        _showDepartmentError = _form.ResponsibleDepartmentID <= 0 && string.IsNullOrWhiteSpace(_form.DepartmentName);
+
+        if (_showCourtError || _showCategoryError || _showDepartmentError)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            var newId = await CaseService.CreateAsync(_form);
+            Toast.Success("Case created", $"\"{_form.CaseTitle}\" has been registered.");
+            Nav.NavigateTo($"/cases/{newId}");
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while creating the case. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

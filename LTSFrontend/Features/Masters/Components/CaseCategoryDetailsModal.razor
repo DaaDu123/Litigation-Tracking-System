@@ -1,0 +1,87 @@
+@* Read-only "View Details" modal for a single case category. *@
+@using LTSFrontend.Features.Masters.DTOs
+@inject UserSessionState Session
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        @if (_category != null)
+        {
+            <div class="lts-modal-header">
+                <div class="lts-modal-icon lts-modal-icon-primary">
+                    <i class="bi bi-diagram-2"></i>
+                </div>
+                <div>
+                    <h5 class="lts-modal-title">@_category.CategoryName</h5>
+                    <p class="lts-modal-subtitle mb-0">Category #@_category.CategoryID</p>
+                </div>
+            </div>
+
+            <div class="lts-modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <StatusBadge IsActive="_category.IsActive" />
+                    @if (_category.IsGlobal)
+                    {
+                        <span class="lts-badge lts-badge-muted"><i class="bi bi-globe2"></i> Global</span>
+                    }
+                </div>
+
+                <dl class="lts-detail-list">
+                    <div class="lts-detail-row">
+                        <dt>Description</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_category.Description) ? "—" : _category.Description)</dd>
+                    </div>
+                </dl>
+
+                @if (_category.IsGlobal && !IsSuperAdmin)
+                {
+                    <div class="lts-form-hint">
+                        <i class="bi bi-info-circle"></i>
+                        This is a shared system-wide category managed by SuperAdmin. You can use it on your cases, but you can't edit or deactivate it — add your own category instead if you need a different one.
+                    </div>
+                }
+            </div>
+
+            <div class="lts-modal-footer">
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Close</button>
+                @if (!_category.IsGlobal || IsSuperAdmin)
+                {
+                    <PermissionGate Roles="FirmAdmin,Partner">
+                        <button type="button" class="lts-btn lts-btn-primary" @onclick="RequestEdit">
+                            <i class="bi bi-pencil"></i> Edit Category
+                        </button>
+                    </PermissionGate>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<CaseCategoryDTO> OnEditRequested { get; set; }
+
+    private bool _isOpen;
+    private CaseCategoryDTO? _category;
+
+    private bool IsSuperAdmin => string.Equals(Session.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+
+    public void Open(CaseCategoryDTO category)
+    {
+        _category = category;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task RequestEdit()
+    {
+        if (_category == null) return;
+        _isOpen = false;
+        await OnEditRequested.InvokeAsync(_category);
+    }
+}

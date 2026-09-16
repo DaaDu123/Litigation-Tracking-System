@@ -1,0 +1,179 @@
+@page "/cases/{CaseId:long}/documents/upload"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Features.Documents.Components
+@using LTSFrontend.Features.Documents.DTOs
+@using LTSFrontend.Features.Documents.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject IDocumentService DocumentService
+@inject IDocumentTypeService DocumentTypeService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Upload Document - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/cases">Cases</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <a href="@($"/cases/{CaseId}")">Case Details</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Upload Document</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Upload Document</h1>
+        <p class="lts-page-subtitle">Attach a filing, evidence file, or other document to this case.</p>
+    </div>
+</div>
+
+<div class="lts-card" style="max-width: 640px;">
+    @if (!string.IsNullOrWhiteSpace(_apiError))
+    {
+        <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+            <i class="bi bi-exclamation-circle-fill"></i>
+            <span>@_apiError</span>
+        </div>
+    }
+
+    <div class="lts-form-group">
+        <label class="lts-form-label">File <span class="required">*</span></label>
+        <FileUploadBox Accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" MaxSizeBytes="15728640"
+                       Disabled="_isSaving" FileSelected="OnFileSelectedAsync" />
+    </div>
+
+    <div class="lts-form-group">
+        <label class="lts-form-label">Document Type <span class="required">*</span></label>
+        @if (_isLoadingTypes)
+        {
+            <div class="d-flex align-items-center gap-2"><span class="lts-spinner lts-spinner-sm"></span></div>
+        }
+        else
+        {
+            <select class="lts-form-control" @bind="_documentTypeId" disabled="@_isSaving">
+                <option value="">Select document type...</option>
+                @foreach (var t in _documentTypes)
+                {
+                    <option value="@t.DocumentTypeID">@t.TypeName</option>
+                }
+            </select>
+        }
+        @if (_showValidation && (_documentTypeId is null or 0))
+        {
+            <div class="lts-form-error">Please select a document type.</div>
+        }
+    </div>
+
+    <div class="lts-form-group">
+        <label class="lts-form-label">Document Name <span class="required">*</span></label>
+        <input class="lts-form-control" @bind="_documentName" disabled="@_isSaving" placeholder="e.g. Written Statement - 1st Defendant" />
+        @if (_showValidation && string.IsNullOrWhiteSpace(_documentName))
+        {
+            <div class="lts-form-error">Document name is required.</div>
+        }
+    </div>
+
+    <div class="lts-form-group">
+        <label class="lts-form-label">Remarks</label>
+        <textarea class="lts-form-control" rows="2" @bind="_remarks" disabled="@_isSaving"></textarea>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="lts-btn lts-btn-ghost" @onclick="Cancel" disabled="@_isSaving">Cancel</button>
+        <button class="lts-btn lts-btn-primary" @onclick="HandleUploadAsync" disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <span class="lts-spinner lts-spinner-sm"></span>
+                <span>Uploading...</span>
+            }
+            else
+            {
+                <i class="bi bi-cloud-arrow-up"></i>
+                <span>Upload</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public long CaseId { get; set; }
+
+    private IBrowserFile? _selectedFile;
+    private int? _documentTypeId;
+    private string _documentName = string.Empty;
+    private string? _remarks;
+
+    private List<DocumentTypeOptionDTO> _documentTypes = new();
+    private bool _isLoadingTypes = true;
+    private bool _isSaving;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private void Cancel() => Nav.NavigateTo($"/cases/{CaseId}");
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Uses the lightweight dropdown-only endpoint (not GetAllAsync,
+            // which is FirmAdmin/Partner-only master-data admin access) so
+            // AssociateLawyer/Moharrir/InternParalegal can populate this
+            // dropdown too, same as they're allowed to upload documents.
+            _documentTypes = await DocumentTypeService.GetOptionsAsync();
+        }
+        catch (Exception)
+        {
+            _apiError = "Couldn't load document types. Please refresh and try again.";
+        }
+        finally
+        {
+            _isLoadingTypes = false;
+        }
+    }
+
+    private Task OnFileSelectedAsync(IBrowserFile? file)
+    {
+        _selectedFile = file;
+        if (file != null && string.IsNullOrWhiteSpace(_documentName))
+            _documentName = System.IO.Path.GetFileNameWithoutExtension(file.Name);
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleUploadAsync()
+    {
+        if (_selectedFile == null || (_documentTypeId is null or 0) || string.IsNullOrWhiteSpace(_documentName))
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            var response = await DocumentService.UploadAsync(new UploadDocumentRequest
+            {
+                CaseID = CaseId,
+                DocumentTypeID = _documentTypeId,
+                DocumentName = _documentName.Trim(),
+                Remarks = string.IsNullOrWhiteSpace(_remarks) ? null : _remarks.Trim(),
+                File = _selectedFile
+            });
+
+            Toast.Success("Document uploaded", response.Message);
+            Nav.NavigateTo($"/cases/{CaseId}");
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while uploading the document. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

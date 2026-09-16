@@ -1,0 +1,166 @@
+@page "/permissions/matrix"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.Permissions.DTOs
+@using LTSFrontend.Features.Permissions.Services
+@using LTSFrontend.Features.Roles.DTOs
+@using LTSFrontend.Features.Roles.Services
+@inject IPermissionService PermissionService
+@inject IRoleService RoleService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Permission Matrix - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Permission Matrix</h1>
+        <p class="lts-page-subtitle">A read-only overview of which permissions each role currently holds.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
+            <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+        </button>
+        <button class="lts-btn lts-btn-primary" @onclick='() => Nav.NavigateTo("/permissions/assign")'>
+            <i class="bi bi-pencil-square"></i> Assign Permissions
+        </button>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <SearchBox @bind-Value="_searchTerm" Placeholder="Search permissions..." />
+        </div>
+    </div>
+
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table lts-matrix-table">
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            @for (var i = 0; i < 4; i++) { <th><div class="lts-skeleton lts-skeleton-text" style="width:70%;"></div></th> }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 6; i++)
+                        {
+                            <tr class="lts-skeleton-row">
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:60%;"></div></td>
+                                @for (var c = 0; c < 4; c++) { <td><div class="lts-skeleton lts-skeleton-text" style="width:1.2rem; margin:0 auto;"></div></td> }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load the permission matrix</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (FilteredPermissions.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-grid-3x3"></i></div>
+                <div class="lts-state-title">@(_allPermissions.Count == 0 ? "No permissions defined" : "No matching permissions")</div>
+                <div class="lts-state-desc">
+                    @(_allPermissions.Count == 0 ? "No permissions exist in the system yet." : "Try adjusting your search.")
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table lts-matrix-table">
+                    <thead>
+                        <tr>
+                            <th class="lts-matrix-sticky-col">Permission</th>
+                            @foreach (var role in _roles)
+                            {
+                                <th class="text-center" title="@role.RoleName">@role.RoleName</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var permission in FilteredPermissions)
+                        {
+                            <tr @key="permission.PermissionID">
+                                <td class="lts-cell-primary lts-matrix-sticky-col">@permission.PermissionName</td>
+                                @foreach (var role in _roles)
+                                {
+                                    <td class="text-center">
+                                        @if (RoleHasPermission(role, permission))
+                                        {
+                                            <i class="bi bi-check-circle-fill text-success" title="Granted"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-dash text-muted" title="Not granted"></i>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<RoleDTO> _roles = new();
+    private List<PermissionDTO> _allPermissions = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+    private string _searchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            var rolesTask = RoleService.GetAllAsync();
+            var permsTask = PermissionService.GetAllAsync();
+            await Task.WhenAll(rolesTask, permsTask);
+            _roles = rolesTask.Result.OrderBy(r => r.RoleName).ToList();
+            _allPermissions = permsTask.Result;
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "The permission matrix could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private List<PermissionDTO> FilteredPermissions =>
+        string.IsNullOrWhiteSpace(_searchTerm)
+            ? _allPermissions
+            : _allPermissions.Where(p => p.PermissionName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private static bool RoleHasPermission(RoleDTO role, PermissionDTO permission) =>
+        role.Permissions.Any(p => p.PermissionID == permission.PermissionID);
+}

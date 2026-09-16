@@ -1,0 +1,349 @@
+@page "/masters/departments"
+@attribute [Authorize(Roles = "FirmAdmin,Partner")]
+@using LTSFrontend.Features.Masters.Components
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject IDepartmentService DepartmentService
+@inject ToastService Toast
+@inject UserSessionState Session
+
+<PageTitle>Departments - Master Data - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/masters">Master Data</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Departments</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Departments</h1>
+        <p class="lts-page-subtitle">Departments and business units within the firm.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <PermissionGate Roles="FirmAdmin,Partner">
+            <button class="lts-btn lts-btn-primary" @onclick="OpenCreate">
+                <i class="bi bi-plus-lg"></i> Add Department
+            </button>
+        </PermissionGate>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#1b4fd6;">
+        <div class="lts-stat-icon"><i class="bi bi-diagram-3"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allDepartments.Count.ToString())</div>
+            <div class="lts-stat-label">Total Departments</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#16a34a;">
+        <div class="lts-stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allDepartments.Count(c => c.IsActive).ToString())</div>
+            <div class="lts-stat-label">Active</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#6b7280;">
+        <div class="lts-stat-icon"><i class="bi bi-slash-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allDepartments.Count(c => !c.IsActive).ToString())</div>
+            <div class="lts-stat-label">Inactive</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <SearchBox @bind-Value="_searchTerm" @bind-Value:after="ResetToFirstPage" Placeholder="Search by name, code, or description..." />
+            <select class="lts-select" @bind="_statusFilter" @bind:after="ResetToFirstPage">
+                <option value="all">All Statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+            </select>
+        </div>
+        <div class="lts-toolbar-right">
+            <select class="lts-select" @bind="_pageSize" @bind:after="ResetToFirstPage" style="min-width:110px;">
+                <option value="10">10 / page</option>
+                <option value="25">25 / page</option>
+                <option value="50">50 / page</option>
+            </select>
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
+                <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr><th>Department Name</th><th>Code</th><th>Description</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 5; i++)
+                        {
+                            <tr class="lts-skeleton-row">
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:70%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:50%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:60%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load departments</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (FilteredDepartments.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-diagram-3"></i></div>
+                <div class="lts-state-title">
+                    @(_allDepartments.Count == 0 ? "No departments yet" : "No matching departments")
+                </div>
+                <div class="lts-state-desc">
+                    @(_allDepartments.Count == 0
+                        ? "Add your first department to start organizing cases and users."
+                        : "Try adjusting your search or filters.")
+                </div>
+                @if (_allDepartments.Count == 0)
+                {
+                    <PermissionGate Roles="FirmAdmin,Partner">
+                        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+                            <i class="bi bi-plus-lg"></i> Add Department
+                        </button>
+                    </PermissionGate>
+                }
+                else
+                {
+                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="ClearFilters">
+                        <i class="bi bi-x-lg"></i> Clear Filters
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable @(_sortField == "name" ? "active" : "")" @onclick='() => Sort("name")'>
+                                Department Name <i class="bi @SortIcon("name")"></i>
+                            </th>
+                            <th class="sortable @(_sortField == "code" ? "active" : "")" @onclick='() => Sort("code")'>
+                                Code <i class="bi @SortIcon("code")"></i>
+                            </th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var department in PagedDepartments)
+                        {
+                            <tr @key="department.DepartmentID">
+                                <td class="lts-cell-primary" data-label="Department Name">
+                                    @department.DepartmentName
+                                    @if (department.IsGlobal)
+                                    {
+                                        <span class="lts-badge lts-badge-muted" style="margin-left:0.4rem;" title="Shared system-wide department - managed by SuperAdmin only">
+                                            <i class="bi bi-globe2"></i> Global
+                                        </span>
+                                    }
+                                </td>
+                                <td class="lts-cell-muted" data-label="Code">@(department.DepartmentCode ?? "—")</td>
+                                <td class="lts-cell-muted" data-label="Description">@(string.IsNullOrWhiteSpace(department.Description) ? "—" : department.Description)</td>
+                                <td data-label="Status"><StatusBadge IsActive="department.IsActive" /></td>
+                                <td data-label="Actions">
+                                    <div class="lts-row-actions">
+                                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="View" @onclick="() => OpenDetails(department)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        @if (CanManage(department))
+                                        {
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick="() => OpenEdit(department)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => HandleDeleteAsync(department)">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </button>
+                                        }
+                                        else if (department.IsGlobal)
+                                        {
+                                            <span class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" style="opacity:0.5;cursor:not-allowed;" title="Global department - only SuperAdmin can edit or deactivate this.">
+                                                <i class="bi bi-lock"></i>
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <Pagination CurrentPage="_currentPage" TotalItems="FilteredDepartments.Count" PageSize="_pageSize" PageChanged="OnPageChanged" />
+            </div>
+        }
+    </div>
+</div>
+
+<DepartmentFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
+<DepartmentDetailsModal @ref="_detailsModal" OnEditRequested="OpenEdit" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<DepartmentDTO> _allDepartments = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    private string _searchTerm = string.Empty;
+    private string _statusFilter = "all";
+    private string _sortField = "name";
+    private bool _sortAsc = true;
+
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private DepartmentFormModal _formModal = default!;
+    private DepartmentDetailsModal _detailsModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _allDepartments = await DepartmentService.GetAllAsync(activeOnly: false);
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Departments could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private List<DepartmentDTO> FilteredDepartments
+    {
+        get
+        {
+            IEnumerable<DepartmentDTO> query = _allDepartments;
+
+            if (_statusFilter == "active") query = query.Where(c => c.IsActive);
+            else if (_statusFilter == "inactive") query = query.Where(c => !c.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                var term = _searchTerm.Trim();
+                query = query.Where(c =>
+                    c.DepartmentName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (c.DepartmentCode != null && c.DepartmentCode.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                    (c.Description != null && c.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            query = _sortField switch
+            {
+                "code" => _sortAsc ? query.OrderBy(c => c.DepartmentCode) : query.OrderByDescending(c => c.DepartmentCode),
+                _ => _sortAsc ? query.OrderBy(c => c.DepartmentName) : query.OrderByDescending(c => c.DepartmentName),
+            };
+
+            return query.ToList();
+        }
+    }
+
+    private List<DepartmentDTO> PagedDepartments =>
+        FilteredDepartments.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+    private void Sort(string field)
+    {
+        if (_sortField == field) _sortAsc = !_sortAsc;
+        else { _sortField = field; _sortAsc = true; }
+    }
+
+    private string SortIcon(string field) =>
+        _sortField != field ? "bi-arrow-down-up" : (_sortAsc ? "bi-sort-alpha-down" : "bi-sort-alpha-up");
+
+    private void ResetToFirstPage() => _currentPage = 1;
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _statusFilter = "all";
+        _currentPage = 1;
+    }
+
+    private Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        return Task.CompletedTask;
+    }
+
+    private void OpenCreate() => _formModal.OpenForCreate();
+
+    private bool CanManage(DepartmentDTO department) =>
+        !department.IsGlobal || string.Equals(Session.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+
+    private void OpenEdit(DepartmentDTO department) => _formModal.OpenForEdit(department);
+
+    private void OpenDetails(DepartmentDTO department) => _detailsModal.Open(department);
+
+    private async Task HandleSavedAsync(bool wasEdit)
+    {
+        await LoadAsync();
+        Toast.Success(wasEdit ? "Department updated" : "Department created",
+            wasEdit ? "The department's details have been saved." : "The new department is now available for cases and users.");
+    }
+
+    private async Task HandleDeleteAsync(DepartmentDTO department)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete \"{department.DepartmentName}\"?",
+            "This cannot be undone. Departments linked to existing cases cannot be deleted.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await DepartmentService.DeleteAsync(department.DepartmentID);
+            await LoadAsync();
+            Toast.Success("Department deleted", $"\"{department.DepartmentName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete department", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete department", "Please try again.");
+        }
+    }
+}

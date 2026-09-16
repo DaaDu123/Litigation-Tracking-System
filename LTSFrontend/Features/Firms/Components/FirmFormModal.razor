@@ -1,0 +1,250 @@
+@* Modal for provisioning a new firm workspace (bootstraps its first Firm Admin
+   in the same step) or editing an existing firm's details.
+   Usage:
+     <FirmFormModal @ref="_firmModal" OnSaved="HandleSavedAsync" />
+     _firmModal.OpenForCreate();
+     _firmModal.OpenForEdit(firm); *@
+@using LTSFrontend.Features.Firms.DTOs
+@using LTSFrontend.Features.Firms.Services
+@inject IFirmService FirmService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-building-add"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_isEdit ? "Edit Firm" : "Provision Firm Workspace")</h5>
+                <p class="lts-modal-subtitle mb-0">
+                    @(_isEdit ? "Update this firm's workspace details." : "Create an isolated workspace and its first Firm Admin account.")
+                </p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span style="white-space: pre-line;">@_apiError</span>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-md-6 lts-form-group">
+                    <label class="lts-form-label">Firm Name <span class="required">*</span></label>
+                    <input class="lts-form-control" @bind="_firmName" disabled="@_isSaving" />
+                    @if (_showValidation && string.IsNullOrWhiteSpace(_firmName))
+                    {
+                        <div class="lts-form-error">Firm name is required.</div>
+                    }
+                </div>
+                @if (!_isEdit)
+                {
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Firm Code <span class="required">*</span></label>
+                        <input class="lts-form-control" @bind="_firmCode" disabled="@_isSaving" placeholder="e.g. ABC-LAW" />
+                        @if (_showValidation && string.IsNullOrWhiteSpace(_firmCode))
+                        {
+                            <div class="lts-form-error">Firm code is required.</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Custom Domain</label>
+                        <input class="lts-form-control" @bind="_customDomain" disabled="@_isSaving" placeholder="e.g. lawfirm.com" />
+                    </div>
+                }
+
+                <div class="col-md-6 lts-form-group">
+                    <label class="lts-form-label">Contact Email</label>
+                    <input class="lts-form-control" @bind="_contactEmail" disabled="@_isSaving" />
+                </div>
+                <div class="col-md-6 lts-form-group">
+                    <label class="lts-form-label">Contact Phone</label>
+                    <input class="lts-form-control" @bind="_contactPhone" disabled="@_isSaving" />
+                </div>
+                <div class="col-12 lts-form-group">
+                    <label class="lts-form-label">Address</label>
+                    <textarea class="lts-form-control" rows="2" @bind="_address" disabled="@_isSaving"></textarea>
+                </div>
+
+                @if (!_isEdit)
+                {
+                    <div class="col-12"><hr /></div>
+                    <div class="col-12">
+                        <div class="text-muted small mb-2">First Firm Admin Account</div>
+                    </div>
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Admin Full Name <span class="required">*</span></label>
+                        <input class="lts-form-control" @bind="_adminFullName" disabled="@_isSaving" />
+                        @if (_showValidation && string.IsNullOrWhiteSpace(_adminFullName))
+                        {
+                            <div class="lts-form-error">Admin name is required.</div>
+                        }
+                    </div>
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Admin Email <span class="required">*</span></label>
+                        <input class="lts-form-control" type="email" @bind="_adminEmail" disabled="@_isSaving" />
+                        @if (_showValidation && string.IsNullOrWhiteSpace(_adminEmail))
+                        {
+                            <div class="lts-form-error">Admin email is required.</div>
+                        }
+                    </div>
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Admin Temporary Password <span class="required">*</span></label>
+                        <input class="lts-form-control" type="password" @bind="_adminPassword" disabled="@_isSaving" />
+                        @if (_showValidation && string.IsNullOrWhiteSpace(_adminPassword))
+                        {
+                            <div class="lts-form-error">A temporary password is required.</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>@(_isEdit ? "Save Changes" : "Provision Firm")</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isEdit;
+    private bool _isSaving;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private int _firmId;
+    private string _firmName = string.Empty;
+    private string _firmCode = string.Empty;
+    private string? _customDomain;
+    private string? _contactEmail;
+    private string? _contactPhone;
+    private string? _address;
+    private string _adminFullName = string.Empty;
+    private string _adminEmail = string.Empty;
+    private string _adminPassword = string.Empty;
+
+    public void OpenForCreate()
+    {
+        _isEdit = false;
+        _firmId = 0;
+        _firmName = _firmCode = _adminFullName = _adminEmail = _adminPassword = string.Empty;
+        _customDomain = _contactEmail = _contactPhone = _address = null;
+        ResetAndOpen();
+    }
+
+    public void OpenForEdit(FirmDTO firm)
+    {
+        _isEdit = true;
+        _firmId = firm.FirmID;
+        _firmName = firm.FirmName;
+        _firmCode = firm.FirmCode;
+        _customDomain = firm.CustomDomain;
+        _contactEmail = firm.ContactEmail;
+        _contactPhone = firm.ContactPhone;
+        _address = firm.Address;
+        ResetAndOpen();
+    }
+
+    private void ResetAndOpen()
+    {
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private bool IsValid()
+    {
+        if (string.IsNullOrWhiteSpace(_firmName)) return false;
+        if (_isEdit) return true;
+        return !string.IsNullOrWhiteSpace(_firmCode)
+            && !string.IsNullOrWhiteSpace(_adminFullName)
+            && !string.IsNullOrWhiteSpace(_adminEmail)
+            && !string.IsNullOrWhiteSpace(_adminPassword);
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (!IsValid())
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            if (_isEdit)
+            {
+                await FirmService.UpdateAsync(new UpdateFirmDTO
+                {
+                    FirmID = _firmId,
+                    FirmName = _firmName.Trim(),
+                    Address = _address,
+                    ContactEmail = _contactEmail,
+                    ContactPhone = _contactPhone,
+                    CustomDomain = _customDomain
+                });
+            }
+            else
+            {
+                await FirmService.CreateAsync(new CreateFirmDTO
+                {
+                    FirmName = _firmName.Trim(),
+                    FirmCode = _firmCode.Trim(),
+                    Address = _address,
+                    ContactEmail = _contactEmail,
+                    ContactPhone = _contactPhone,
+                    AdminFullName = _adminFullName.Trim(),
+                    AdminEmail = _adminEmail.Trim(),
+                    AdminPassword = _adminPassword
+                });
+            }
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the firm. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

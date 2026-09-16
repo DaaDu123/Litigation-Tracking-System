@@ -1,0 +1,62 @@
+@* Modal for rejecting a user join request with an optional reason.
+   Usage: <RejectUserJoinRequestModal @ref="_rejectModal" OnConfirmed="HandleRejectConfirmedAsync" />
+          _rejectModal.Open(request); *@
+@using LTSFrontend.Features.UserJoinRequests.DTOs
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-danger">
+                <i class="bi bi-x-circle"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Reject request from "@_request?.FullName"?</h5>
+                <p class="lts-modal-subtitle mb-0">@_request?.Email will be notified by email.</p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Reason (optional)</label>
+                <textarea class="lts-form-control" rows="3" @bind="_reason" placeholder="e.g. Could not verify identity, role not needed right now..."></textarea>
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-danger" @onclick="Confirm">
+                <i class="bi bi-x-circle"></i> Reject Request
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<(int RequestId, string? Reason)> OnConfirmed { get; set; }
+
+    private bool _isOpen;
+    private UserJoinRequestDTO? _request;
+    private string? _reason;
+
+    public void Open(UserJoinRequestDTO request)
+    {
+        _request = request;
+        _reason = null;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        if (_request == null) return;
+        _isOpen = false;
+        await OnConfirmed.InvokeAsync((_request.RequestID, _reason));
+    }
+}

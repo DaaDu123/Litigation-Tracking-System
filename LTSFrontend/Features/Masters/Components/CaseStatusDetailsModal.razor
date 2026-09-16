@@ -1,0 +1,77 @@
+@* Read-only "View Details" modal for a single case status. *@
+@using LTSFrontend.Features.Masters.DTOs
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        @if (_status != null)
+        {
+            <div class="lts-modal-header">
+                <div class="lts-modal-icon lts-modal-icon-primary">
+                    <i class="bi bi-flag"></i>
+                </div>
+                <div>
+                    <h5 class="lts-modal-title">@_status.StatusName</h5>
+                    <p class="lts-modal-subtitle mb-0">Status #@_status.StatusID</p>
+                </div>
+            </div>
+
+            <div class="lts-modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <StatusBadge IsActive="_status.IsActive" />
+                    @if (_status.IsClosed)
+                    {
+                        <span class="lts-scope-pill"><i class="bi bi-lock"></i>Closed Status</span>
+                    }
+                    <span class="lts-scope-pill"><i class="bi bi-sort-numeric-down"></i>Sequence @_status.SequenceNo</span>
+                </div>
+
+                <dl class="lts-detail-list">
+                    <div class="lts-detail-row">
+                        <dt>Color</dt>
+                        <dd class="d-flex align-items-center gap-2">
+                            <span class="lts-color-chip" style="background:@_status.ColorCode;"></span>
+                            @_status.ColorCode
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="lts-modal-footer">
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Close</button>
+                <PermissionGate Roles="FirmAdmin,Partner">
+                    <button type="button" class="lts-btn lts-btn-primary" @onclick="RequestEdit">
+                        <i class="bi bi-pencil"></i> Edit Status
+                    </button>
+                </PermissionGate>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<CaseStatusDTO> OnEditRequested { get; set; }
+
+    private bool _isOpen;
+    private CaseStatusDTO? _status;
+
+    public void Open(CaseStatusDTO status)
+    {
+        _status = status;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task RequestEdit()
+    {
+        if (_status == null) return;
+        _isOpen = false;
+        await OnEditRequested.InvokeAsync(_status);
+    }
+}

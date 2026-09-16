@@ -1,0 +1,149 @@
+@* Modal for adding/editing a case note.
+   Usage:
+     <CaseNoteModal @ref="_noteModal" OnSaved="HandleSavedAsync" />
+     _noteModal.OpenForCreate(caseId);
+     _noteModal.OpenForEdit(note); *@
+@using LTSFrontend.Features.CaseNotes.DTOs
+@using LTSFrontend.Features.CaseNotes.Services
+@inject ICaseNoteService NoteService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_isEdit ? "Edit Note" : "Add Case Note")</h5>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Note Type <span class="required">*</span></label>
+                <select class="lts-form-control" @bind="_form.NoteType" disabled="@_isSaving">
+                    @foreach (var t in CaseNoteFormDTO.NoteTypes)
+                    {
+                        <option value="@t">@t</option>
+                    }
+                </select>
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Note <span class="required">*</span></label>
+                <textarea class="lts-form-control" rows="5" maxlength="4000" @bind="_form.Notes" disabled="@_isSaving"
+                          placeholder="Write the note or legal opinion..."></textarea>
+                @if (_showValidation && string.IsNullOrWhiteSpace(_form.Notes))
+                {
+                    <div class="lts-form-error">Note text is required.</div>
+                }
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>@(_isEdit ? "Save Changes" : "Add Note")</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isEdit;
+    private bool _isSaving;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private CaseNoteFormDTO _form = new();
+
+    public void OpenForCreate(long caseId)
+    {
+        _isEdit = false;
+        _form = new CaseNoteFormDTO { CaseID = caseId };
+        ResetAndOpen();
+    }
+
+    public void OpenForEdit(CaseNoteDTO note)
+    {
+        _isEdit = true;
+        _form = new CaseNoteFormDTO
+        {
+            NoteID = note.NoteID,
+            CaseID = note.CaseID,
+            NoteType = note.NoteType,
+            Notes = note.Notes
+        };
+        ResetAndOpen();
+    }
+
+    private void ResetAndOpen()
+    {
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Notes))
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            if (_isEdit)
+                await NoteService.UpdateAsync(_form);
+            else
+                await NoteService.CreateAsync(_form);
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the note. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

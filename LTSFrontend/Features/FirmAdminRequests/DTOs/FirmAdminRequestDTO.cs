@@ -1,0 +1,23 @@
+namespace LTSFrontend.Features.FirmAdminRequests.DTOs
+{
+    /// <summary>Mirrors LTSBackend.Features.FirmAdminRequests.DTOs.FirmAdminRequestDTO</summary>
+    public class FirmAdminRequestDTO
+    {
+        public int RequestID { get; set; }
+        public string FirmName { get; set; } = string.Empty;
+        public string FirmCode { get; set; } = string.Empty;
+        public string? Address { get; set; }
+        public string? ContactEmail { get; set; }
+        public string? ContactPhone { get; set; }
+        public string AdminFullName { get; set; } = string.Empty;
+        public string AdminEmail { get; set; } = string.Empty;
+        public string? AdminPhone { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime RequestedAt { get; set; }
+        public int? ReviewedBy { get; set; }
+        public string? ReviewedByName { get; set; }
+        public DateTime? ReviewedAt { get; set; }
+        public string? RejectionReason { get; set; }
+        public int? CreatedFirmID { get; set; }
+    }
+}

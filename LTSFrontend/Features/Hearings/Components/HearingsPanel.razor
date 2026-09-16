@@ -1,0 +1,144 @@
+@* Embedded panel (tab) on CaseDetails for scheduling/tracking hearings.
+   SRS Reference: Case_SRS UC-05 "Track Upcoming Hearings" *@
+@using LTSFrontend.Features.Hearings.DTOs
+@using LTSFrontend.Features.Hearings.Services
+@inject IHearingService HearingService
+@inject ToastService Toast
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Hearings</h6>
+    <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+            <i class="bi bi-calendar-plus"></i> Schedule Hearing
+        </button>
+    </PermissionGate>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_hearings.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-calendar-event"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">No hearings scheduled for this case yet.</div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="lts-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Court</th>
+                    <th>Judge</th>
+                    <th>Purpose</th>
+                    <th>Outcome</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var h in _hearings)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@h.HearingDate.ToString("dd MMM yyyy")</div>
+                            <div class="text-muted small">@h.HearingDate.ToString("hh:mm tt")</div>
+                        </td>
+                        <td>@h.CourtName @(string.IsNullOrWhiteSpace(h.CourtRoom) ? "" : $"({h.CourtRoom})")</td>
+                        <td>@(h.JudgeName ?? "-")</td>
+                        <td>@(h.HearingPurpose ?? "-")</td>
+                        <td>@(string.IsNullOrWhiteSpace(h.HearingOutcome) ? "-" : h.HearingOutcome)</td>
+                        <td class="text-end">
+                            <PermissionGate Roles="AssociateLawyer,Partner,FirmAdmin,SuperAdmin">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEdit(h)" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </PermissionGate>
+                            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenAttendance(h)" title="Attendance">
+                                <i class="bi bi-people"></i>
+                            </button>
+                            <PermissionGate Roles="Partner,FirmAdmin,SuperAdmin">
+                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteAsync(h)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </PermissionGate>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<HearingModal @ref="_hearingModal" OnSaved="HandleSavedAsync" />
+<HearingAttendanceModal @ref="_attendanceModal" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private List<HearingDTO> _hearings = new();
+    private bool _isLoading = true;
+
+    private HearingModal _hearingModal = default!;
+    private HearingAttendanceModal _attendanceModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var result = await HearingService.GetByCaseAsync(CaseId, pageNumber: 1, pageSize: 100);
+            _hearings = result.Items.OrderByDescending(h => h.HearingDate).ToList();
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load hearings", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreate() => _hearingModal.OpenForCreate(CaseId);
+    private void OpenEdit(HearingDTO h) => _hearingModal.OpenForEdit(h);
+    private Task OpenAttendance(HearingDTO h) => _attendanceModal.OpenAsync(h.HearingId, h.HearingDate);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "The hearing has been saved.");
+    }
+
+    private async Task HandleDeleteAsync(HearingDTO h)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete hearing on \"{h.HearingDate:dd MMM yyyy}\"?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await HearingService.DeleteAsync(h.HearingId);
+            await LoadAsync();
+            Toast.Success("Hearing deleted", "The hearing has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete hearing", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete hearing", "Please try again.");
+        }
+    }
+}

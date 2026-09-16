@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1092 1092">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE484"/>
+      <stop offset="45%" stop-color="#F7C11B"/>
+      <stop offset="100%" stop-color="#D89A0A"/>
+    </linearGradient>
+    <linearGradient id="goldGradV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFE995"/>
+      <stop offset="50%" stop-color="#F5BE18"/>
+      <stop offset="100%" stop-color="#D8960A"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="url(#goldGrad)" stroke="none">
+    <!-- top finial -->
+    <path d="M546 145 L575 235 L546 275 L517 235 Z"/>
+    <!-- central knob under finial -->
+    <circle cx="546" cy="292" r="26"/>
+    <!-- crossbar -->
+    <path d="M270 320
+             C 330 275, 420 262, 546 262
+             C 672 262, 762 275, 822 320
+             L 822 345
+             C 762 305, 672 292, 546 292
+             C 420 292, 330 305, 270 345 Z"/>
+    <!-- crossbar lower knob -->
+    <circle cx="546" cy="360" r="22"/>
+    <!-- vertical post -->
+    <rect x="520" y="292" width="52" height="460" rx="14"/>
+    <!-- base knob -->
+    <circle cx="546" cy="775" r="34"/>
+    <!-- base riser -->
+    <path d="M480 800 L612 800 L640 848 L452 848 Z"/>
+    <!-- base plate -->
+    <ellipse cx="546" cy="872" rx="178" ry="34"/>
+
+    <!-- left chain lines -->
+    <path d="M270 322 L156 605 M270 322 L286 340" stroke="url(#goldGradV)" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M270 322 L384 605" stroke="url(#goldGradV)" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <!-- left pan -->
+    <path d="M110 605 C110 660 175 700 270 700 C365 700 430 660 430 605 Z"/>
+    <ellipse cx="270" cy="605" rx="160" ry="16"/>
+
+    <!-- right chain lines -->
+    <path d="M822 322 L708 605" stroke="url(#goldGradV)" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M822 322 L936 605" stroke="url(#goldGradV)" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <!-- right pan -->
+    <path d="M662 605 C662 660 727 700 822 700 C917 700 982 660 982 605 Z"/>
+    <ellipse cx="822" cy="605" rx="160" ry="16"/>
+
+    <!-- left pivot ring -->
+    <circle cx="270" cy="320" r="24"/>
+    <!-- right pivot ring -->
+    <circle cx="822" cy="320" r="24"/>
+  </g>
+</svg>

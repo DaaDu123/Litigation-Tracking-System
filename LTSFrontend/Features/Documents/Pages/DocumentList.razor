@@ -1,0 +1,28 @@
+@page "/cases/{CaseId:long}/documents"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Features.Documents.Components
+
+<PageTitle>Case Documents - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/cases">Cases</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <a href="@($"/cases/{CaseId}")">Case Details</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Documents</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Case Documents</h1>
+        <p class="lts-page-subtitle">All documents attached to this case.</p>
+    </div>
+</div>
+
+<div class="lts-card">
+    <DocumentsPanel CaseId="@CaseId" />
+</div>
+
+@code {
+    [Parameter] public long CaseId { get; set; }
+}

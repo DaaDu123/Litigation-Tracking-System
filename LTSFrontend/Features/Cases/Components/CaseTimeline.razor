@@ -1,0 +1,181 @@
+@* Read-only, chronological "story so far" for a case - merges Milestones,
+   Hearings, Notes, and Status Changes (the sources that already carry a
+   date + who did it) into a single feed, newest first. Used as the
+   "Timeline" tab on CaseDetails.razor, alongside the dedicated
+   Milestones/Hearings/Notes tabs that let you actually manage each of
+   those individually. Status changes have no dedicated tab of their own
+   (FR-05: "maintain case status history") - this feed is the only place
+   they're visible in the UI. *@
+@using LTSFrontend.Features.CaseNotes.DTOs
+@using LTSFrontend.Features.CaseNotes.Services
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Hearings.DTOs
+@using LTSFrontend.Features.Hearings.Services
+@using LTSFrontend.Features.Milestones.DTOs
+@using LTSFrontend.Features.Milestones.Services
+@inject IMilestoneService MilestoneService
+@inject IHearingService HearingService
+@inject ICaseNoteService CaseNoteService
+@inject ICaseService CaseService
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Case Timeline</h6>
+    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" disabled="@_isLoading" title="Refresh">
+        <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+    </button>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_hasError)
+{
+    <div class="lts-state is-error" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">@_errorMessage</div>
+    </div>
+}
+else if (_entries.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-clock-history"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">
+            Nothing recorded yet - milestones, hearings, and notes will show up here as they're added.
+        </div>
+    </div>
+}
+else
+{
+    <div class="lts-timeline">
+        @foreach (var entry in _entries)
+        {
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="lts-stat-icon" style="--accent: @entry.Accent; flex-shrink:0;">
+                    <i class="bi @entry.Icon"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="fw-semibold">@entry.Title</div>
+                        <span class="lts-badge lts-badge-muted">@entry.Kind</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(entry.Detail))
+                    {
+                        <div class="text-muted small">@entry.Detail</div>
+                    }
+                    <div class="lts-form-hint" style="margin-top:0.15rem;">
+                        @entry.Date.ToString("dd MMM yyyy")@(entry.By is null ? "" : $" · {entry.By}")
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+    private List<TimelineEntry> _entries = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            // Fire all four off in parallel - independent reads, no reason
+            // to wait on them one at a time.
+            var milestonesTask = MilestoneService.GetByCaseAsync(CaseId);
+            var hearingsTask = HearingService.GetByCaseAsync(CaseId, pageNumber: 1, pageSize: 100);
+            var notesTask = CaseNoteService.GetByCaseAsync(CaseId);
+            var statusHistoryTask = CaseService.GetStatusHistoryAsync(CaseId);
+
+            await Task.WhenAll(milestonesTask, hearingsTask, notesTask, statusHistoryTask);
+
+            var entries = new List<TimelineEntry>();
+
+            foreach (var m in milestonesTask.Result)
+            {
+                entries.Add(new TimelineEntry(
+                    Date: m.MilestoneDate,
+                    Kind: "Milestone",
+                    Icon: m.IsCompleted ? "bi-check-circle-fill" : "bi-flag",
+                    Accent: m.IsCompleted ? "#16a34a" : "#6b7280",
+                    Title: m.Milestone,
+                    Detail: m.Description,
+                    By: m.CompletedByName));
+            }
+
+            foreach (var h in hearingsTask.Result.Items)
+            {
+                var title = string.IsNullOrWhiteSpace(h.HearingPurpose) ? "Hearing" : h.HearingPurpose;
+                var detail = string.IsNullOrWhiteSpace(h.HearingOutcome)
+                    ? h.CourtName
+                    : $"{h.CourtName} · Outcome: {h.HearingOutcome}";
+
+                entries.Add(new TimelineEntry(
+                    Date: h.HearingDate,
+                    Kind: "Hearing",
+                    Icon: "bi-calendar-event",
+                    Accent: "#1b4fd6",
+                    Title: title!,
+                    Detail: detail,
+                    By: h.CreatedByUser));
+            }
+
+            foreach (var n in notesTask.Result)
+            {
+                entries.Add(new TimelineEntry(
+                    Date: n.CreatedDate,
+                    Kind: string.IsNullOrWhiteSpace(n.NoteType) ? "Note" : n.NoteType,
+                    Icon: "bi-journal-text",
+                    Accent: "#9333ea",
+                    Title: n.Notes.Length > 120 ? n.Notes[..120] + "..." : n.Notes,
+                    Detail: null,
+                    By: n.UserName));
+            }
+
+            foreach (var s in statusHistoryTask.Result)
+            {
+                var title = s.OldStatusName is null
+                    ? $"Status set to {s.NewStatusName}"
+                    : $"Status changed: {s.OldStatusName} → {s.NewStatusName}";
+
+                entries.Add(new TimelineEntry(
+                    Date: s.ChangedDate,
+                    Kind: "Status",
+                    Icon: "bi-arrow-repeat",
+                    Accent: "#dc2626",
+                    Title: title,
+                    Detail: string.IsNullOrWhiteSpace(s.Remarks) ? null : s.Remarks,
+                    By: s.ChangedByName));
+            }
+
+            _entries = entries.OrderByDescending(e => e.Date).ToList();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Timeline could not be loaded. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private record TimelineEntry(DateTime Date, string Kind, string Icon, string Accent, string Title, string? Detail, string? By);
+}

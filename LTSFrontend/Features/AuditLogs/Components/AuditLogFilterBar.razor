@@ -1,0 +1,68 @@
+@* Filter toolbar for the Audit Log list: free-text search, action, and date range.
+   Usage: <AuditLogFilterBar Filter="_filter" FilterChanged="OnFilterChangedAsync" /> *@
+@using LTSFrontend.Features.AuditLogs.DTOs
+
+<div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+    <div class="lts-toolbar-left">
+        <SearchBox @bind-Value="_search" @bind-Value:after="OnSearchChangedAsync" Placeholder="Search by user or action..." />
+
+        <input type="date" class="lts-select" value="@(_fromDate?.ToString("yyyy-MM-dd"))" @onchange="OnFromDateChangedAsync" title="From date" />
+        <input type="date" class="lts-select" value="@(_toDate?.ToString("yyyy-MM-dd"))" @onchange="OnToDateChangedAsync" title="To date" />
+
+        <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="ClearFiltersAsync">
+            <i class="bi bi-x-circle"></i> Clear
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public AuditLogFilterDTO Filter { get; set; } = default!;
+    [Parameter]
+    public EventCallback FilterChanged { get; set; }
+
+    private string _search = string.Empty;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+
+    protected override void OnParametersSet()
+    {
+        _search = Filter.Search ?? string.Empty;
+        _fromDate = Filter.FromDate;
+        _toDate = Filter.ToDate;
+    }
+
+    private async Task OnSearchChangedAsync()
+    {
+        Filter.Search = string.IsNullOrWhiteSpace(_search) ? null : _search;
+        Filter.PageNumber = 1;
+        await FilterChanged.InvokeAsync();
+    }
+
+    private async Task OnFromDateChangedAsync(ChangeEventArgs e)
+    {
+        Filter.FromDate = DateTime.TryParse(e.Value?.ToString(), out var dt) ? dt : null;
+        Filter.PageNumber = 1;
+        await FilterChanged.InvokeAsync();
+    }
+
+    private async Task OnToDateChangedAsync(ChangeEventArgs e)
+    {
+        Filter.ToDate = DateTime.TryParse(e.Value?.ToString(), out var dt) ? dt.Date.AddDays(1).AddTicks(-1) : null;
+        Filter.PageNumber = 1;
+        await FilterChanged.InvokeAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _search = string.Empty;
+        _fromDate = null;
+        _toDate = null;
+        Filter.Search = null;
+        Filter.Action = null;
+        Filter.FromDate = null;
+        Filter.ToDate = null;
+        Filter.PageNumber = 1;
+        await FilterChanged.InvokeAsync();
+    }
+}

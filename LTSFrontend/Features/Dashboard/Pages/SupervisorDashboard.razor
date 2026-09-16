@@ -1,0 +1,135 @@
+@page "/dashboard/supervisor"
+@attribute [Authorize(Roles = "Partner")]
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Dashboard.Components
+@using LTSFrontend.Features.Dashboard.DTOs
+@inject ICaseService CaseService
+@inject UserSessionState Session
+
+<PageTitle>Supervisor Dashboard - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Supervisor Dashboard</h1>
+        <p class="lts-page-subtitle">Welcome back, @Session.FullName. Case-team oversight at a glance.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <a class="lts-btn lts-btn-primary" href="/cases/create">
+            <i class="bi bi-plus-lg"></i> New Case
+        </a>
+    </div>
+</div>
+
+@if (_hasError)
+{
+    <div class="lts-state is-error">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-title">Couldn't load dashboard data</div>
+        <div class="lts-state-desc">@_errorMessage</div>
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Try Again
+        </button>
+    </div>
+}
+else
+{
+    <div class="lts-stat-grid">
+        <KpiCard Title="Cases Under Supervision" Value="@_totalCases.ToString()" Icon="bi-briefcase" Accent="#1b4fd6" IsLoading="_isLoading" Href="/cases" />
+        <KpiCard Title="High Priority" Value="@_highPriorityCount.ToString()" Icon="bi-exclamation-triangle" Accent="#dc2626" IsLoading="_isLoading" SubLabel="Needs closer attention" />
+        <KpiCard Title="Medium Priority" Value="@_mediumPriorityCount.ToString()" Icon="bi-dash-circle" Accent="#d97706" IsLoading="_isLoading" />
+        <KpiCard Title="Active Cases" Value="@_activeCount.ToString()" Icon="bi-check-circle" Accent="#16a34a" IsLoading="_isLoading" SubLabel="Not archived" />
+    </div>
+
+    <div class="lts-dashboard-grid">
+        <ChartWidget Title="Cases by Priority" Items="_priorityBreakdown" IsLoading="_isLoading" EmptyMessage="No cases yet." />
+        <RecentActivityPanel Title="Recently Updated Cases" Items="_recentCases" IsLoading="_isLoading" EmptyMessage="No cases yet." />
+    </div>
+
+    <div class="lts-card" style="margin-top:1rem;">
+        <div class="lts-chart-widget-title">Quick Links</div>
+        <div class="lts-quicklink-grid">
+            <a class="lts-quicklink" href="/cases"><i class="bi bi-briefcase"></i> All Cases</a>
+            <a class="lts-quicklink" href="/cases/create"><i class="bi bi-plus-lg"></i> New Case</a>
+            <a class="lts-quicklink" href="/profile"><i class="bi bi-person-circle"></i> My Profile</a>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CaseDTO> _cases = new();
+    private int _totalCases;
+    private int _highPriorityCount;
+    private int _mediumPriorityCount;
+    private int _activeCount;
+    private List<ChartItem> _priorityBreakdown = new();
+    private List<ActivityItem> _recentCases = new();
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            // NOTE: no dedicated case-aggregate endpoint yet - GetAllCases already
+            // scopes to "cases this Partner can see" server-side, so a generous
+            // single page is a fair dashboard snapshot until that endpoint exists.
+            var paged = await CaseService.GetAllAsync(pageSize: 100);
+            _cases = paged.Items;
+            _totalCases = paged.TotalRecords;
+            _highPriorityCount = _cases.Count(c => c.Priority == "High");
+            _mediumPriorityCount = _cases.Count(c => c.Priority == "Medium");
+            _activeCount = _cases.Count(c => !c.IsArchived);
+
+            _priorityBreakdown = _cases
+                .GroupBy(c => string.IsNullOrWhiteSpace(c.Priority) ? "Unspecified" : c.Priority)
+                .Select(g => new ChartItem
+                {
+                    Label = g.Key,
+                    Value = g.Count(),
+                    Color = g.Key switch
+                    {
+                        "High" => "#dc2626",
+                        "Medium" => "#d97706",
+                        "Low" => "#16a34a",
+                        _ => "#6b7280"
+                    }
+                })
+                .ToList();
+
+            _recentCases = _cases
+                .OrderByDescending(c => c.CreatedDate)
+                .Take(6)
+                .Select(c => new ActivityItem
+                {
+                    Title = c.CaseTitle,
+                    Subtitle = $"{c.CourtName} · {c.StatusName} · {c.Priority}",
+                    Timestamp = c.CreatedDate,
+                    Icon = "bi-briefcase",
+                    Href = $"/cases/{c.CaseID}"
+                })
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Dashboard data could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,285 @@
+@* Create / Edit modal for Users, matching RoleFormModal's pattern so both
+   master-data-style entities behave the same way in the UI. Handles the
+   user's profile fields, role, status, and an optional profile image in
+   one save. Opened imperatively from UserList.razor via @ref:
+     _formModal.OpenForCreateAsync() / OpenForEditAsync(user); *@
+@using LTSFrontend.Core.Enums
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IUserService UserService
+@inject UserSessionState Session
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi @(IsEditMode ? "bi-pencil-square" : "bi-person-plus")"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(IsEditMode ? "Edit User" : "Add New User")</h5>
+                <p class="lts-modal-subtitle mb-0">
+                    @(IsEditMode ? "Update this user's details, role, or status." : "Just email and a temporary password — they'll complete the rest of their profile after logging in.")
+                </p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span style="white-space: pre-line;">@_apiError</span>
+                </div>
+            }
+
+            <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
+                <DataAnnotationsValidator />
+
+                @if (!IsEditMode)
+                {
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Full Name <span class="required">*</span></label>
+                        <InputText @bind-Value="_form.FullName" class="lts-form-control" maxlength="150" disabled="@_isSaving" autofocus />
+                        <ValidationMessage For="() => _form.FullName" class="lts-form-error" />
+                    </div>
+
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Email <span class="required">*</span></label>
+                        <InputText @bind-Value="_form.Email" type="email" class="lts-form-control" maxlength="150" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.Email" class="lts-form-error" />
+                    </div>
+
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Temporary Password <span class="required">*</span></label>
+                        <InputText @bind-Value="_form.Password" type="password" class="lts-form-control"
+                                   placeholder="At least 8 characters, mixed case, number & symbol" disabled="@_isSaving" />
+                        <ValidationMessage For="() => _form.Password" class="lts-form-error" />
+                        <div class="lts-form-hint">The user logs in with this password the first time, then sets their own.</div>
+                    </div>
+
+                    <div class="lts-form-hint" style="display:flex; gap:0.5rem; align-items:flex-start; margin-bottom:0.5rem;">
+                        <i class="bi bi-info-circle"></i>
+                        <span>
+                            The user is added as <strong>Intern / Paralegal</strong> by default and will be asked to
+                            complete their profile after signing in. Only a <strong>Firm Admin</strong> can change
+                            their role later, from User Management — the user cannot change it themselves.
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Profile Photo</label>
+                        <FileUploadInput CurrentImageUrl="@_currentImageUrl" Disabled="@_isSaving" FileSelected="OnFileSelected" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Full Name <span class="required">*</span></label>
+                                <InputText @bind-Value="_form.FullName" class="lts-form-control" maxlength="150" disabled="@_isSaving" />
+                                <ValidationMessage For="() => _form.FullName" class="lts-form-error" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Email</label>
+                                <InputText @bind-Value="_form.Email" type="email" class="lts-form-control" maxlength="150" disabled="true" />
+                                <div class="lts-form-hint">Email cannot be changed here.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Role <span class="required">*</span></label>
+                                <select class="lts-form-control" @bind="_form.RoleID" disabled="@_isSaving">
+                                    <option value="">-- Select Role --</option>
+                                    @foreach (var role in _roleOptions)
+                                    {
+                                        <option value="@role.Id">@role.Name</option>
+                                    }
+                                </select>
+                                @if (_showRoleValidation && _form.RoleID is null or <= 0)
+                                {
+                                    <div class="lts-form-error">Please select a role.</div>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Status</label>
+                                <select class="lts-form-control" @bind="_form.IsActive" disabled="@_isSaving">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Phone <span class="text-muted fw-normal">(optional)</span></label>
+                                <InputText @bind-Value="_form.Phone" class="lts-form-control" maxlength="20" disabled="@_isSaving" />
+                                <ValidationMessage For="() => _form.Phone" class="lts-form-error" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lts-form-group">
+                                <label class="lts-form-label">Department <span class="text-muted fw-normal">(optional)</span></label>
+                                <InputText @bind-Value="_form.Department" class="lts-form-control" maxlength="100" disabled="@_isSaving" />
+                                <ValidationMessage For="() => _form.Department" class="lts-form-error" />
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="lts-modal-footer" style="padding: 1rem 0 0; margin-top: 0.5rem;">
+                    <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">
+                        Cancel
+                    </button>
+                    <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="lts-spinner lts-spinner-sm"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-lg"></i>
+                            <span>@(IsEditMode ? "Save Changes" : "Create User")</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+
+    private bool _isOpen;
+    private bool _isSaving;
+    private bool _showRoleValidation;
+    private string? _apiError;
+    private string? _currentImageUrl;
+    private CreateUserDTO _form = new();
+    private IBrowserFile? _profileImage;
+
+    // Mirrors CreateUser.razor/EditUser.razor: the acting user (FirmAdmin OR
+    // Partner - both can reach this modal now) can only assign a role that
+    // is strictly lower privilege than their own (see
+    // RoleHierarchy.CanAssignRole on the backend). A FirmAdmin sees
+    // Partner/AssociateLawyer/Moharrir/InternParalegal; a Partner sees only
+    // AssociateLawyer/Moharrir/InternParalegal - never FirmAdmin, Partner,
+    // or SuperAdmin either way.
+    private List<(int Id, string Name)> _roleOptions = new();
+
+    private bool IsEditMode => _form.UserID.HasValue;
+
+    public Task OpenForCreateAsync()
+    {
+        _form = new CreateUserDTO();
+        _currentImageUrl = null;
+        _roleOptions = UserRoleExtensions.AssignableBy(Session.Role).ToList();
+        return OpenAsync();
+    }
+
+    public Task OpenForEditAsync(UserDTO user)
+    {
+        _form = new CreateUserDTO
+        {
+            UserID = user.UserID,
+            FullName = user.FullName,
+            Email = user.Email,
+            Phone = user.Phone,
+            Department = user.Department,
+            RoleID = user.RoleID,
+            IsActive = user.IsActive
+        };
+        _currentImageUrl = user.ProfileImage;
+
+        // Keep the user's current role selectable even if it falls outside
+        // what the acting user (FirmAdmin or Partner) can newly assign
+        // (e.g. a Partner editing a Moharrir who was later promoted) - the
+        // dropdown shouldn't silently drop it.
+        _roleOptions = UserRoleExtensions.AssignableBy(Session.Role).ToList();
+        if (user.RoleID.HasValue && !_roleOptions.Any(r => r.Id == user.RoleID.Value))
+        {
+            _roleOptions = new List<(int Id, string Name)>(_roleOptions)
+            {
+                (user.RoleID.Value, UserRoleExtensions.NameOf(user.RoleID.Value))
+            };
+        }
+
+        return OpenAsync();
+    }
+
+    private Task OpenAsync()
+    {
+        _apiError = null;
+        _showRoleValidation = false;
+        _profileImage = null;
+        _isOpen = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private void OnFileSelected(IBrowserFile? file) => _profileImage = file;
+
+    private async Task HandleSubmitAsync()
+    {
+        // Role is only collected (and required) in Edit mode - Create is
+        // Full Name + Email + Temp Password only; the backend defaults
+        // every new user to Intern/Paralegal. Full Name itself is
+        // enforced by [Required] on CreateUserDTO (both modes) already.
+        if (IsEditMode && _form.RoleID is null or <= 0)
+        {
+            _showRoleValidation = true;
+            return;
+        }
+
+        if (!IsEditMode && string.IsNullOrWhiteSpace(_form.Password))
+        {
+            _apiError = "Password is required.";
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            var wasEdit = IsEditMode;
+            if (wasEdit)
+                await UserService.UpdateAsync(_form, _profileImage);
+            else
+                await UserService.CreateAsync(_form, _profileImage);
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync(wasEdit);
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the user. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,8 @@
+@* Small inline spinner for buttons / lightweight loading moments. Use
+   Shared/Components skeleton markup directly on list pages for full-table loading. *@
+<span class="lts-spinner @SizeClass" role="status" aria-label="Loading"></span>
+
+@code {
+    [Parameter] public string Size { get; set; } = "md"; // sm | md | lg
+    private string SizeClass => $"lts-spinner-{Size}";
+}

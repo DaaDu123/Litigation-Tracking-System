@@ -1,0 +1,59 @@
+@page "/masters"
+@attribute [Authorize(Roles = "FirmAdmin,Partner")]
+
+<PageTitle>Master Data - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <span class="current">Master Data</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Master Data</h1>
+        <p class="lts-page-subtitle">Reference data shared across cases, hearings, and documents.</p>
+    </div>
+</div>
+
+<div class="lts-module-grid">
+    <a href="/masters/courts" class="lts-module-card">
+        <div class="lts-module-icon"><i class="bi bi-bank"></i></div>
+        <h3 class="lts-module-title">Courts <i class="bi bi-arrow-right" style="font-size:0.8rem;color:var(--lts-text-muted);"></i></h3>
+        <p class="lts-module-desc">Courts and tribunals used when filing cases and scheduling hearings.</p>
+        <span class="lts-module-badge">Available</span>
+    </a>
+
+    <a href="/masters/case-categories" class="lts-module-card">
+        <div class="lts-module-icon"><i class="bi bi-diagram-2"></i></div>
+        <h3 class="lts-module-title">Case Categories <i class="bi bi-arrow-right" style="font-size:0.8rem;color:var(--lts-text-muted);"></i></h3>
+        <p class="lts-module-desc">Classify cases by subject matter and category.</p>
+        <span class="lts-module-badge">Available</span>
+    </a>
+
+    <a href="/masters/case-stages" class="lts-module-card">
+        <div class="lts-module-icon"><i class="bi bi-signpost-split"></i></div>
+        <h3 class="lts-module-title">Case Stages <i class="bi bi-arrow-right" style="font-size:0.8rem;color:var(--lts-text-muted);"></i></h3>
+        <p class="lts-module-desc">Track the litigation lifecycle stage of every case.</p>
+        <span class="lts-module-badge">Available</span>
+    </a>
+
+    <a href="/masters/case-statuses" class="lts-module-card">
+        <div class="lts-module-icon"><i class="bi bi-flag"></i></div>
+        <h3 class="lts-module-title">Case Statuses <i class="bi bi-arrow-right" style="font-size:0.8rem;color:var(--lts-text-muted);"></i></h3>
+        <p class="lts-module-desc">Define the statuses cases can move through.</p>
+        <span class="lts-module-badge">Available</span>
+    </a>
+
+    <a href="/masters/departments" class="lts-module-card">
+        <div class="lts-module-icon"><i class="bi bi-diagram-3"></i></div>
+        <h3 class="lts-module-title">Departments <i class="bi bi-arrow-right" style="font-size:0.8rem;color:var(--lts-text-muted);"></i></h3>
+        <p class="lts-module-desc">Departments and business units within the firm.</p>
+        <span class="lts-module-badge">Available</span>
+    </a>
+
+    <a href="/masters/document-types" class="lts-module-card">
+        <div class="lts-module-icon"><i class="bi bi-file-earmark-text"></i></div>
+        <h3 class="lts-module-title">Document Types <i class="bi bi-arrow-right" style="font-size:0.8rem;color:var(--lts-text-muted);"></i></h3>
+        <p class="lts-module-desc">Categorize uploaded documents by type.</p>
+        <span class="lts-module-badge">Available</span>
+    </a>
+</div>

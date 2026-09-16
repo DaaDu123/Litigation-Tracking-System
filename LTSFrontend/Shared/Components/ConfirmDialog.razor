@@ -1,0 +1,66 @@
+@* Reusable confirmation modal for destructive/important actions (delete, deactivate...).
+   Usage:
+     <ConfirmDialog @ref="_confirmDialog" />
+     ...
+     bool ok = await _confirmDialog.ShowAsync("Delete court?", "This cannot be undone.", "Delete", "danger");
+     if (ok) { ... } *@
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="() => Resolve(false)"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-@_variant">
+                <i class="bi @IconFor(_variant)"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@_title</h5>
+                @if (!string.IsNullOrWhiteSpace(_message))
+                {
+                    <p class="lts-modal-subtitle mb-0">@_message</p>
+                }
+            </div>
+        </div>
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="() => Resolve(false)">@_cancelText</button>
+            <button type="button" class="lts-btn lts-btn-@_variant" @onclick="() => Resolve(true)">@_confirmText</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isOpen;
+    private string _title = string.Empty;
+    private string? _message;
+    private string _confirmText = "Confirm";
+    private string _cancelText = "Cancel";
+    private string _variant = "danger";
+    private TaskCompletionSource<bool>? _tcs;
+
+    public Task<bool> ShowAsync(string title, string? message = null, string confirmText = "Confirm",
+        string variant = "danger", string cancelText = "Cancel")
+    {
+        _title = title;
+        _message = message;
+        _confirmText = confirmText;
+        _cancelText = cancelText;
+        _variant = variant;
+        _isOpen = true;
+        _tcs = new TaskCompletionSource<bool>();
+        StateHasChanged();
+        return _tcs.Task;
+    }
+
+    private void Resolve(bool result)
+    {
+        _isOpen = false;
+        _tcs?.TrySetResult(result);
+        StateHasChanged();
+    }
+
+    private static string IconFor(string variant) => variant switch
+    {
+        "danger" => "bi-exclamation-triangle-fill",
+        "warning" => "bi-exclamation-circle-fill",
+        _ => "bi-question-circle-fill"
+    };
+}

@@ -1,0 +1,146 @@
+@* Create / Edit modal for the Case Stage master. Opened imperatively from
+   CaseStages.razor via @ref: _formModal.OpenForCreate() / OpenForEdit(stage). *@
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseStageService CaseStageService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi @(_form.IsEditMode ? "bi-pencil-square" : "bi-signpost-split")"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_form.IsEditMode ? "Edit Case Stage" : "Add New Case Stage")</h5>
+                <p class="lts-modal-subtitle mb-0">
+                    @(_form.IsEditMode ? "Update this stage's details." : "Register a new litigation stage in the master list.")
+                </p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
+                <DataAnnotationsValidator />
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Stage Name <span class="required">*</span></label>
+                    <InputText @bind-Value="_form.StageName" class="lts-form-control" maxlength="150"
+                               placeholder="e.g. Under Trial" disabled="@_isSaving" />
+                    <div class="d-flex justify-content-between">
+                        <ValidationMessage For="() => _form.StageName" class="lts-form-error" />
+                        <span class="lts-char-count">@(_form.StageName?.Length ?? 0)/150</span>
+                    </div>
+                </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Description</label>
+                    <InputTextArea @bind-Value="_form.Description" class="lts-form-control" maxlength="500" rows="3"
+                                   placeholder="Brief description of this stage..." disabled="@_isSaving" />
+                    <div class="d-flex justify-content-between">
+                        <ValidationMessage For="() => _form.Description" class="lts-form-error" />
+                        <span class="lts-char-count">@(_form.Description?.Length ?? 0)/500</span>
+                    </div>
+                </div>
+
+                <div class="lts-switch-row">
+                    <div>
+                        <div class="fw-semibold" style="font-size:0.88rem;color:var(--lts-text);">Active</div>
+                        <div class="lts-form-hint" style="margin-top:0;">Inactive stages are hidden from case dropdowns.</div>
+                    </div>
+                    <label class="lts-switch">
+                        <InputCheckbox @bind-Value="_form.IsActive" disabled="@_isSaving" />
+                        <span class="lts-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="lts-modal-footer" style="padding: 1rem 0 0; margin-top: 0.5rem;">
+                    <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">
+                        Cancel
+                    </button>
+                    <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="lts-spinner lts-spinner-sm"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-lg"></i>
+                            <span>@(_form.IsEditMode ? "Save Changes" : "Create Stage")</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+
+    private bool _isOpen;
+    private bool _isSaving;
+    private string? _apiError;
+    private CaseStageFormDTO _form = new();
+
+    public void OpenForCreate()
+    {
+        _form = new CaseStageFormDTO { IsActive = true };
+        _apiError = null;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    public void OpenForEdit(CaseStageDTO stage)
+    {
+        _form = CaseStageFormDTO.FromDto(stage);
+        _apiError = null;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            var wasEdit = _form.IsEditMode;
+            if (wasEdit)
+                await CaseStageService.UpdateAsync(_form);
+            else
+                await CaseStageService.CreateAsync(_form);
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync(wasEdit);
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the stage. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

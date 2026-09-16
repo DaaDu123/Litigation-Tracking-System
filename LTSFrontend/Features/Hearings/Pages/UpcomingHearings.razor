@@ -1,0 +1,156 @@
+@page "/hearings"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Features.Hearings.DTOs
+@using LTSFrontend.Features.Hearings.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject IHearingService HearingService
+@inject ICourtService CourtService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Hearings - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Upcoming Hearings</h1>
+        <p class="lts-page-subtitle">All scheduled hearings across your firm's cases, soonest first.</p>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <select class="lts-select" @bind="_courtFilter" @bind:after="OnFilterChangedAsync">
+                <option value="0">All Courts</option>
+                @foreach (var c in _courts)
+                {
+                    <option value="@c.CourtID">@c.CourtName</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else if (_hearings.Count == 0)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <div class="lts-state-icon"><i class="bi bi-calendar-event"></i></div>
+            <div class="lts-state-title">No upcoming hearings</div>
+            <div class="lts-state-desc">There are no scheduled hearings matching this filter.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Case</th>
+                        <th>Court</th>
+                        <th>Judge</th>
+                        <th>Purpose</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in _hearings)
+                    {
+                        <tr style="cursor:pointer;" @onclick="() => GoToCase(h.CaseId)">
+                            <td>
+                                <div class="fw-semibold">@h.HearingDate.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted small">@h.HearingDate.ToString("hh:mm tt")</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@h.CaseNumber</div>
+                                <div class="text-muted small">@h.CaseTitle</div>
+                            </td>
+                            <td>@h.CourtName @(string.IsNullOrWhiteSpace(h.CourtRoom) ? "" : $"({h.CourtRoom})")</td>
+                            <td>@(h.JudgeName ?? "-")</td>
+                            <td>@(h.HearingPurpose ?? "-")</td>
+                            <td>
+                                <span class="lts-badge @PriorityBadgeClass(h.HearingPriority)">@h.HearingPriority</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding: 0 1.1rem 1.1rem;">
+            <Pagination CurrentPage="_pageNumber" TotalItems="_totalCount" PageSize="_pageSize" PageChanged="OnPageChangedAsync" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<HearingDTO> _hearings = new();
+    private List<CourtDTO> _courts = new();
+    private bool _isLoading = true;
+
+    private int _courtFilter;
+    private int _pageNumber = 1;
+    private readonly int _pageSize = 15;
+    private int _totalCount;
+
+    private void GoToCase(long caseId) => Nav.NavigateTo($"/cases/{caseId}");
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+        }
+        catch (Exception) { /* filter dropdown is non-critical */ }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var result = await HearingService.GetUpcomingAsync(
+                _pageNumber, _pageSize,
+                courtId: _courtFilter > 0 ? _courtFilter : null);
+
+            _hearings = result.Items;
+            _totalCount = result.TotalCount;
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load hearings", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnFilterChangedAsync()
+    {
+        _pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task OnPageChangedAsync(int page)
+    {
+        _pageNumber = page;
+        await LoadAsync();
+    }
+
+    private static string PriorityBadgeClass(string priority) => priority switch
+    {
+        "Critical" => "lts-badge-danger",
+        "High" => "lts-badge-warning",
+        "Medium" => "lts-badge-info",
+        _ => "lts-badge-muted"
+    };
+}

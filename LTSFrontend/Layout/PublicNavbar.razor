@@ -1,0 +1,92 @@
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IDisposable
+
+<header class="public-navbar">
+    <a href="/login" class="public-navbar-brand">
+        <img src="images/justice-scale-logo.png" alt="Litigation Tracking System" />
+        <span class="public-navbar-brand-text">
+            <span class="brand-title">LITIGATION TRACKING SYSTEM</span>
+            <span class="brand-subtitle">MANAGE. MONITOR. RESOLVE.</span>
+        </span>
+    </a>
+
+    <button class="public-navbar-toggle" type="button" @onclick="ToggleMenu" aria-label="Toggle menu">
+        <i class="bi @(_menuOpen ? "bi-x-lg" : "bi-list")"></i>
+    </button>
+
+    <ul class="public-navbar-links @(_menuOpen ? "open" : "")">
+        <li><a href="/features" class="@ActiveClass("/features")">Features</a></li>
+        <li><a href="/benefits" class="@ActiveClass("/benefits")">Benefits</a></li>
+        <li><a href="/security" class="@ActiveClass("/security")">Security</a></li>
+        <li><a href="/pricing" class="@ActiveClass("/pricing")">Pricing</a></li>
+        <li><a href="/contact" class="@ActiveClass("/contact")">Contact</a></li>
+    </ul>
+
+    <div class="public-navbar-actions">
+        <button class="public-navbar-theme-btn" type="button" title="Toggle theme" @onclick="ToggleThemeAsync">
+            <i class="bi @(_isDarkTheme ? "bi-sun" : "bi-moon-stars")"></i>
+        </button>
+        <span class="public-navbar-lang d-none d-md-inline-flex">
+            <i class="bi bi-globe2"></i> EN
+        </span>
+        <a href="/login" class="public-navbar-login-btn">
+            <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+    </div>
+</header>
+
+@code {
+    private bool _menuOpen;
+    private bool _isDarkTheme;
+
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+
+    private string ActiveClass(string path)
+    {
+        var current = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+        return string.Equals(current, path, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+
+    protected override void OnInitialized()
+    {
+        // Re-render whenever the URL changes (including internal nav-link
+        // clicks that don't do a full page reload) so the active link
+        // color updates immediately instead of staying stuck until refresh.
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _menuOpen = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var theme = await JS.InvokeAsync<string>("ltsTheme.get");
+                _isDarkTheme = theme == "dark";
+                StateHasChanged();
+            }
+            catch
+            {
+                // JS interop not ready yet (prerender) - default to light theme.
+            }
+        }
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDarkTheme = !_isDarkTheme;
+        await JS.InvokeVoidAsync("ltsTheme.set", _isDarkTheme ? "dark" : "light");
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

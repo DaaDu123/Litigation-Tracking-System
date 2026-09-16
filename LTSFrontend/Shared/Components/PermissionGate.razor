@@ -1,0 +1,17 @@
+@* Shows child content only when the current user's role is in Roles (comma-separated). *@
+@inject UserSessionState Session
+
+@if (IsAllowed)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public string Roles { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool IsAllowed =>
+        !string.IsNullOrWhiteSpace(Session.Role) &&
+        Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Contains(Session.Role, StringComparer.OrdinalIgnoreCase);
+}

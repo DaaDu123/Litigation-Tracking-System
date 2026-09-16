@@ -1,0 +1,344 @@
+@page "/masters/case-categories"
+@attribute [Authorize(Roles = "FirmAdmin,Partner")]
+@using LTSFrontend.Features.Masters.Components
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseCategoryService CaseCategoryService
+@inject ToastService Toast
+@inject UserSessionState Session
+
+<PageTitle>Case Categories - Master Data - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/masters">Master Data</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Case Categories</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Case Categories</h1>
+        <p class="lts-page-subtitle">Classify cases by subject matter and category.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <PermissionGate Roles="FirmAdmin,Partner">
+            <button class="lts-btn lts-btn-primary" @onclick="OpenCreate">
+                <i class="bi bi-plus-lg"></i> Add Category
+            </button>
+        </PermissionGate>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#1b4fd6;">
+        <div class="lts-stat-icon"><i class="bi bi-diagram-2"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allCategories.Count.ToString())</div>
+            <div class="lts-stat-label">Total Categories</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#16a34a;">
+        <div class="lts-stat-icon"><i class="bi bi-check-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allCategories.Count(c => c.IsActive).ToString())</div>
+            <div class="lts-stat-label">Active</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#6b7280;">
+        <div class="lts-stat-icon"><i class="bi bi-slash-circle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _allCategories.Count(c => !c.IsActive).ToString())</div>
+            <div class="lts-stat-label">Inactive</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <SearchBox @bind-Value="_searchTerm" @bind-Value:after="ResetToFirstPage" Placeholder="Search by name or description..." />
+            <select class="lts-select" @bind="_statusFilter" @bind:after="ResetToFirstPage">
+                <option value="all">All Statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+            </select>
+        </div>
+        <div class="lts-toolbar-right">
+            <select class="lts-select" @bind="_pageSize" @bind:after="ResetToFirstPage" style="min-width:110px;">
+                <option value="10">10 / page</option>
+                <option value="25">25 / page</option>
+                <option value="50">50 / page</option>
+            </select>
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
+                <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+            </button>
+        </div>
+    </div>
+
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr><th>Category Name</th><th>Description</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < 5; i++)
+                        {
+                            <tr class="lts-skeleton-row">
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:70%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:60%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:40%;"></div></td>
+                                <td><div class="lts-skeleton lts-skeleton-text" style="width:2rem;"></div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load case categories</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (FilteredCategories.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-diagram-2"></i></div>
+                <div class="lts-state-title">
+                    @(_allCategories.Count == 0 ? "No case categories yet" : "No matching categories")
+                </div>
+                <div class="lts-state-desc">
+                    @(_allCategories.Count == 0
+                        ? "Add your first case category to start classifying cases."
+                        : "Try adjusting your search or filters.")
+                </div>
+                @if (_allCategories.Count == 0)
+                {
+                    <PermissionGate Roles="FirmAdmin,Partner">
+                        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+                            <i class="bi bi-plus-lg"></i> Add Category
+                        </button>
+                    </PermissionGate>
+                }
+                else
+                {
+                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="ClearFilters">
+                        <i class="bi bi-x-lg"></i> Clear Filters
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable @(_sortField == "name" ? "active" : "")" @onclick='() => Sort("name")'>
+                                Category Name <i class="bi @SortIcon("name")"></i>
+                            </th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in PagedCategories)
+                        {
+                            <tr @key="category.CategoryID">
+                                <td class="lts-cell-primary" data-label="Category Name">
+                                    @category.CategoryName
+                                    @if (category.IsGlobal)
+                                    {
+                                        <span class="lts-badge lts-badge-muted" style="margin-left:0.4rem;" title="Shared system-wide category - managed by SuperAdmin only">
+                                            <i class="bi bi-globe2"></i> Global
+                                        </span>
+                                    }
+                                </td>
+                                <td class="lts-cell-muted" data-label="Description">@(string.IsNullOrWhiteSpace(category.Description) ? "—" : category.Description)</td>
+                                <td data-label="Status"><StatusBadge IsActive="category.IsActive" /></td>
+                                <td data-label="Actions">
+                                    <div class="lts-row-actions">
+                                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="View" @onclick="() => OpenDetails(category)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        @if (CanManage(category))
+                                        {
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick="() => OpenEdit(category)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => HandleDeleteAsync(category)">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </button>
+                                        }
+                                        else if (category.IsGlobal)
+                                        {
+                                            <span class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" style="opacity:0.5;cursor:not-allowed;" title="Global category - only SuperAdmin can edit or deactivate this. Add your own category instead.">
+                                                <i class="bi bi-lock"></i>
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <Pagination CurrentPage="_currentPage" TotalItems="FilteredCategories.Count" PageSize="_pageSize" PageChanged="OnPageChanged" />
+            </div>
+        }
+    </div>
+</div>
+
+<CaseCategoryFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
+<CaseCategoryDetailsModal @ref="_detailsModal" OnEditRequested="OpenEdit" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<CaseCategoryDTO> _allCategories = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    private string _searchTerm = string.Empty;
+    private string _statusFilter = "all";
+    private string _sortField = "name";
+    private bool _sortAsc = true;
+
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private CaseCategoryFormModal _formModal = default!;
+    private CaseCategoryDetailsModal _detailsModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _allCategories = await CaseCategoryService.GetAllAsync(activeOnly: false);
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Case categories could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private List<CaseCategoryDTO> FilteredCategories
+    {
+        get
+        {
+            IEnumerable<CaseCategoryDTO> query = _allCategories;
+
+            if (_statusFilter == "active") query = query.Where(c => c.IsActive);
+            else if (_statusFilter == "inactive") query = query.Where(c => !c.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                var term = _searchTerm.Trim();
+                query = query.Where(c =>
+                    c.CategoryName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (c.Description != null && c.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            query = _sortAsc ? query.OrderBy(c => c.CategoryName) : query.OrderByDescending(c => c.CategoryName);
+
+            return query.ToList();
+        }
+    }
+
+    private List<CaseCategoryDTO> PagedCategories =>
+        FilteredCategories.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+    private void Sort(string field)
+    {
+        if (_sortField == field) _sortAsc = !_sortAsc;
+        else { _sortField = field; _sortAsc = true; }
+    }
+
+    private string SortIcon(string field) =>
+        _sortField != field ? "bi-arrow-down-up" : (_sortAsc ? "bi-sort-alpha-down" : "bi-sort-alpha-up");
+
+    private void ResetToFirstPage() => _currentPage = 1;
+
+    private void ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _statusFilter = "all";
+        _currentPage = 1;
+    }
+
+    private Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        return Task.CompletedTask;
+    }
+
+    private void OpenCreate() => _formModal.OpenForCreate();
+
+    // A global (system-wide) category can only be edited/deactivated/deleted by
+    // SuperAdmin - a FirmAdmin only manages their own firm's custom categories.
+    // This mirrors the backend's ownership check in UpdateCaseCategoryHandler /
+    // DeleteCaseCategoryHandler, so the buttons that would just fail are hidden
+    // instead of showing and then throwing a 404 on submit.
+    private bool CanManage(CaseCategoryDTO category) =>
+        !category.IsGlobal || string.Equals(Session.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+
+    private void OpenEdit(CaseCategoryDTO category) => _formModal.OpenForEdit(category);
+
+    private void OpenDetails(CaseCategoryDTO category) => _detailsModal.Open(category);
+
+    private async Task HandleSavedAsync(bool wasEdit)
+    {
+        await LoadAsync();
+        Toast.Success(wasEdit ? "Category updated" : "Category created",
+            wasEdit ? "The category's details have been saved." : "The new category is now available for cases.");
+    }
+
+    private async Task HandleDeleteAsync(CaseCategoryDTO category)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete \"{category.CategoryName}\"?",
+            "This cannot be undone. Categories linked to existing cases cannot be deleted.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await CaseCategoryService.DeleteAsync(category.CategoryID);
+            await LoadAsync();
+            Toast.Success("Category deleted", $"\"{category.CategoryName}\" has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete category", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete category", "Please try again.");
+        }
+    }
+}

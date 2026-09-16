@@ -1,0 +1,157 @@
+@page "/deadlines"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Features.Deadlines.DTOs
+@using LTSFrontend.Features.Deadlines.Services
+@inject IDeadlineService DeadlineService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Deadlines - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Upcoming Deadlines</h1>
+        <p class="lts-page-subtitle">Filing deadlines and legal milestones due across your firm's cases.</p>
+    </div>
+</div>
+
+<div class="lts-stat-grid">
+    <div class="lts-stat-card" style="--accent:#dc2626;">
+        <div class="lts-stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _deadlines.Count(d => d.IsOverdue && !d.Completed).ToString())</div>
+            <div class="lts-stat-label">Overdue</div>
+        </div>
+    </div>
+    <div class="lts-stat-card" style="--accent:#d97706;">
+        <div class="lts-stat-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+            <div class="lts-stat-value">@(_isLoading ? "-" : _deadlines.Count(d => !d.Completed && !d.IsOverdue).ToString())</div>
+            <div class="lts-stat-label">Upcoming</div>
+        </div>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <select class="lts-select" @bind="_daysAhead" @bind:after="LoadAsync">
+                <option value="7">Next 7 days</option>
+                <option value="14">Next 14 days</option>
+                <option value="30">Next 30 days</option>
+                <option value="90">Next 90 days</option>
+            </select>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else if (_deadlines.Count == 0)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <div class="lts-state-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="lts-state-title">No upcoming deadlines</div>
+            <div class="lts-state-desc">Nothing is due in the selected window.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="lts-table">
+                <thead>
+                    <tr>
+                        <th>Case</th>
+                        <th>Type</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in _deadlines.OrderBy(x => x.DueDate))
+                    {
+                        <tr style="cursor:pointer;" @onclick="() => GoToCase(d.CaseID)">
+                            <td>
+                                <div class="fw-semibold">@d.CaseNumber</div>
+                                <div class="text-muted small">@d.CaseTitle</div>
+                            </td>
+                            <td>@d.DeadlineType</td>
+                            <td>@d.DueDate.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (d.Completed)
+                                {
+                                    <span class="lts-badge lts-badge-success">Completed</span>
+                                }
+                                else if (d.IsOverdue)
+                                {
+                                    <span class="lts-badge lts-badge-danger">Overdue</span>
+                                }
+                                else
+                                {
+                                    <span class="lts-badge lts-badge-warning">@d.DaysRemaining day(s) left</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (!d.Completed)
+                                {
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick:stopPropagation="true" @onclick="() => HandleCompleteAsync(d)">
+                                        <i class="bi bi-check2-square"></i> Complete
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<DeadlineDTO> _deadlines = new();
+    private bool _isLoading = true;
+    private int _daysAhead = 14;
+
+    private void GoToCase(long caseId) => Nav.NavigateTo($"/cases/{caseId}");
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _deadlines = await DeadlineService.GetUpcomingAsync(_daysAhead);
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load deadlines", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleCompleteAsync(DeadlineDTO d)
+    {
+        try
+        {
+            await DeadlineService.CompleteAsync(d.DeadlineID);
+            await LoadAsync();
+            Toast.Success("Marked complete", $"\"{d.DeadlineType}\" has been marked complete.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't update deadline", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't update deadline", "Please try again.");
+        }
+    }
+}

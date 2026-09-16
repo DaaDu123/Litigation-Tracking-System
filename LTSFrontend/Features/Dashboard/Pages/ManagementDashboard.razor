@@ -1,0 +1,143 @@
+@page "/dashboard/management"
+@attribute [Authorize(Roles = "FirmAdmin")]
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Dashboard.Components
+@using LTSFrontend.Features.Dashboard.DTOs
+@using LTSFrontend.Features.Dashboard.Services
+@inject IDashboardService DashboardService
+@inject ICaseService CaseService
+@inject UserSessionState Session
+
+<PageTitle>Management Dashboard - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Management Dashboard</h1>
+        <p class="lts-page-subtitle">Welcome back, @Session.FullName. Here's how the firm is doing.</p>
+    </div>
+</div>
+
+@if (_hasError)
+{
+    <div class="lts-state is-error">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-title">Couldn't load dashboard data</div>
+        <div class="lts-state-desc">@_errorMessage</div>
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Try Again
+        </button>
+    </div>
+}
+else
+{
+    @*
+        _stats comes from FirmDashboardDTO: FirmWide scope (FirmAdmin/Partner)
+        or AssignedOnly scope (AssociateLawyer/Moharrir/InternParalegal) - the
+        backend decides which based on the signed-in user's own role, so this
+        one page renders correctly for either without the frontend needing to
+        know which. TotalFirmUsers is null under AssignedOnly scope (a lawyer's
+        dashboard has no business showing firm headcount), so that KPI hides
+        itself in that case.
+    *@
+    <div class="lts-stat-grid">
+        <KpiCard Title="Total Cases" Value="@_totalCases.ToString()" Icon="bi-briefcase" Accent="#1b4fd6" IsLoading="_isLoading" Href="/cases" />
+        <KpiCard Title="High Priority" Value="@_highPriorityCount.ToString()" Icon="bi-exclamation-triangle" Accent="#dc2626" IsLoading="_isLoading" Href="/cases" />
+        <KpiCard Title="Upcoming Hearings (7d)" Value="@_stats?.UpcomingHearings7Days.ToString()" Icon="bi-calendar-event" Accent="#7c3aed" IsLoading="_isLoading" Href="/hearings" />
+        <KpiCard Title="Pending Deadlines" Value="@_stats?.PendingDeadlines.ToString()" Icon="bi-hourglass-split" Accent="#d97706" IsLoading="_isLoading" Href="/deadlines" />
+        <KpiCard Title="Overdue Deadlines" Value="@_stats?.OverdueDeadlines.ToString()" Icon="bi-exclamation-octagon" Accent="#dc2626" IsLoading="_isLoading" Href="/deadlines" />
+        @if (_stats?.TotalFirmUsers is not null)
+        {
+            <KpiCard Title="Firm Users" Value="@_stats.TotalFirmUsers?.ToString()" Icon="bi-people" Accent="#16a34a" IsLoading="_isLoading" Href="/users" />
+        }
+    </div>
+
+    <div class="lts-dashboard-grid">
+        <ChartWidget Title="Cases by Status" Items="_statusBreakdown" IsLoading="_isLoading" EmptyMessage="No cases yet." />
+        <RecentActivityPanel Title="Recently Updated Cases" Items="_recentCases" IsLoading="_isLoading" EmptyMessage="No cases yet." />
+    </div>
+
+    <div class="lts-card" style="margin-top:1rem;">
+        <div class="lts-chart-widget-title">Quick Links</div>
+        <div class="lts-quicklink-grid">
+            <a class="lts-quicklink" href="/cases"><i class="bi bi-briefcase"></i> Cases</a>
+            <a class="lts-quicklink" href="/cases/create"><i class="bi bi-plus-lg"></i> New Case</a>
+            @if (_stats?.TotalFirmUsers is not null)
+            {
+                <a class="lts-quicklink" href="/users"><i class="bi bi-people"></i> Users</a>
+                <a class="lts-quicklink" href="/masters"><i class="bi bi-diagram-3"></i> Master Data</a>
+            }
+            <a class="lts-quicklink" href="/profile"><i class="bi bi-person-circle"></i> My Profile</a>
+        </div>
+    </div>
+}
+
+@code {
+    private FirmDashboardDTO? _stats;
+    private List<CaseDTO> _cases = new();
+    private int _totalCases;
+    private int _highPriorityCount;
+    private List<ChartItem> _statusBreakdown = new();
+    private List<ActivityItem> _recentCases = new();
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            var statsTask = DashboardService.GetFirmStatsAsync();
+            // NOTE: no dedicated case-aggregate endpoint exists yet, so we pull a
+            // generous page (visibility is already firm/role-scoped server-side)
+            // and compute the breakdown client-side. Good enough for a dashboard
+            // snapshot; revisit if firms grow large case volumes.
+            var casesTask = CaseService.GetAllAsync(pageSize: 100);
+            await Task.WhenAll(statsTask, casesTask);
+
+            _stats = statsTask.Result;
+            var paged = casesTask.Result;
+            _cases = paged.Items;
+            _totalCases = paged.TotalRecords;
+            _highPriorityCount = _cases.Count(c => c.Priority == "High");
+
+            _statusBreakdown = _cases
+                .GroupBy(c => c.StatusName)
+                .Select(g => new ChartItem { Label = g.Key, Value = g.Count() })
+                .ToList();
+
+            _recentCases = _cases
+                .OrderByDescending(c => c.CreatedDate)
+                .Take(6)
+                .Select(c => new ActivityItem
+                {
+                    Title = c.CaseTitle,
+                    Subtitle = $"{c.CourtName} · {c.StatusName}",
+                    Timestamp = c.CreatedDate,
+                    Icon = "bi-briefcase",
+                    Href = $"/cases/{c.CaseID}"
+                })
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Dashboard data could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

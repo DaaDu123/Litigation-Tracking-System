@@ -1,0 +1,237 @@
+@* Modal for scheduling/editing a hearing.
+   Usage:
+     <HearingModal @ref="_hearingModal" OnSaved="HandleSavedAsync" />
+     _hearingModal.OpenForCreate(caseId);
+     _hearingModal.OpenForEdit(hearing); *@
+@using LTSFrontend.Features.Hearings.DTOs
+@using LTSFrontend.Features.Hearings.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject IHearingService HearingService
+@inject ICourtService CourtService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-calendar-event"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_isEdit ? "Edit Hearing" : "Schedule Hearing")</h5>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            <div class="row">
+                @if (!_isEdit)
+                {
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Court <span class="required">*</span></label>
+                        @if (_isLoadingCourts)
+                        {
+                            <div class="d-flex align-items-center gap-2"><span class="lts-spinner lts-spinner-sm"></span></div>
+                        }
+                        else
+                        {
+                            <select class="lts-form-control" @bind="_form.CourtId" disabled="@_isSaving">
+                                <option value="">Select court...</option>
+                                @foreach (var c in _courts)
+                                {
+                                    <option value="@c.CourtID">@c.CourtName</option>
+                                }
+                            </select>
+                        }
+                        @if (_showValidation && (_form.CourtId is null or 0))
+                        {
+                            <div class="lts-form-error">Please select a court.</div>
+                        }
+                    </div>
+                }
+                <div class="col-md-6 lts-form-group">
+                    <label class="lts-form-label">Hearing Date &amp; Time <span class="required">*</span></label>
+                    <input type="datetime-local" class="lts-form-control"
+                           value="@(_form.HearingDate?.ToString("yyyy-MM-ddTHH:mm"))"
+                           @onchange="OnHearingDateChanged" disabled="@_isSaving" />
+                </div>
+                <div class="col-md-6 lts-form-group">
+                    <label class="lts-form-label">Court Room</label>
+                    <input class="lts-form-control" @bind="_form.CourtRoom" disabled="@_isSaving" />
+                </div>
+                <div class="col-md-6 lts-form-group">
+                    <label class="lts-form-label">Judge Name</label>
+                    <input class="lts-form-control" @bind="_form.JudgeName" disabled="@_isSaving" />
+                </div>
+                <div class="col-12 lts-form-group">
+                    <label class="lts-form-label">Hearing Purpose</label>
+                    <input class="lts-form-control" @bind="_form.HearingPurpose" disabled="@_isSaving" placeholder="e.g. Arguments, Evidence Recording..." />
+                </div>
+
+                @if (_isEdit)
+                {
+                    <div class="col-12 lts-form-group">
+                        <label class="lts-form-label">Hearing Outcome</label>
+                        <textarea class="lts-form-control" rows="2" @bind="_form.HearingOutcome" disabled="@_isSaving"
+                                  placeholder="Outcome of this hearing, if held..."></textarea>
+                    </div>
+                    <div class="col-md-6 lts-form-group">
+                        <label class="lts-form-label">Next Hearing Date</label>
+                        <input type="date" class="lts-form-control"
+                               value="@(_form.NextHearingDate?.ToString("yyyy-MM-dd"))"
+                               @onchange="OnNextHearingDateChanged" disabled="@_isSaving" />
+                    </div>
+                }
+
+                <div class="col-12 lts-form-group">
+                    <label class="lts-form-label">Remarks</label>
+                    <textarea class="lts-form-control" rows="2" @bind="_form.Remarks" disabled="@_isSaving"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>@(_isEdit ? "Save Changes" : "Schedule")</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isEdit;
+    private bool _isSaving;
+    private bool _isLoadingCourts;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private HearingFormDTO _form = new();
+    private List<CourtDTO> _courts = new();
+
+    public async void OpenForCreate(long caseId)
+    {
+        _isEdit = false;
+        _form = new HearingFormDTO { CaseId = caseId };
+        ResetAndOpen();
+        await EnsureCourtsLoadedAsync();
+    }
+
+    public void OpenForEdit(HearingDTO hearing)
+    {
+        _isEdit = true;
+        _form = new HearingFormDTO
+        {
+            HearingId = hearing.HearingId,
+            CaseId = hearing.CaseId,
+            CourtId = hearing.CourtId,
+            HearingDate = hearing.HearingDate,
+            CourtRoom = hearing.CourtRoom,
+            JudgeName = hearing.JudgeName,
+            HearingPurpose = hearing.HearingPurpose,
+            HearingOutcome = hearing.HearingOutcome,
+            NextHearingDate = hearing.NextHearingDate,
+            Remarks = hearing.Remarks
+        };
+        ResetAndOpen();
+    }
+
+    private void ResetAndOpen()
+    {
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private async Task EnsureCourtsLoadedAsync()
+    {
+        if (_courts.Count > 0) return;
+        _isLoadingCourts = true;
+        StateHasChanged();
+        try
+        {
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+        }
+        catch (Exception)
+        {
+            _apiError = "Couldn't load the list of courts. Please close and try again.";
+        }
+        finally
+        {
+            _isLoadingCourts = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnHearingDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var dt))
+            _form.HearingDate = dt;
+    }
+
+    private void OnNextHearingDateChanged(ChangeEventArgs e)
+    {
+        _form.NextHearingDate = DateTime.TryParse(e.Value?.ToString(), out var dt) ? dt : null;
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if ((!_isEdit && (_form.CourtId is null or 0)) || _form.HearingDate is null)
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            if (_isEdit)
+                await HearingService.UpdateAsync(_form);
+            else
+                await HearingService.CreateAsync(_form);
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the hearing. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

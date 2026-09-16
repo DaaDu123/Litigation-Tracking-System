@@ -1,0 +1,170 @@
+@* Modal for adding/editing a case deadline.
+   Usage:
+     <DeadlineModal @ref="_deadlineModal" OnSaved="HandleSavedAsync" />
+     _deadlineModal.OpenForCreate(caseId);
+     _deadlineModal.OpenForEdit(deadline); *@
+@using LTSFrontend.Features.Deadlines.DTOs
+@using LTSFrontend.Features.Deadlines.Services
+@inject IDeadlineService DeadlineService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@(_isEdit ? "Edit Deadline" : "Add Deadline")</h5>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Deadline Type <span class="required">*</span></label>
+                <input class="lts-form-control" list="deadlineTypes" @bind="_form.DeadlineType" disabled="@_isSaving"
+                       placeholder="e.g. Filing Reply, Appeal..." />
+                <datalist id="deadlineTypes">
+                    @foreach (var t in DeadlineFormDTO.CommonTypes)
+                    {
+                        <option value="@t" />
+                    }
+                </datalist>
+                @if (_showValidation && string.IsNullOrWhiteSpace(_form.DeadlineType))
+                {
+                    <div class="lts-form-error">Deadline type is required.</div>
+                }
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Due Date <span class="required">*</span></label>
+                <input type="date" class="lts-form-control"
+                       value="@(_form.DueDate?.ToString("yyyy-MM-dd"))"
+                       @onchange="OnDueDateChanged" disabled="@_isSaving" />
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Reminder (days before due date)</label>
+                <input type="number" min="0" max="90" class="lts-form-control" @bind="_form.ReminderDays" disabled="@_isSaving" />
+            </div>
+
+            <div class="lts-form-group">
+                <label class="lts-form-label">Remarks</label>
+                <textarea class="lts-form-control" rows="2" @bind="_form.Remarks" disabled="@_isSaving"></textarea>
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@_isSaving">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>@(_isEdit ? "Save Changes" : "Add Deadline")</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isEdit;
+    private bool _isSaving;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private DeadlineFormDTO _form = new();
+
+    public void OpenForCreate(long caseId)
+    {
+        _isEdit = false;
+        _form = new DeadlineFormDTO { CaseID = caseId };
+        ResetAndOpen();
+    }
+
+    public void OpenForEdit(DeadlineDTO deadline)
+    {
+        _isEdit = true;
+        _form = new DeadlineFormDTO
+        {
+            DeadlineID = deadline.DeadlineID,
+            CaseID = deadline.CaseID,
+            DeadlineType = deadline.DeadlineType,
+            DueDate = deadline.DueDate,
+            ReminderDays = deadline.ReminderDays,
+            Remarks = deadline.Remarks
+        };
+        ResetAndOpen();
+    }
+
+    private void ResetAndOpen()
+    {
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void OnDueDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var dt))
+            _form.DueDate = dt;
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.DeadlineType) || _form.DueDate is null)
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            if (_isEdit)
+                await DeadlineService.UpdateAsync(_form);
+            else
+                await DeadlineService.CreateAsync(_form);
+
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the deadline. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

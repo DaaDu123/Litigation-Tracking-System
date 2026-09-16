@@ -1,0 +1,114 @@
+@page "/dashboard/legal-officer"
+@attribute [Authorize(Roles = "Moharrir")]
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Dashboard.Components
+@using LTSFrontend.Features.Dashboard.DTOs
+@inject ICaseService CaseService
+@inject UserSessionState Session
+
+<PageTitle>Legal Officer Dashboard - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Legal Officer Dashboard</h1>
+        <p class="lts-page-subtitle">Welcome back, @Session.FullName. Your court diary at a glance.</p>
+    </div>
+</div>
+
+@if (_hasError)
+{
+    <div class="lts-state is-error">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-title">Couldn't load your cases</div>
+        <div class="lts-state-desc">@_errorMessage</div>
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Try Again
+        </button>
+    </div>
+}
+else
+{
+    <div class="lts-stat-grid">
+        <KpiCard Title="Cases in My Diary" Value="@_totalCases.ToString()" Icon="bi-journal-bookmark" Accent="#1b4fd6" IsLoading="_isLoading" Href="/cases" />
+        <KpiCard Title="Active" Value="@_activeCount.ToString()" Icon="bi-check-circle" Accent="#16a34a" IsLoading="_isLoading" SubLabel="Not archived" />
+        <KpiCard Title="Courts Involved" Value="@_courtCount.ToString()" Icon="bi-bank" Accent="#7c3aed" IsLoading="_isLoading" />
+    </div>
+
+    <div class="lts-dashboard-grid">
+        <ChartWidget Title="Cases by Court" Items="_courtBreakdown" IsLoading="_isLoading" EmptyMessage="You have no assigned cases yet." />
+        <RecentActivityPanel Title="Recently Updated" Items="_recentCases" IsLoading="_isLoading" EmptyMessage="You have no assigned cases yet." />
+    </div>
+
+    <div class="lts-card" style="margin-top:1rem;">
+        <div class="lts-chart-widget-title">Quick Links</div>
+        <div class="lts-quicklink-grid">
+            <a class="lts-quicklink" href="/cases"><i class="bi bi-briefcase"></i> My Cases</a>
+            <a class="lts-quicklink" href="/profile"><i class="bi bi-person-circle"></i> My Profile</a>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CaseDTO> _cases = new();
+    private int _totalCases;
+    private int _activeCount;
+    private int _courtCount;
+    private List<ChartItem> _courtBreakdown = new();
+    private List<ActivityItem> _recentCases = new();
+
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            // GetAllCases already returns only cases this Moharrir is actively
+            // assigned to (server-side scoping) - i.e. their own court diary.
+            var paged = await CaseService.GetAllAsync(pageSize: 100);
+            _cases = paged.Items;
+            _totalCases = paged.TotalRecords;
+            _activeCount = _cases.Count(c => !c.IsArchived);
+            _courtCount = _cases.Select(c => c.CourtID).Distinct().Count();
+
+            _courtBreakdown = _cases
+                .GroupBy(c => c.CourtName)
+                .Select(g => new ChartItem { Label = g.Key, Value = g.Count() })
+                .ToList();
+
+            _recentCases = _cases
+                .OrderByDescending(c => c.CreatedDate)
+                .Take(6)
+                .Select(c => new ActivityItem
+                {
+                    Title = c.CaseTitle,
+                    Subtitle = $"{c.CourtName} · {c.StatusName}",
+                    Timestamp = c.CreatedDate,
+                    Icon = "bi-journal-bookmark",
+                    Href = $"/cases/{c.CaseID}"
+                })
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Your cases could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

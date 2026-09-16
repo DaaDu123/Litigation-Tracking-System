@@ -1,0 +1,329 @@
+@page "/cases/{CaseId:long}"
+@attribute [Authorize(Roles = "FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal")]
+@using LTSFrontend.Features.CaseAssignments.Components
+@using LTSFrontend.Features.CaseNotes.Components
+@using LTSFrontend.Features.CaseParties.Components
+@using LTSFrontend.Features.Cases.Components
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Deadlines.Components
+@using LTSFrontend.Features.Documents.Components
+@using LTSFrontend.Features.Hearings.Components
+@using LTSFrontend.Features.Milestones.Components
+@inject ICaseService CaseService
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>@(_case?.CaseNumber ?? "Case Details") - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/cases">Cases</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">@(_case?.CaseNumber ?? "Details")</span>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-card">
+        <div class="lts-state">
+            <span class="lts-spinner lts-spinner-md"></span>
+            <div class="lts-state-title" style="margin-top:0.75rem;">Loading case...</div>
+        </div>
+    </div>
+}
+else if (_notFound || _case == null)
+{
+    <div class="lts-card">
+        <div class="lts-state is-error">
+            <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="lts-state-title">Case not found</div>
+            <div class="lts-state-desc">It may have been removed, or you may not have access to it.</div>
+            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick='() => Nav.NavigateTo("/cases")'>
+                <i class="bi bi-arrow-left"></i> Back to Cases
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lts-page-header">
+        <div>
+            <h1 class="lts-page-title">@_case.CaseTitle</h1>
+            <p class="lts-page-subtitle">
+                @_case.CaseNumber &middot; @_case.InternalReferenceNo
+                @if (_case.IsArchived)
+                {
+                    <span class="lts-badge lts-badge-muted ms-2">Archived</span>
+                }
+            </p>
+        </div>
+        <div class="lts-page-header-actions">
+            <PermissionGate Roles="Partner,FirmAdmin">
+                <button class="lts-btn lts-btn-outline" @onclick="OpenStatusModal">
+                    <i class="bi bi-arrow-repeat"></i> Update Status
+                </button>
+                <button class="lts-btn lts-btn-outline" @onclick="OpenStageModal">
+                    <i class="bi bi-signpost-split"></i> Update Stage
+                </button>
+                <button class="lts-btn lts-btn-outline" @onclick='() => Nav.NavigateTo($"/cases/{CaseId}/edit")'>
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+            </PermissionGate>
+            <PermissionGate Roles="FirmAdmin,Partner">
+                <button class="lts-btn lts-btn-danger" @onclick="HandleDeleteAsync">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </PermissionGate>
+        </div>
+    </div>
+
+    <div class="lts-stat-grid">
+        <div class="lts-stat-card" style="--accent:#1b4fd6;">
+            <div class="lts-stat-icon"><i class="bi bi-flag"></i></div>
+            <div>
+                <div class="lts-stat-value" style="font-size:1.1rem;">@_case.StatusName</div>
+                <div class="lts-stat-label">Current Status</div>
+            </div>
+        </div>
+        <div class="lts-stat-card" style="--accent:#d97706;">
+            <div class="lts-stat-icon"><i class="bi bi-signpost-split"></i></div>
+            <div>
+                <div class="lts-stat-value" style="font-size:1.1rem;">@_case.StageName</div>
+                <div class="lts-stat-label">Current Stage</div>
+            </div>
+        </div>
+        <div class="lts-stat-card" style="--accent:#dc2626;">
+            <div class="lts-stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <div class="lts-stat-value" style="font-size:1.1rem;">@_case.Priority</div>
+                <div class="lts-stat-label">Priority</div>
+            </div>
+        </div>
+        <div class="lts-stat-card" style="--accent:#16a34a;">
+            <div class="lts-stat-icon"><i class="bi bi-person-badge"></i></div>
+            <div>
+                <div class="lts-stat-value" style="font-size:1.1rem;">@_case.LegalOfficerName</div>
+                <div class="lts-stat-label">Legal Officer</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lts-tabs mb-3">
+        <button class="lts-tab @(_activeTab == "overview" ? "active" : "")" @onclick='() => _activeTab = "overview"'>
+            <i class="bi bi-info-circle"></i> Overview
+        </button>
+        <button class="lts-tab @(_activeTab == "timeline" ? "active" : "")" @onclick='() => _activeTab = "timeline"'>
+            <i class="bi bi-clock-history"></i> Timeline
+        </button>
+        <button class="lts-tab @(_activeTab == "assignments" ? "active" : "")" @onclick='() => _activeTab = "assignments"'>
+            <i class="bi bi-person-badge"></i> Assignments
+        </button>
+        <button class="lts-tab @(_activeTab == "notes" ? "active" : "")" @onclick='() => _activeTab = "notes"'>
+            <i class="bi bi-journal-text"></i> Notes
+        </button>
+        <button class="lts-tab @(_activeTab == "parties" ? "active" : "")" @onclick='() => _activeTab = "parties"'>
+            <i class="bi bi-people"></i> Parties
+        </button>
+        <button class="lts-tab @(_activeTab == "documents" ? "active" : "")" @onclick='() => _activeTab = "documents"'>
+            <i class="bi bi-folder2-open"></i> Documents
+        </button>
+        <button class="lts-tab @(_activeTab == "hearings" ? "active" : "")" @onclick='() => _activeTab = "hearings"'>
+            <i class="bi bi-calendar-event"></i> Hearings
+        </button>
+        <button class="lts-tab @(_activeTab == "deadlines" ? "active" : "")" @onclick='() => _activeTab = "deadlines"'>
+            <i class="bi bi-hourglass-split"></i> Deadlines
+        </button>
+        <button class="lts-tab @(_activeTab == "milestones" ? "active" : "")" @onclick='() => _activeTab = "milestones"'>
+            <i class="bi bi-flag"></i> Milestones
+        </button>
+    </div>
+
+    @if (_activeTab == "overview")
+    {
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="lts-card">
+                    <h6 class="fw-semibold mb-3">Case Information</h6>
+                    <dl class="mb-0">
+                        <div class="lts-detail-row"><dt>Court</dt><dd>@_case.CourtName</dd></div>
+                        <div class="lts-detail-row"><dt>Category</dt><dd>@_case.CategoryName</dd></div>
+                        <div class="lts-detail-row"><dt>Department</dt><dd>@_case.DepartmentName</dd></div>
+                        <div class="lts-detail-row"><dt>Subject Matter</dt><dd>@_case.SubjectMatter</dd></div>
+                        <div class="lts-detail-row">
+                            <dt>Description</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(_case.CaseDescription) ? "-" : _case.CaseDescription)</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="lts-card mt-3">
+                    <h6 class="fw-semibold mb-3">Important Dates</h6>
+                    <dl class="mb-0">
+                        <div class="lts-detail-row"><dt>Filing Date</dt><dd>@_case.FilingDate.ToString("dd MMM yyyy")</dd></div>
+                        <div class="lts-detail-row"><dt>Institution Date</dt><dd>@_case.InstitutionDate.ToString("dd MMM yyyy")</dd></div>
+                        <div class="lts-detail-row"><dt>Registration Date</dt><dd>@_case.RegistrationDate.ToString("dd MMM yyyy")</dd></div>
+                        <div class="lts-detail-row">
+                            <dt>Expected Disposal</dt>
+                            <dd>@(_case.ExpectedDisposalDate?.ToString("dd MMM yyyy") ?? "-")</dd>
+                        </div>
+                        <div class="lts-detail-row"><dt>Created On</dt><dd>@_case.CreatedDate.ToString("dd MMM yyyy")</dd></div>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="lts-card">
+                    <h6 class="fw-semibold mb-3">Financial Information</h6>
+                    <dl class="mb-0">
+                        <div class="lts-detail-row"><dt>Claimed Amount</dt><dd>@_case.ClaimedAmount.ToString("N0")</dd></div>
+                        <div class="lts-detail-row"><dt>Potential Liability</dt><dd>@_case.PotentialLiability.ToString("N0")</dd></div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_activeTab == "timeline")
+    {
+        <div class="lts-card">
+            <CaseTimeline CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "assignments")
+    {
+        <div class="lts-card">
+            <CaseAssignmentsPanel CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "notes")
+    {
+        <div class="lts-card">
+            <CaseNotesPanel CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "parties")
+    {
+        <div class="lts-card">
+            <CasePartiesPanel CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "documents")
+    {
+        <div class="lts-card">
+            <DocumentsPanel CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "hearings")
+    {
+        <div class="lts-card">
+            <HearingsPanel CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "deadlines")
+    {
+        <div class="lts-card">
+            <DeadlinesPanel CaseId="@CaseId" />
+        </div>
+    }
+    else if (_activeTab == "milestones")
+    {
+        <div class="lts-card">
+            <MilestonesPanel CaseId="@CaseId" />
+        </div>
+    }
+}
+
+<UpdateCaseStatus @ref="_statusModal" OnUpdated="HandleStatusUpdatedAsync" />
+<UpdateCaseStage @ref="_stageModal" OnUpdated="HandleStageUpdatedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter] public long CaseId { get; set; }
+
+    private CaseDTO? _case;
+    private bool _isLoading = true;
+    private bool _notFound;
+    private string _activeTab = "overview";
+
+    private UpdateCaseStatus _statusModal = default!;
+    private UpdateCaseStage _stageModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _notFound = false;
+        try
+        {
+            _case = await CaseService.GetByIdAsync(CaseId);
+            if (_case == null) _notFound = true;
+        }
+        catch (ApiException)
+        {
+            _notFound = true;
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load case", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenStatusModal()
+    {
+        if (_case == null) return;
+        _statusModal.Open(_case.CaseID, _case.StatusName, _case.StatusID);
+    }
+
+    private async Task HandleStatusUpdatedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Status updated", "The case status has been changed.");
+    }
+
+    private void OpenStageModal()
+    {
+        if (_case == null) return;
+        _stageModal.Open(_case.CaseID, _case.StageName);
+    }
+
+    private async Task HandleStageUpdatedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Stage updated", "The case stage has been changed.");
+    }
+
+    private async Task HandleDeleteAsync()
+    {
+        if (_case == null) return;
+
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete case \"{_case.CaseNumber}\"?",
+            "This cannot be undone. Cases with linked hearings, deadlines, or documents cannot be deleted.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await CaseService.DeleteAsync(_case.CaseID);
+            Toast.Success("Case deleted", $"\"{_case.CaseNumber}\" has been removed.");
+            Nav.NavigateTo("/cases");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete case", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete case", "Please try again.");
+        }
+    }
+}

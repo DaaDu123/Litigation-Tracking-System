@@ -1,0 +1,154 @@
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseService CaseService
+@inject IMasterDataService MasterDataService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-signpost-split"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Update Case Stage</h5>
+                <p class="lts-modal-subtitle mb-0">Currently: <strong>@_currentStageName</strong></p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            @if (_isLoadingStages)
+            {
+                <div class="d-flex align-items-center gap-2" style="padding: 1rem 0;">
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Loading stages...</span>
+                </div>
+            }
+            else
+            {
+                <div class="lts-form-group">
+                    <label class="lts-form-label">New Stage <span class="required">*</span></label>
+                    <select class="lts-form-control" @bind="_newStageId" disabled="@_isSaving">
+                        <option value="0">Select new stage...</option>
+                        @foreach (var stage in _stages)
+                        {
+                            <option value="@stage.StageID">@stage.StageName</option>
+                        }
+                    </select>
+                    @if (_showValidation && _newStageId <= 0)
+                    {
+                        <div class="lts-form-error">Please select a stage.</div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@(_isSaving || _isLoadingStages)">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Updating...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>Update Stage</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnUpdated { get; set; }
+
+    private bool _isOpen;
+    private bool _isSaving;
+    private bool _isLoadingStages;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private long _caseId;
+    private string _currentStageName = string.Empty;
+    private int _newStageId;
+
+    private List<CaseStageDTO> _stages = new();
+
+    public async void Open(long caseId, string currentStageName)
+    {
+        _caseId = caseId;
+        _currentStageName = currentStageName;
+        _newStageId = 0;
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+
+        if (_stages.Count == 0)
+        {
+            _isLoadingStages = true;
+            StateHasChanged();
+            try
+            {
+                _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+            }
+            catch (Exception)
+            {
+                _apiError = "Couldn't load the list of stages. Please close and try again.";
+            }
+            finally
+            {
+                _isLoadingStages = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (_newStageId <= 0)
+        {
+            _showValidation = true;
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            await CaseService.UpdateStageAsync(_caseId, _newStageId);
+            _isOpen = false;
+            await OnUpdated.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while updating the stage. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

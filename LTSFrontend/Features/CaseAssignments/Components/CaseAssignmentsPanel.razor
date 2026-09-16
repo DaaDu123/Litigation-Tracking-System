@@ -1,0 +1,149 @@
+@* Embedded panel (tab) on CaseDetails showing lawyer/counsel assignments for a case.
+   SRS Reference: Case_SRS UC-04 "Assign Case to Counsel" *@
+@using LTSFrontend.Features.CaseAssignments.DTOs
+@using LTSFrontend.Features.CaseAssignments.Services
+@inject ICaseAssignmentService AssignmentService
+@inject ToastService Toast
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Assigned Lawyers &amp; Counsel</h6>
+    <PermissionGate Roles="Supervisor,Partner,FirmAdmin,SuperAdmin">
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+            <i class="bi bi-person-plus"></i> Assign
+        </button>
+    </PermissionGate>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_assignments.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-person-badge"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">No one has been assigned to this case yet.</div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="lts-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Lead</th>
+                    <th>Assigned</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in _assignments)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@a.UserName</div>
+                            <div class="text-muted small">@a.UserEmail</div>
+                        </td>
+                        <td>@a.AssignmentType</td>
+                        <td>@(a.LeadCounsel ? "Yes" : "-")</td>
+                        <td>@a.AssignedDate.ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (a.IsActive)
+                            {
+                                <span class="lts-badge lts-badge-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="lts-badge lts-badge-muted">Ended @(a.EndDate?.ToString("dd MMM yyyy"))</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (a.IsActive)
+                            {
+                                <PermissionGate Roles="Supervisor,Partner,FirmAdmin,SuperAdmin">
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEdit(a)" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleEndAsync(a)" title="End assignment">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </PermissionGate>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<AssignCaseModal @ref="_assignModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private List<CaseAssignmentDTO> _assignments = new();
+    private bool _isLoading = true;
+
+    private AssignCaseModal _assignModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _assignments = await AssignmentService.GetByCaseAsync(CaseId);
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load assignments", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenCreate() => _assignModal.OpenForCreate(CaseId);
+    private void OpenEdit(CaseAssignmentDTO a) => _assignModal.OpenForEdit(a);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "Assignment has been saved.");
+    }
+
+    private async Task HandleEndAsync(CaseAssignmentDTO a)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"End assignment for \"{a.UserName}\"?",
+            "This lawyer/counsel will no longer be listed as actively assigned to this case.",
+            "End Assignment", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await AssignmentService.EndAsync(a.AssignmentID, null);
+            await LoadAsync();
+            Toast.Success("Assignment ended", $"\"{a.UserName}\" is no longer actively assigned.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't end assignment", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't end assignment", "Please try again.");
+        }
+    }
+}

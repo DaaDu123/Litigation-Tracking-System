@@ -1,0 +1,98 @@
+@page "/dashboard/admin"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using LTSFrontend.Features.Dashboard.Components
+@using LTSFrontend.Features.Dashboard.DTOs
+@using LTSFrontend.Features.Dashboard.Services
+@inject IDashboardService DashboardService
+@inject UserSessionState Session
+
+<PageTitle>Admin Dashboard - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Admin Dashboard</h1>
+        <p class="lts-page-subtitle">
+            Welcome back, @Session.FullName. SuperAdmin scope: firm workspace
+            provisioning and system-wide audit only - no firm's case, user, or
+            document data is shown here.
+        </p>
+    </div>
+</div>
+
+@if (_hasError)
+{
+    <div class="lts-state is-error">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-title">Couldn't load dashboard data</div>
+        <div class="lts-state-desc">@_errorMessage</div>
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync">
+            <i class="bi bi-arrow-clockwise"></i> Try Again
+        </button>
+    </div>
+}
+else
+{
+    <div class="lts-stat-grid">
+        <KpiCard Title="Total Firms" Value="@_stats?.TotalFirms.ToString()" Icon="bi-building" Accent="#1b4fd6" IsLoading="_isLoading" Href="/firms" />
+        <KpiCard Title="Active Firms" Value="@_stats?.ActiveFirms.ToString()" Icon="bi-building-check" Accent="#16a34a" IsLoading="_isLoading" Href="/firms" />
+        <KpiCard Title="Blocked Firms" Value="@_stats?.BlockedFirms.ToString()" Icon="bi-building-x" Accent="#dc2626" IsLoading="_isLoading" Href="/firms" />
+        <KpiCard Title="Audit Log Entries" Value="@_stats?.TotalSystemAuditLogs.ToString()" Icon="bi-journal-text" Accent="#0891b2" IsLoading="_isLoading" Href="/audit-logs" />
+    </div>
+
+    <div class="lts-dashboard-grid">
+        <RecentActivityPanel Title="Recent System-Wide Activity" Items="_activityItems" IsLoading="_isLoading" EmptyMessage="No activity recorded yet." />
+
+        <div class="lts-card">
+            <div class="lts-chart-widget-title">Quick Links</div>
+            <div class="lts-quicklink-grid">
+                <a class="lts-quicklink" href="/firms"><i class="bi bi-building"></i> Firm Workspaces</a>
+                <a class="lts-quicklink" href="/audit-logs"><i class="bi bi-journal-check"></i> Audit Logs</a>
+                <a class="lts-quicklink" href="/profile"><i class="bi bi-person-circle"></i> My Profile</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private SuperAdminDashboardDTO? _stats;
+    private List<ActivityItem> _activityItems = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _stats = await DashboardService.GetSuperAdminStatsAsync();
+            _activityItems = (_stats?.RecentActivities ?? new())
+                .Select(a => new ActivityItem
+                {
+                    Title = string.IsNullOrWhiteSpace(a.Action) ? "System activity" : a.Action!,
+                    Subtitle = a.UserID.HasValue ? $"By user #{a.UserID}" : "System",
+                    Timestamp = a.Timestamp,
+                    Icon = "bi-journal-text"
+                })
+                .ToList();
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Dashboard data could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

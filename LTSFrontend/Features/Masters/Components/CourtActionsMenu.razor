@@ -1,0 +1,38 @@
+@namespace LTSFrontend.Features.Masters.Components
+@using LTSFrontend.Features.Masters.DTOs
+
+<div class="dropdown lts-actions-dropdown">
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown"
+            aria-label="Actions for @Court.CourtName">
+        <i class="bi bi-three-dots-vertical"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+            <button class="dropdown-item" type="button" @onclick="() => OnView.InvokeAsync(Court)">
+                <i class="bi bi-eye me-2"></i>View Details
+            </button>
+        </li>
+        @if (CanManage)
+        {
+            <li>
+                <button class="dropdown-item" type="button" @onclick="() => OnEdit.InvokeAsync(Court)">
+                    <i class="bi bi-pencil me-2"></i>Edit
+                </button>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+                <button class="dropdown-item text-danger" type="button" @onclick="() => OnDelete.InvokeAsync(Court)">
+                    <i class="bi bi-trash me-2"></i>Delete
+                </button>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public CourtDTO Court { get; set; } = default!;
+    [Parameter] public bool CanManage { get; set; }
+    [Parameter] public EventCallback<CourtDTO> OnView { get; set; }
+    [Parameter] public EventCallback<CourtDTO> OnEdit { get; set; }
+    [Parameter] public EventCallback<CourtDTO> OnDelete { get; set; }
+}

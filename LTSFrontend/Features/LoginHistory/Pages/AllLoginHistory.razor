@@ -1,0 +1,113 @@
+@page "/login-history"
+@attribute [Authorize(Roles = "FirmAdmin,SuperAdmin")]
+@using LTSFrontend.Features.LoginHistory.Components
+@using LTSFrontend.Features.LoginHistory.DTOs
+@using LTSFrontend.Features.LoginHistory.Services
+@inject ILoginHistoryService LoginHistoryService
+@inject ToastService Toast
+
+<PageTitle>Login History - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Login History</h1>
+        <p class="lts-page-subtitle">
+            Sign-in activity across your firm. This is a permanent audit trail - records cannot be deleted.
+        </p>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
+        <div class="lts-toolbar-left">
+            <SearchBox @bind-Value="_search" @bind-Value:after="OnFilterChangedAsync" Placeholder="Search by name or email..." />
+
+            <select class="lts-select" @bind="_status" @bind:after="OnFilterChangedAsync">
+                <option value="">All Statuses</option>
+                <option value="Success">Success</option>
+                <option value="Failed">Failed</option>
+            </select>
+
+            <input type="date" class="lts-select" value="@(_fromDate?.ToString("yyyy-MM-dd"))" @onchange="OnFromDateChangedAsync" title="From date" />
+            <input type="date" class="lts-select" value="@(_toDate?.ToString("yyyy-MM-dd"))" @onchange="OnToDateChangedAsync" title="To date" />
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="lts-state" style="padding: 2rem;">
+            <span class="lts-spinner lts-spinner-md"></span>
+        </div>
+    }
+    else
+    {
+        <LoginHistoryTable Rows="_rows" ShowUser="true" />
+
+        <div style="padding: 0 1.1rem 1.1rem;">
+            <Pagination CurrentPage="_filter.PageNumber" TotalItems="_totalRecords" PageSize="_filter.PageSize" PageChanged="OnPageChangedAsync" />
+        </div>
+    }
+</div>
+
+@code {
+    private LoginHistoryFilterDTO _filter = new();
+    private List<LoginHistoryTable.LoginHistoryRow> _rows = new();
+    private int _totalRecords;
+    private bool _isLoading = true;
+
+    private string _search = string.Empty;
+    private string _status = string.Empty;
+    private DateTime? _fromDate;
+    private DateTime? _toDate;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var result = await LoginHistoryService.GetAllAsync(_filter);
+            _rows = result.Items.Select(LoginHistoryTable.LoginHistoryRow.From).ToList();
+            _totalRecords = result.TotalRecords;
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load login history", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnFilterChangedAsync()
+    {
+        _filter.Search = string.IsNullOrWhiteSpace(_search) ? null : _search;
+        _filter.Status = string.IsNullOrWhiteSpace(_status) ? null : _status;
+        _filter.PageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task OnFromDateChangedAsync(ChangeEventArgs e)
+    {
+        _fromDate = DateTime.TryParse(e.Value?.ToString(), out var dt) ? dt : null;
+        _filter.FromDate = _fromDate;
+        _filter.PageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task OnToDateChangedAsync(ChangeEventArgs e)
+    {
+        _toDate = DateTime.TryParse(e.Value?.ToString(), out var dt) ? dt.Date.AddDays(1).AddTicks(-1) : null;
+        _filter.ToDate = _toDate;
+        _filter.PageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task OnPageChangedAsync(int page)
+    {
+        _filter.PageNumber = page;
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,219 @@
+@* Bell icon + dropdown for the top nav. Polls unread count periodically
+   and reloads the recent list whenever the dropdown is opened, so users
+   see hearing/deadline/assignment reminders (SRS §5.10.2/5.10.8
+   "Notifications Panel") without needing a dedicated page. *@
+@using LTSFrontend.Features.Notifications.DTOs
+@using LTSFrontend.Features.Notifications.Services
+@implements IAsyncDisposable
+@inject INotificationService NotificationService
+@inject UserSessionState Session
+@inject NavigationManager Navigation
+
+<div class="dropdown lts-notification-bell">
+    <button class="lts-icon-btn dropdown-toggle" type="button" title="Notifications"
+            data-bs-toggle="dropdown" data-bs-auto-close="outside" @onclick="HandleOpenAsync">
+        <i class="bi bi-bell"></i>
+        @if (_unreadCount > 0)
+        {
+            <span class="lts-notification-badge">@(_unreadCount > 99 ? "99+" : _unreadCount.ToString())</span>
+        }
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end lts-dropdown-menu lts-notification-menu">
+        <div class="lts-notification-header">
+            <span>Notifications</span>
+            @if (_unreadCount > 0)
+            {
+                <button type="button" class="btn btn-link btn-sm p-0" @onclick="MarkAllReadAsync">Mark all read</button>
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <div class="lts-notification-empty"><i class="bi bi-hourglass-split me-2"></i>Loading...</div>
+        }
+        else if (_items.Count == 0)
+        {
+            <div class="lts-notification-empty"><i class="bi bi-bell-slash me-2"></i>No notifications yet</div>
+        }
+        else
+        {
+            <div class="lts-notification-list">
+                @foreach (var n in _items)
+                {
+                    <div class="lts-notification-item @(n.IsRead ? "" : "unread")" @key="n.NotificationID">
+                        <div class="lts-notification-item-body" @onclick="() => HandleItemClickAsync(n)">
+                            <div class="lts-notification-subject">@(n.Subject ?? n.NotificationTypeName)</div>
+                            @if (!string.IsNullOrWhiteSpace(n.Message))
+                            {
+                                <div class="lts-notification-message">@n.Message</div>
+                            }
+                            <div class="lts-notification-meta">
+                                @if (!string.IsNullOrWhiteSpace(n.CaseNumber))
+                                {
+                                    <span class="me-2">@n.CaseNumber</span>
+                                }
+                                <span>@FormatWhen(n.CreatedDate)</span>
+                            </div>
+                        </div>
+                        <button type="button" class="lts-notification-dismiss" title="Dismiss" @onclick="() => DismissAsync(n)">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<NotificationDTO> _items = new();
+    private int _unreadCount;
+    private bool _loading;
+    private Timer? _pollTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Session.OnChange += HandleSessionChanged;
+
+        if (Session.IsAuthenticated)
+        {
+            await RefreshUnreadCountAsync();
+        }
+
+        // Poll every 60s so the badge stays roughly current even if the
+        // user never opens the dropdown (background ReminderService on
+        // the backend generates new rows every few hours).
+        _pollTimer = new Timer(async _ => await InvokeAsync(RefreshUnreadCountAsync), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+    }
+
+    private async void HandleSessionChanged()
+    {
+        if (Session.IsAuthenticated)
+        {
+            await InvokeAsync(RefreshUnreadCountAsync);
+        }
+        else
+        {
+            _unreadCount = 0;
+            _items = new();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RefreshUnreadCountAsync()
+    {
+        try
+        {
+            _unreadCount = await NotificationService.GetUnreadCountAsync();
+            StateHasChanged();
+        }
+        catch
+        {
+            // Silent - badge just won't update this cycle; a page-level
+            // action elsewhere will surface real connectivity errors.
+        }
+    }
+
+    private async Task HandleOpenAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await NotificationService.GetMyAsync(pageNumber: 1, pageSize: 10);
+            _items = result.Items;
+        }
+        catch
+        {
+            _items = new();
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleItemClickAsync(NotificationDTO n)
+    {
+        if (!n.IsRead)
+        {
+            n.IsRead = true;
+            _unreadCount = Math.Max(0, _unreadCount - 1);
+            StateHasChanged();
+
+            try
+            {
+                await NotificationService.MarkAsReadAsync(n.NotificationID);
+            }
+            catch
+            {
+                // Best-effort - a stale IsRead flag self-corrects next poll.
+            }
+        }
+
+        if (n.CaseID.HasValue)
+        {
+            Navigation.NavigateTo($"/cases/{n.CaseID.Value}");
+        }
+    }
+
+    private async Task DismissAsync(NotificationDTO n)
+    {
+        _items.Remove(n);
+        if (!n.IsRead)
+        {
+            _unreadCount = Math.Max(0, _unreadCount - 1);
+        }
+        StateHasChanged();
+
+        try
+        {
+            await NotificationService.DeleteAsync(n.NotificationID);
+        }
+        catch
+        {
+            // Best-effort dismiss - worst case it reappears next open.
+        }
+    }
+
+    private async Task MarkAllReadAsync()
+    {
+        foreach (var n in _items)
+        {
+            n.IsRead = true;
+        }
+        _unreadCount = 0;
+        StateHasChanged();
+
+        try
+        {
+            await NotificationService.MarkAllAsReadAsync();
+        }
+        catch
+        {
+            // Best-effort - next open/poll will reconcile.
+        }
+    }
+
+    private static string FormatWhen(DateTime createdUtc)
+    {
+        var span = DateTime.UtcNow - createdUtc;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+        return createdUtc.ToLocalTime().ToString("dd MMM yyyy");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Session.OnChange -= HandleSessionChanged;
+        if (_pollTimer != null)
+        {
+            await _pollTimer.DisposeAsync();
+        }
+    }
+}

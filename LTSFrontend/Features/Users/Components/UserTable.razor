@@ -1,0 +1,92 @@
+@* Presentational table of users, built on the shared generic DataTable so
+   loading/empty/error states match every other list in the app (see
+   RoleList.razor). The caller owns data loading, search, and pagination -
+   this component only renders the given page of users and raises callbacks.
+   Usage:
+     <UserTable Users="PagedUsers" IsLoading="_isLoading" HasError="_hasError"
+                ErrorMessage="_errorMessage" OnRetry="LoadAsync" CanManage="CanManageUsers"
+                CurrentUserId="Session.UserID" OnEdit="OpenEditAsync" OnDelete="HandleDeleteAsync" /> *@
+@using LTSFrontend.Features.Users.DTOs
+
+<DataTable TItem="UserDTO" Items="Users" IsLoading="IsLoading" HasError="HasError"
+           ErrorMessage="ErrorMessage" OnRetry="OnRetry"
+           EmptyIcon="bi-people" EmptyTitle="@(HasActiveFilters ? "No matching users" : "No users yet")"
+           EmptyDescription="@(HasActiveFilters ? "Try adjusting your search." : "Add your first user to get started.")"
+           SkeletonColumnCount="@(CanManage ? 5 : 4)">
+    <HeaderContent>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        @if (CanManage)
+        {
+            <th class="text-end">Actions</th>
+        }
+    </HeaderContent>
+    <RowTemplate Context="user">
+        <td class="lts-cell-primary">
+            <a href="/users/details/@user.UserID">@user.FullName</a>
+        </td>
+        <td class="lts-cell-muted">@user.Email</td>
+        <td>@(string.IsNullOrWhiteSpace(user.RoleName) ? "-" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(user.RoleName))</td>
+        <td><StatusBadge IsActive="user.IsActive" /></td>
+        @if (CanManage)
+        {
+            <td class="text-end">
+                <div class="lts-row-actions">
+                    <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit"
+                            @onclick="() => OnEdit.InvokeAsync(user)">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    @if (user.IsActive)
+                    {
+                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Deactivate (reversible - blocks sign-in, keeps the account)"
+                                disabled="@(user.UserID == CurrentUserId)"
+                                @onclick="() => OnDeactivate.InvokeAsync(user)">
+                            <i class="bi bi-slash-circle text-warning"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Activate (restore sign-in access)"
+                                @onclick="() => OnActivate.InvokeAsync(user)">
+                            <i class="bi bi-check-circle text-success"></i>
+                        </button>
+                    }
+                    <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete permanently (cannot be undone)"
+                            disabled="@(user.UserID == CurrentUserId)"
+                            @onclick="() => OnDelete.InvokeAsync(user)">
+                        <i class="bi bi-trash text-danger"></i>
+                    </button>
+                </div>
+            </td>
+        }
+    </RowTemplate>
+</DataTable>
+
+@code {
+    [Parameter, EditorRequired] public IEnumerable<UserDTO>? Users { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+
+    /// <summary>Whether the current viewer (FirmAdmin/SuperAdmin) can edit/deactivate users - hides the Actions column entirely when false.</summary>
+    [Parameter] public bool CanManage { get; set; }
+
+    /// <summary>The signed-in user's own ID, so they can't deactivate themselves from the table.</summary>
+    [Parameter] public int CurrentUserId { get; set; }
+
+    [Parameter] public bool HasActiveFilters { get; set; }
+
+    [Parameter] public EventCallback<UserDTO> OnEdit { get; set; }
+
+    /// <summary>Reversible: sets IsActive = false. User keeps showing in the list and can be turned back on.</summary>
+    [Parameter] public EventCallback<UserDTO> OnDeactivate { get; set; }
+
+    /// <summary>Reverses Deactivate: sets IsActive = true again.</summary>
+    [Parameter] public EventCallback<UserDTO> OnActivate { get; set; }
+
+    /// <summary>Permanent, irreversible removal. Frees up the user's email for reuse.</summary>
+    [Parameter] public EventCallback<UserDTO> OnDelete { get; set; }
+}

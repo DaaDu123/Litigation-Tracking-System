@@ -1,0 +1,141 @@
+@page "/verify-otp"
+@layout LTSFrontend.Layout.LoginLayout
+@using LTSFrontend.Core.Auth
+@using LTSFrontend.Features.Auth.DTOs
+@using LTSFrontend.Features.Auth.Services
+@using LTSFrontend.Features.Users.Services
+@inject IAuthService AuthService
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Verify Email - LTS</PageTitle>
+
+<h2>Verify Your Email</h2>
+<p class="auth-subtitle">
+    We've sent a 6-digit code to <strong>@_model.Email</strong>.
+    Please check your inbox (and Spam/Junk folder).
+</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger py-2">@_errorMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(_infoMessage))
+{
+    <div class="alert alert-success py-2">@_infoMessage</div>
+}
+
+<EditForm Model="_model" OnValidSubmit="HandleVerifyAsync">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" @bind="_model.Email" @bind:event="oninput" required />
+        <ValidationMessage For="() => _model.Email" class="text-danger small" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">OTP Code</label>
+        <input type="text" class="form-control auth-otp-input" maxlength="6" placeholder="------"
+               inputmode="numeric" pattern="[0-9]*"
+               @bind="_model.OtpCode" @bind:event="oninput" required />
+        <ValidationMessage For="() => _model.OtpCode" class="text-danger small" />
+    </div>
+
+    <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+        @if (_isBusy)
+        {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+        }
+        Verify & Continue
+    </button>
+</EditForm>
+
+<div class="auth-footer">
+    Didn't get the code?
+    <button type="button" class="btn btn-link auth-link p-0 border-0 align-baseline"
+            disabled="@_isResending" @onclick="HandleResendAsync">
+        @(_isResending ? "Sending..." : "Resend OTP")
+    </button>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Email { get; set; }
+
+    private readonly VerifyOtpRequest _model = new();
+    private bool _isBusy;
+    private bool _isResending;
+    private string? _errorMessage;
+    private string? _infoMessage;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(Email))
+            _model.Email = Email;
+    }
+
+    private async Task HandleVerifyAsync()
+    {
+        _errorMessage = null;
+        _infoMessage = null;
+        _isBusy = true;
+        try
+        {
+            var result = await AuthService.VerifyOtpAsync(_model);
+
+            var provider = (CustomAuthStateProvider)AuthStateProvider;
+
+            await provider.MarkUserAsAuthenticatedAsync(result.UserID, result.FullName, result.Email, result.RoleName, result.AccessToken, result.AccessTokenExpiry);
+
+            // No forceLoad - see Login.razor comment: session is already
+            // live in this circuit, a hard reload only risks the
+            // prerender-vs-JS-interop race.
+            Navigation.NavigateTo("/");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Verification nahi ho saki. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task HandleResendAsync()
+    {
+        _errorMessage = null;
+        _infoMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_model.Email))
+        {
+            _errorMessage = "Please enter your email first.";
+            return;
+        }
+
+        _isResending = true;
+        try
+        {
+            var result = await AuthService.ResendOtpAsync(new ResendOtpRequest { Email = _model.Email });
+            _infoMessage = result.Message;
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "OTP resend nahi ho saka. Please try again.";
+        }
+        finally
+        {
+            _isResending = false;
+        }
+    }
+}

@@ -1,0 +1,81 @@
+@* Read-only "View Details" modal for a single court. *@
+@using LTSFrontend.Features.Masters.DTOs
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" @onclick:stopPropagation="true">
+        @if (_court != null)
+        {
+            <div class="lts-modal-header">
+                <div class="lts-modal-icon lts-modal-icon-primary">
+                    <i class="bi bi-bank"></i>
+                </div>
+                <div>
+                    <h5 class="lts-modal-title">@_court.CourtName</h5>
+                    <p class="lts-modal-subtitle mb-0">Court #@_court.CourtID</p>
+                </div>
+            </div>
+
+            <div class="lts-modal-body">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <StatusBadge IsActive="_court.IsActive" />
+                    @if (!string.IsNullOrWhiteSpace(_court.CourtType))
+                    {
+                        <span class="lts-scope-pill"><i class="bi bi-tag"></i>@_court.CourtType</span>
+                    }
+                </div>
+
+                <dl class="lts-detail-list">
+                    <div class="lts-detail-row">
+                        <dt>Jurisdiction</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_court.Jurisdiction) ? "—" : _court.Jurisdiction)</dd>
+                    </div>
+                    <div class="lts-detail-row">
+                        <dt>Address</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_court.Address) ? "—" : _court.Address)</dd>
+                    </div>
+                    <div class="lts-detail-row">
+                        <dt>Created</dt>
+                        <dd>@_court.CreatedDate.ToLocalTime().ToString("dd MMM yyyy, h:mm tt")</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="lts-modal-footer">
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Close</button>
+                <PermissionGate Roles="FirmAdmin,Partner">
+                    <button type="button" class="lts-btn lts-btn-primary" @onclick="RequestEdit">
+                        <i class="bi bi-pencil"></i> Edit Court
+                    </button>
+                </PermissionGate>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<CourtDTO> OnEditRequested { get; set; }
+
+    private bool _isOpen;
+    private CourtDTO? _court;
+
+    public void Open(CourtDTO court)
+    {
+        _court = court;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task RequestEdit()
+    {
+        if (_court == null) return;
+        _isOpen = false;
+        await OnEditRequested.InvokeAsync(_court);
+    }
+}

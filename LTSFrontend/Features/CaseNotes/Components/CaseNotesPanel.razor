@@ -1,0 +1,135 @@
+@* Embedded panel (tab) on CaseDetails for case notes / legal opinions.
+   Backend only allows the note's author or Partner/FirmAdmin/SuperAdmin to
+   edit/delete, so we mirror that same rule here for showing the buttons -
+   the backend still enforces it authoritatively either way. *@
+@using LTSFrontend.Features.CaseNotes.DTOs
+@using LTSFrontend.Features.CaseNotes.Services
+@inject ICaseNoteService NoteService
+@inject ToastService Toast
+@inject UserSessionState Session
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0">Case Notes</h6>
+    <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="OpenCreate">
+        <i class="bi bi-plus-lg"></i> Add Note
+    </button>
+</div>
+
+@if (_isLoading)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <span class="lts-spinner lts-spinner-sm"></span>
+    </div>
+}
+else if (_notes.Count == 0)
+{
+    <div class="lts-state" style="padding: 1.5rem 0.5rem;">
+        <div class="lts-state-icon"><i class="bi bi-journal-text"></i></div>
+        <div class="lts-state-desc" style="margin-top:0;">No notes have been added to this case yet.</div>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-2">
+        @foreach (var n in _notes)
+        {
+            <div class="lts-card" style="padding: 0.85rem 1rem;">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div>
+                        <span class="lts-badge @BadgeClassFor(n.NoteType)">@n.NoteType</span>
+                        <span class="text-muted small ms-2">@n.UserName &middot; @n.CreatedDate.ToString("dd MMM yyyy HH:mm")</span>
+                    </div>
+                    @if (CanManage(n))
+                    {
+                        <div>
+                            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEdit(n)" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteAsync(n)" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div class="mt-2" style="white-space: pre-wrap;">@n.Notes</div>
+            </div>
+        }
+    </div>
+}
+
+<CaseNoteModal @ref="_noteModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    [Parameter, EditorRequired] public long CaseId { get; set; }
+
+    private List<CaseNoteDTO> _notes = new();
+    private bool _isLoading = true;
+
+    private CaseNoteModal _noteModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    private static readonly string[] ElevatedRoles = { "SuperAdmin", "FirmAdmin", "Partner" };
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _notes = await NoteService.GetByCaseAsync(CaseId);
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load notes", "Please refresh and try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool CanManage(CaseNoteDTO n) =>
+        n.UserID == Session.UserID ||
+        (!string.IsNullOrWhiteSpace(Session.Role) && ElevatedRoles.Contains(Session.Role, StringComparer.OrdinalIgnoreCase));
+
+    private static string BadgeClassFor(string noteType) => noteType switch
+    {
+        "Confidential" => "lts-badge-danger",
+        "Internal" => "lts-badge-warning",
+        _ => "lts-badge-muted"
+    };
+
+    private void OpenCreate() => _noteModal.OpenForCreate(CaseId);
+    private void OpenEdit(CaseNoteDTO n) => _noteModal.OpenForEdit(n);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Saved", "The note has been saved.");
+    }
+
+    private async Task HandleDeleteAsync(CaseNoteDTO n)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            "Delete this note?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await NoteService.DeleteAsync(n.NoteID);
+            await LoadAsync();
+            Toast.Success("Note deleted", "The note has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete note", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete note", "Please try again.");
+        }
+    }
+}

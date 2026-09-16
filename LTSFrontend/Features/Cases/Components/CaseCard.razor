@@ -1,0 +1,48 @@
+@* Reusable summary card for a single case - used by CaseList.razor's grid/card
+   view (and available for dashboards/"recent cases" widgets). Mirrors the
+   inline `.lts-entity-card` markup CaseList used to duplicate for its
+   table vs. grid views; extracted here so both stay in sync. *@
+@using LTSFrontend.Features.Cases.DTOs
+
+<div class="lts-entity-card">
+    <div class="lts-entity-card-header">
+        <div class="lts-entity-card-title">@Case.CaseTitle</div>
+        <span class="lts-badge lts-badge-@PriorityBadgeClass(Case.Priority)">@Case.Priority</span>
+    </div>
+    <div class="lts-entity-card-meta"><i class="bi bi-hash"></i>@Case.CaseNumber</div>
+    <div class="lts-entity-card-meta"><i class="bi bi-bank"></i>@Case.CourtName</div>
+    <div class="lts-entity-card-meta"><i class="bi bi-tag"></i>@Case.CategoryName</div>
+    <div class="lts-entity-card-meta"><i class="bi bi-flag"></i>@Case.StatusName &middot; @Case.StageName</div>
+
+    <div class="lts-entity-card-footer">
+        <button class="lts-btn lts-btn-ghost lts-btn-sm" @onclick="() => OnView.InvokeAsync(Case)">
+            <i class="bi bi-eye"></i> View
+        </button>
+        <PermissionGate Roles="Partner,FirmAdmin">
+            <div class="lts-row-actions">
+                <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick="() => OnEdit.InvokeAsync(Case)">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <PermissionGate Roles="FirmAdmin,Partner">
+                    <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => OnDelete.InvokeAsync(Case)">
+                        <i class="bi bi-trash text-danger"></i>
+                    </button>
+                </PermissionGate>
+            </div>
+        </PermissionGate>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public CaseDTO Case { get; set; } = default!;
+    [Parameter] public EventCallback<CaseDTO> OnView { get; set; }
+    [Parameter] public EventCallback<CaseDTO> OnEdit { get; set; }
+    [Parameter] public EventCallback<CaseDTO> OnDelete { get; set; }
+
+    private static string PriorityBadgeClass(string priority) => priority switch
+    {
+        "High" => "danger",
+        "Medium" => "warning",
+        _ => "muted"
+    };
+}

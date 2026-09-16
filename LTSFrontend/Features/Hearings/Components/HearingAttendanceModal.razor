@@ -1,0 +1,319 @@
+@* Attendance modal for a single hearing.
+   SRS Reference: Complete Database Schema - HearingAttendance table.
+   Backend had full CRUD (record/get/update/delete) with no frontend caller
+   until now - opened from HearingsPanel via @ref:
+     _attendanceModal.Open(hearing); *@
+@using LTSFrontend.Features.Hearings.DTOs
+@using LTSFrontend.Features.Hearings.Services
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IHearingService HearingService
+@inject IUserService UserService
+@inject ToastService Toast
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-lg" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Hearing Attendance</h5>
+                <p class="lts-modal-subtitle mb-0">
+                    @(_hearingDate is null ? "" : $"Hearing on {_hearingDate:dd MMM yyyy}")
+                </p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (_isLoading)
+            {
+                <div class="d-flex align-items-center gap-2" style="padding: 1rem 0;">
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Loading attendance...</span>
+                </div>
+            }
+            else
+            {
+                @if (_records.Count == 0)
+                {
+                    <div class="lts-state" style="padding: 1rem 0.5rem;">
+                        <div class="lts-state-desc" style="margin-top:0;">No attendance recorded yet for this hearing.</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="lts-table">
+                            <thead>
+                                <tr>
+                                    <th>Attendee</th>
+                                    <th>Role</th>
+                                    <th>Present</th>
+                                    <th>Arrival</th>
+                                    <th>Departure</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in _records)
+                                {
+                                    <tr>
+                                        <td>@r.UserName</td>
+                                        <td>@(r.AttendanceRole ?? "-")</td>
+                                        <td>
+                                            @if (r.IsPresent)
+                                            {
+                                                <span class="lts-badge lts-badge-success">Present</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="lts-badge lts-badge-muted">Absent</span>
+                                            }
+                                        </td>
+                                        <td>@(r.ArrivalTime?.ToString("hh:mm tt") ?? "-")</td>
+                                        <td>@(r.DepartureTime?.ToString("hh:mm tt") ?? "-")</td>
+                                        <td class="text-end">
+                                            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEditRow(r)" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <PermissionGate Roles="Partner,FirmAdmin,SuperAdmin">
+                                                <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleDeleteRowAsync(r)" title="Remove">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </PermissionGate>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <hr />
+
+                <h6 class="fw-semibold mb-2">@(_form.IsEditMode ? "Update Attendance" : "Add Attendee")</h6>
+
+                @if (!string.IsNullOrWhiteSpace(_apiError))
+                {
+                    <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span style="white-space: pre-line;">@_apiError</span>
+                    </div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">User <span class="required">*</span></label>
+                            <select class="lts-form-control" @bind="_form.UserId" disabled="@(_isSaving || _form.IsEditMode)">
+                                <option value="0">-- Select user --</option>
+                                @foreach (var u in _users)
+                                {
+                                    <option value="@u.UserID">@u.FullName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Attendance Role</label>
+                            <input class="lts-form-control" @bind="_form.AttendanceRole" maxlength="100"
+                                   placeholder="e.g. Lead Counsel, Witness" disabled="@_isSaving" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Present?</label>
+                            <select class="lts-form-control" @bind="_form.IsPresent" disabled="@_isSaving">
+                                <option value="true">Present</option>
+                                <option value="false">Absent</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Arrival Time</label>
+                            <input type="time" class="lts-form-control" @bind="_arrivalTimeOnly" disabled="@_isSaving" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Departure Time</label>
+                            <input type="time" class="lts-form-control" @bind="_departureTimeOnly" disabled="@_isSaving" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Remarks</label>
+                            <input class="lts-form-control" @bind="_form.Remarks" maxlength="255" disabled="@_isSaving" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lts-modal-footer" style="padding: 1rem 0 0; margin-top: 0.5rem;">
+                    @if (_form.IsEditMode)
+                    {
+                        <button type="button" class="lts-btn lts-btn-ghost" @onclick="ResetForm" disabled="@_isSaving">Cancel Edit</button>
+                    }
+                    <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="lts-spinner lts-spinner-sm"></span>
+                        }
+                        else
+                        {
+                            <span>@(_form.IsEditMode ? "Update" : "Add Attendee")</span>
+                        }
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private bool _isOpen;
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _apiError;
+
+    private long _hearingId;
+    private DateTime? _hearingDate;
+    private List<HearingAttendanceDTO> _records = new();
+    private List<UserDTO> _users = new();
+    private AttendanceFormDTO _form = new();
+    private TimeOnly? _arrivalTimeOnly;
+    private TimeOnly? _departureTimeOnly;
+    private ConfirmDialog _confirmDialog = default!;
+
+    public async Task OpenAsync(long hearingId, DateTime hearingDate)
+    {
+        _hearingId = hearingId;
+        _hearingDate = hearingDate;
+        _isOpen = true;
+        ResetForm();
+        await LoadAsync();
+    }
+
+    private void Close() => _isOpen = false;
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            var recordsTask = HearingService.GetAttendanceAsync(_hearingId);
+            var usersTask = UserService.GetAllAsync();
+            await Task.WhenAll(recordsTask, usersTask);
+
+            _records = recordsTask.Result;
+            _users = usersTask.Result;
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't load attendance", "Please try again.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OpenEditRow(HearingAttendanceDTO r)
+    {
+        _apiError = null;
+        _form = new AttendanceFormDTO
+        {
+            AttendanceId = r.AttendanceId,
+            HearingId = _hearingId,
+            UserId = r.UserId,
+            AttendanceRole = r.AttendanceRole,
+            IsPresent = r.IsPresent,
+            ArrivalTime = r.ArrivalTime,
+            DepartureTime = r.DepartureTime,
+            Remarks = r.Remarks
+        };
+        _arrivalTimeOnly = r.ArrivalTime is null ? null : TimeOnly.FromDateTime(r.ArrivalTime.Value);
+        _departureTimeOnly = r.DepartureTime is null ? null : TimeOnly.FromDateTime(r.DepartureTime.Value);
+    }
+
+    private void ResetForm()
+    {
+        _apiError = null;
+        _form = new AttendanceFormDTO { HearingId = _hearingId, IsPresent = true };
+        _arrivalTimeOnly = null;
+        _departureTimeOnly = null;
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        _apiError = null;
+
+        if (!_form.IsEditMode && _form.UserId <= 0)
+        {
+            _apiError = "Please select a user.";
+            return;
+        }
+
+        var today = _hearingDate?.Date ?? DateTime.UtcNow.Date;
+        _form.ArrivalTime = _arrivalTimeOnly is null ? null : today.Add(_arrivalTimeOnly.Value.ToTimeSpan());
+        _form.DepartureTime = _departureTimeOnly is null ? null : today.Add(_departureTimeOnly.Value.ToTimeSpan());
+
+        _isSaving = true;
+        try
+        {
+            if (_form.IsEditMode)
+            {
+                await HearingService.UpdateAttendanceAsync(_form);
+                Toast.Success("Attendance updated", "The attendance record has been updated.");
+            }
+            else
+            {
+                await HearingService.RecordAttendanceAsync(_form);
+                Toast.Success("Attendance recorded", "The attendee has been added.");
+            }
+
+            ResetForm();
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task HandleDeleteRowAsync(HearingAttendanceDTO r)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Remove attendance for \"{r.UserName}\"?", "This cannot be undone.", "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await HearingService.DeleteAttendanceAsync(_hearingId, r.AttendanceId);
+            await LoadAsync();
+            Toast.Success("Attendance removed", "The record has been removed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't remove attendance", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't remove attendance", "Please try again.");
+        }
+    }
+}

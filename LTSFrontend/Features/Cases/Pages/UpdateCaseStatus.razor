@@ -1,0 +1,186 @@
+@* Modal component for changing a case's workflow status.
+   Not a routed page - opened imperatively from CaseDetails.razor via @ref:
+     <UpdateCaseStatus @ref="_statusModal" OnUpdated="HandleStatusUpdatedAsync" />
+     ...
+     _statusModal.Open(caseId, currentStatusName, currentStatusId); *@
+@using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseService CaseService
+@inject IMasterDataService MasterDataService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-arrow-repeat"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Update Case Status</h5>
+                <p class="lts-modal-subtitle mb-0">Currently: <strong>@_currentStatusName</strong></p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>@_apiError</span>
+                </div>
+            }
+
+            @if (_isLoadingStatuses)
+            {
+                <div class="d-flex align-items-center gap-2" style="padding: 1rem 0;">
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Loading statuses...</span>
+                </div>
+            }
+            else
+            {
+                <div class="lts-form-group">
+                    <label class="lts-form-label">New Status <span class="required">*</span></label>
+                    <select class="lts-form-control" @bind="_newStatusId" disabled="@_isSaving">
+                        <option value="0">Select new status...</option>
+                        @foreach (var status in _statuses)
+                        {
+                            <option value="@status.StatusID" disabled="@(status.StatusID == _currentStatusId)">
+                                @status.StatusName@(status.StatusID == _currentStatusId ? " (current)" : "")
+                            </option>
+                        }
+                    </select>
+                    @if (_showValidation && _newStatusId <= 0)
+                    {
+                        <div class="lts-form-error">Please select a status.</div>
+                    }
+                    @if (_newStatusId == _currentStatusId && _currentStatusId > 0)
+                    {
+                        <div class="lts-form-error">
+                            <i class="bi bi-info-circle"></i>
+                            This is already the case's current status — pick a different one to record a change.
+                            Just want to log a note without changing status? Use <strong>Notes</strong> on the case details page instead.
+                        </div>
+                    }
+                </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Remarks</label>
+                    <textarea class="lts-form-control" rows="3" @bind="_remarks" disabled="@_isSaving"
+                              placeholder="Optional note about this status change..."></textarea>
+                </div>
+            }
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSubmitAsync" disabled="@(_isSaving || _isLoadingStatuses || (_newStatusId == _currentStatusId && _currentStatusId > 0))">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Updating...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>Update Status</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnUpdated { get; set; }
+
+    private bool _isOpen;
+    private bool _isSaving;
+    private bool _isLoadingStatuses;
+    private bool _showValidation;
+    private string? _apiError;
+
+    private long _caseId;
+    private string _currentStatusName = string.Empty;
+    private int _currentStatusId;
+    private int _newStatusId;
+    private string? _remarks;
+
+    private List<CaseStatusDTO> _statuses = new();
+
+    public async void Open(long caseId, string currentStatusName, int currentStatusId)
+    {
+        _caseId = caseId;
+        _currentStatusName = currentStatusName;
+        _currentStatusId = currentStatusId;
+        _newStatusId = 0;
+        _remarks = null;
+        _apiError = null;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+
+        if (_statuses.Count == 0)
+        {
+            _isLoadingStatuses = true;
+            StateHasChanged();
+            try
+            {
+                _statuses = await MasterDataService.GetCaseStatusesAsync(activeOnly: true);
+            }
+            catch (Exception)
+            {
+                _apiError = "Couldn't load the list of statuses. Please close and try again.";
+            }
+            finally
+            {
+                _isLoadingStatuses = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        if (_newStatusId <= 0)
+        {
+            _showValidation = true;
+            return;
+        }
+
+        if (_newStatusId == _currentStatusId)
+        {
+            // Guarded against in the UI (disabled option + disabled submit
+            // button), but double-checked here in case of a stale render.
+            return;
+        }
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            await CaseService.UpdateStatusAsync(_caseId, _newStatusId, _remarks);
+            _isOpen = false;
+            await OnUpdated.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while updating the status. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}
