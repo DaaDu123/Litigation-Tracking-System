@@ -24,7 +24,7 @@ services:
       context: ./LTSBackend
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
@@ -42,7 +42,7 @@ services:
       context: ./LTSFrontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "127.0.0.1:3000:80"
     environment:
       ASPNETCORE_URLS: http://+:80
       ApiSettings__BaseUrl: http://backend:8080
