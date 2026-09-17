@@ -10,56 +10,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. GitHub repository ka code lena
+
+      # 1. Get latest source code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. .NET setup
+      # 2. Install .NET 10
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      # 3. Backend restore
+      # 3. Restore Backend dependencies
       - name: Restore Backend
         run: dotnet restore LTSBackend/LTSBackend.csproj
 
-      # 4. Backend build check
+      # 4. Build Backend - checks C# compile errors
       - name: Build Backend
         run: dotnet build LTSBackend/LTSBackend.csproj --configuration Release --no-restore
 
-      # 5. Frontend restore
+      # 5. Restore Frontend dependencies
       - name: Restore Frontend
         run: dotnet restore LTSFrontend/LTSFrontend.csproj
 
-      # 6. Frontend build check
+      # 6. Build Frontend - checks C# compile errors
       - name: Build Frontend
         run: dotnet build LTSFrontend/LTSFrontend.csproj --configuration Release --no-restore
 
-      # 7. Docker images build check
-      - name: Build Docker images
-        run: docker compose build backend frontend
+      # 7. Build Backend Docker image
+      - name: Build Backend Docker image
+        run: docker build -t lts-backend-ci ./LTSBackend
 
-      # 8. Agar upar ke tamam checks successful hain,
-      #    tab EC2 par deployment hoga
+      # 8. Build Frontend Docker image
+      - name: Build Frontend Docker image
+        run: docker build -t lts-frontend-ci ./LTSFrontend
+
+      # 9. Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+
           script: |
             set -e
 
             cd /home/ubuntu/Litigation-Tracking-System
 
-            echo "Pulling latest code..."
-            git pull origin master
+            echo "Pulling latest code from GitHub..."
+            git pull --ff-only origin master
 
-            echo "Deploying Backend and Frontend..."
+            echo "Starting deployment..."
+
             docker compose up -d --build backend frontend
 
             echo "Checking containers..."
+
             docker compose ps
 
             echo "Deployment completed successfully!"
