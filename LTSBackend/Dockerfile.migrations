@@ -1,0 +1,15 @@
+﻿FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+WORKDIR /src
+
+COPY LTSBackend.csproj .
+
+RUN dotnet restore LTSBackend.csproj
+
+RUN dotnet tool install --global dotnet-ef --version 10.0.11
+
+ENV PATH="/root/.dotnet/tools:${PATH}"
+
+COPY . .
+
+ENTRYPOINT ["dotnet", "ef", "database", "update"]

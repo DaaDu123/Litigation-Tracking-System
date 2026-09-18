@@ -4,22 +4,6 @@ using Microsoft.Extensions.Configuration;
 
 namespace LTSBackend.Data;
 
-/// <summary>
-/// Design-time factory for EF Core CLI/PMC tools ("dotnet ef migrations add",
-/// "dotnet ef database update", Package Manager Console's Add-Migration).
-///
-/// Without this, "dotnet ef" tries to build the FULL application host
-/// (everything registered in Program.cs - authentication, authorization
-/// policies, MediatR, hosted services, etc.) just to pull a DbContextOptions
-/// out of it, and any DI misconfiguration anywhere in that graph (as
-/// happened with PermissionPolicyProvider's missing DefaultAuthorizationPolicyProvider
-/// registration) breaks migrations even though it has nothing to do with
-/// the database. Implementing IDesignTimeDbContextFactory gives EF Core
-/// tools a minimal, self-contained way to build just the DbContext -
-/// reading the connection string directly from appsettings.json (and
-/// appsettings.{ASPNETCORE_ENVIRONMENT}.json if present) - so migration
-/// commands work reliably regardless of the rest of the app's DI graph.
-/// </summary>
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
@@ -30,7 +14,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
             .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: false)
-            //.AddEnvironmentVariables()
+            .AddEnvironmentVariables()
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection")

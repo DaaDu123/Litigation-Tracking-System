@@ -49,3 +49,13 @@ services:
     depends_on:
       - backend
 
+  migrations:
+    build:
+      context: ./LTSBackend
+      dockerfile: Dockerfile.migrations
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=LitigationDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+    depends_on:
+      db:
+        condition: service_healthy
