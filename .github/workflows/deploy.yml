@@ -58,15 +58,43 @@ jobs:
 
             cd /home/ubuntu/Litigation-Tracking-System
 
+            echo "======================================"
             echo "Pulling latest code from GitHub..."
+            echo "======================================"
+
             git pull --ff-only origin master
 
-            echo "Starting deployment..."
+            echo "======================================"
+            echo "Building Docker images..."
+            echo "======================================"
 
-            docker compose up -d --build backend frontend
+            docker compose build backend frontend migrations
 
+            echo "======================================"
+            echo "Starting SQL Server..."
+            echo "======================================"
+
+            docker compose up -d db
+
+            echo "======================================"
+            echo "Running EF Core production migrations..."
+            echo "======================================"
+
+            docker compose run --rm migrations
+
+            echo "======================================"
+            echo "Migrations completed successfully!"
+            echo "Starting Backend and Frontend..."
+            echo "======================================"
+
+            docker compose up -d backend frontend
+
+            echo "======================================"
             echo "Checking containers..."
+            echo "======================================"
 
             docker compose ps
 
+            echo "======================================"
             echo "Deployment completed successfully!"
+            echo "======================================"
