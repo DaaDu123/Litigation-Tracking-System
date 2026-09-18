@@ -25,7 +25,7 @@ jobs:
       - name: Restore Backend
         run: dotnet restore LTSBackend/LTSBackend.csproj
 
-      # 4. Build Backend - checks C# compile errors
+      # 4. Build Backend
       - name: Build Backend
         run: dotnet build LTSBackend/LTSBackend.csproj --configuration Release --no-restore
 
@@ -33,19 +33,11 @@ jobs:
       - name: Restore Frontend
         run: dotnet restore LTSFrontend/LTSFrontend.csproj
 
-      # 6. Build Frontend - checks C# compile errors
+      # 6. Build Frontend
       - name: Build Frontend
         run: dotnet build LTSFrontend/LTSFrontend.csproj --configuration Release --no-restore
 
-      # 7. Build Backend Docker image
-      - name: Build Backend Docker image
-        run: docker build -t lts-backend-ci ./LTSBackend
-
-      # 8. Build Frontend Docker image
-      - name: Build Frontend Docker image
-        run: docker build -t lts-frontend-ci ./LTSFrontend
-
-      # 9. Deploy to EC2
+      # 7. Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -84,8 +76,9 @@ jobs:
 
             echo "======================================"
             echo "Migrations completed successfully!"
-            echo "Starting Backend and Frontend..."
             echo "======================================"
+
+            echo "Starting Backend and Frontend..."
 
             docker compose up -d backend frontend
 
