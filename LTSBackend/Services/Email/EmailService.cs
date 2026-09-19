@@ -1,6 +1,7 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
+
 namespace LTSBackend.Services.Email;
 
 public class EmailService(IConfiguration _configuration, ILogger<EmailService> _logger) : IEmailService
@@ -36,6 +37,7 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
             int smtpPort = Convert.ToInt32(_configuration["EmailSettings:SmtpPort"]);
             string senderEmail = _configuration["EmailSettings:SenderEmail"]!;
             string senderName = _configuration["EmailSettings:SenderName"]!;
+            string smtpLogin = _configuration["EmailSettings:SmtpLogin"]!;
             string appPassword = _configuration["EmailSettings:AppPassword"]!;
 
             var textBody = $"New message from the LTS website contact form:\r\n\r\n" +
@@ -47,16 +49,19 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
 
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(senderName, senderEmail));
+
             // Replying in the inbox goes straight to the visitor, not back to us.
             email.ReplyTo.Add(new MailboxAddress(fromName, fromEmail));
+
             // Delivered to the firm's own support inbox (the configured sender).
             email.To.Add(new MailboxAddress(senderName, senderEmail));
+
             email.Subject = $"LTS Website Contact - {fromName}";
             email.Body = new TextPart("plain") { Text = textBody };
 
             using var smtp = new SmtpClient();
             await smtp.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(senderEmail, appPassword);
+            await smtp.AuthenticateAsync(smtpLogin, appPassword);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
 
@@ -77,9 +82,15 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
             int smtpPort = Convert.ToInt32(_configuration["EmailSettings:SmtpPort"]);
             string senderEmail = _configuration["EmailSettings:SenderEmail"]!;
             string senderName = _configuration["EmailSettings:SenderName"]!;
+            string smtpLogin = _configuration["EmailSettings:SmtpLogin"]!;
             string appPassword = _configuration["EmailSettings:AppPassword"]!;
 
-            _logger.LogInformation("SMTP Configuration - Host: {Host}, Port: {Port}, Sender: {Sender}", smtpHost, smtpPort, senderEmail);
+            _logger.LogInformation(
+                "SMTP Configuration - Host: {Host}, Port: {Port}, Sender: {Sender}",
+                smtpHost,
+                smtpPort,
+                senderEmail
+            );
 
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(senderName, senderEmail));
@@ -89,13 +100,19 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
 
             using var smtp = new SmtpClient();
             await smtp.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(senderEmail, appPassword);
+            await smtp.AuthenticateAsync(smtpLogin, appPassword);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email ({Subject}) to {Email}", subject, toEmail);
+            _logger.LogError(
+                ex,
+                "Failed to send email ({Subject}) to {Email}",
+                subject,
+                toEmail
+            );
+
             throw; // Re-throw to let caller handle
         }
     }
