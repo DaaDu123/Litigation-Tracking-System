@@ -33,6 +33,7 @@ services:
 
       EmailSettings__SmtpHost: smtp-relay.brevo.com
       EmailSettings__SmtpPort: "587"
+      EmailSettings__SmtpLogin: ${SMTP_LOGIN:?Set SMTP_LOGIN in .env}
       EmailSettings__SenderEmail: ${SMTP_SENDER_EMAIL:?Set SMTP_SENDER_EMAIL in .env}
       EmailSettings__AppPassword: ${SMTP_APP_PASSWORD:?Set SMTP_APP_PASSWORD in .env}
 
