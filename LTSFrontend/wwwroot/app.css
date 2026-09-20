@@ -483,16 +483,33 @@ h1:focus {
         border-radius: var(--lts-radius-sm);
         font-size: 0.89rem;
         font-weight: 500;
+        line-height: 1;
         transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
     }
 
+        /* Icon and label sit on the same row, centered on the same line -
+           without an explicit line-height/vertical-align the icon glyph and
+           the text baseline can drift out of alignment (icon sitting lower,
+           label sitting higher). */
         .lts-sidebar .nav-link i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             width: 1.15rem;
+            height: 1.15rem;
+            line-height: 1;
+            vertical-align: middle;
             text-align: center;
             font-size: 0.98rem;
             flex: 0 0 auto;
             color: #8b98c4;
             transition: color 0.15s ease;
+        }
+
+        .lts-sidebar .nav-link .nav-label {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1.2;
         }
 
         .lts-sidebar .nav-link:hover {
@@ -2715,6 +2732,22 @@ thead .lts-matrix-sticky-col {
     gap: 0.85rem;
 }
 
+/* Keep the original desktop order (theme -> language -> login) even
+   though the login button now sits earlier in the markup so it can be
+   repositioned between the theme and menu-toggle buttons on small
+   screens (see the max-width: 991px block below). */
+.public-navbar-theme-btn {
+    order: 1;
+}
+
+.public-navbar-lang {
+    order: 2;
+}
+
+.public-navbar-login-btn {
+    order: 3;
+}
+
 .public-navbar-lang {
     display: inline-flex;
     align-items: center;
@@ -2759,11 +2792,13 @@ thead .lts-matrix-sticky-col {
     .public-navbar {
         padding: 0.85rem 1.25rem;
         flex-wrap: wrap;
+        position: relative;
     }
 
-    /* Split the actions group so the theme toggle can sit up top next
-       to the menu button, while Login drops down below the nav links
-       instead of sitting in the top row. */
+    /* Split the actions group so the theme toggle, Login button and the
+       hamburger (Navigation menu) toggle all sit in the same top row, in
+       that order: theme -> login -> menu toggle. The nav-links dropdown
+       itself renders as a floating panel below the row (see .public-navbar-links). */
     .public-navbar-actions {
         display: contents;
     }
@@ -2772,37 +2807,74 @@ thead .lts-matrix-sticky-col {
         order: 1;
     }
 
+    .public-navbar-login-btn {
+        order: 2;
+        width: auto;
+        margin-top: 0;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.82rem;
+    }
+
     .public-navbar-lang {
         display: none;
     }
 
     .public-navbar-toggle {
-        order: 2;
+        order: 3;
         display: inline-flex;
     }
 
+    /* Navigation menu dropdown - a floating, professional card (matches the
+       site's white/blue theme) instead of an inline row so each link
+       (Features, Benefits, Security, Pricing, Contact) shows on its own
+       row rather than all wrapped onto one line. */
     .public-navbar-links {
         display: none;
-        width: 100%;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.75rem 1.4rem;
-        order: 3;
-        padding-top: 0.85rem;
+        position: absolute;
+        top: 100%;
+        right: 1.25rem;
+        left: 1.25rem;
+        order: 4;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.15rem;
         margin-top: 0.6rem;
-        border-top: 1px solid var(--lts-border);
+        padding: 0.6rem;
+        background: #ffffff;
+        border: 1px solid var(--lts-border);
+        border-top: 3px solid var(--lts-blue, #1b4fd6);
+        border-radius: 0.75rem;
+        box-shadow: 0 12px 32px rgba(16, 33, 77, 0.16);
+        z-index: 60;
     }
 
     .public-navbar-links.open {
         display: flex;
     }
 
-    .public-navbar-login-btn {
-        order: 4;
+    .public-navbar-links li {
         width: 100%;
-        justify-content: center;
-        margin-top: 0.75rem;
+    }
+
+    .public-navbar-links a {
+        display: block;
+        width: 100%;
+        padding: 0.65rem 0.75rem;
+        border-radius: 0.5rem;
+        color: #33415c;
+    }
+
+        .public-navbar-links a:hover,
+        .public-navbar-links a.active {
+            background: rgba(27, 79, 214, 0.08);
+            color: var(--lts-navy);
+        }
+}
+
+@media (max-width: 420px) {
+    .public-navbar-login-btn span,
+    .public-navbar-login-btn {
+        font-size: 0.78rem;
     }
 }
 
@@ -3040,29 +3112,36 @@ thead .lts-matrix-sticky-col {
         padding: 2.25rem 1.25rem;
     }
 
+    /* On small screens the login card should be the first thing a person
+       sees, with the four feature cards (Case Management, Hearing &
+       Deadlines, Document Management, Reports & Analytics) below it -
+       the reverse of the source order used on large screens. */
+    .auth-hero-right {
+        order: 1;
+    }
+
     .auth-hero-left {
+        order: 2;
         max-width: none;
         text-align: center;
         align-items: center;
+        margin-top: 2rem;
     }
 
-    .auth-hero-rule {
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .auth-hero-left h1 {
-        font-size: 2.1rem;
+    /* The "Litigation Tracking System" heading, its gold underline rule,
+       and the 2-3 line lead paragraph above the feature cards are only
+       needed on wide screens where there's room beside the login card -
+       on small screens they're hidden, leaving just the login card
+       followed directly by the 4 feature cards. */
+    .auth-hero-rule,
+    .auth-hero-left h1,
+    .auth-hero-lead {
+        display: none;
     }
 
     .hero-feature-grid {
         margin: 0 auto;
         text-align: left;
-    }
-
-    .auth-hero-lead {
-        margin-left: auto;
-        margin-right: auto;
     }
 }
 
@@ -3718,6 +3797,21 @@ thead .lts-matrix-sticky-col {
 [data-theme="dark"] .public-navbar-links a:hover,
 [data-theme="dark"] .public-navbar-links a.active {
     color: var(--lts-gold);
+}
+
+@media (max-width: 991px) {
+    [data-theme="dark"] .public-navbar-links {
+        background: var(--lts-surface);
+        border-color: var(--lts-border-color);
+        border-top-color: var(--lts-blue-light, #3f7bff);
+        box-shadow: var(--lts-shadow-lg);
+    }
+
+    [data-theme="dark"] .public-navbar-links a:hover,
+    [data-theme="dark"] .public-navbar-links a.active {
+        background: rgba(63, 123, 255, 0.14);
+        color: var(--lts-text);
+    }
 }
 
 [data-theme="dark"] .public-navbar-lang {

@@ -154,10 +154,44 @@
             }
         }
 
+        var target = ResolveTarget(n);
+        if (!string.IsNullOrEmpty(target))
+        {
+            Navigation.NavigateTo(target);
+        }
+    }
+
+    private static string? ResolveTarget(NotificationDTO n)
+    {
         if (n.CaseID.HasValue)
         {
-            Navigation.NavigateTo($"/cases/{n.CaseID.Value}");
+            return $"/cases/{n.CaseID.Value}";
         }
+
+        var text = $"{n.NotificationTypeName} {n.Subject} {n.Message}";
+
+        if (text.Contains("firm admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/firm-admin-requests";
+        }
+
+        if (text.Contains("join", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("user request", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/user-join-requests";
+        }
+
+        if (text.Contains("hearing", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/hearings";
+        }
+
+        if (text.Contains("deadline", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/deadlines";
+        }
+
+        return null;
     }
 
     private async Task DismissAsync(NotificationDTO n)

@@ -27,18 +27,26 @@
         <button class="public-navbar-theme-btn" type="button" title="Toggle theme" @onclick="ToggleThemeAsync">
             <i class="bi @(_isDarkTheme ? "bi-sun" : "bi-moon-stars")"></i>
         </button>
+        @* Login button sits between the theme toggle and the hamburger
+           (Navigation menu) button, and is hidden entirely on the Login
+           page itself - showing "Login" while already on the login screen
+           is redundant/confusing. *@
+        @if (!_isLoginPage)
+        {
+            <a href="/login" class="public-navbar-login-btn">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+            </a>
+        }
         <span class="public-navbar-lang d-none d-md-inline-flex">
             <i class="bi bi-globe2"></i> EN
         </span>
-        <a href="/login" class="public-navbar-login-btn">
-            <i class="bi bi-box-arrow-in-right"></i> Login
-        </a>
     </div>
 </header>
 
 @code {
     private bool _menuOpen;
     private bool _isDarkTheme;
+    private bool _isLoginPage;
 
     private void ToggleMenu() => _menuOpen = !_menuOpen;
 
@@ -48,8 +56,16 @@
         return string.Equals(current, path, StringComparison.OrdinalIgnoreCase) ? "active" : "";
     }
 
+    private void UpdateLoginPageFlag()
+    {
+        var current = new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/');
+        _isLoginPage = string.Equals(current, "/login", StringComparison.OrdinalIgnoreCase);
+    }
+
     protected override void OnInitialized()
     {
+        UpdateLoginPageFlag();
+
         // Re-render whenever the URL changes (including internal nav-link
         // clicks that don't do a full page reload) so the active link
         // color updates immediately instead of staying stuck until refresh.
@@ -59,6 +75,7 @@
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         _menuOpen = false;
+        UpdateLoginPageFlag();
         InvokeAsync(StateHasChanged);
     }
 
