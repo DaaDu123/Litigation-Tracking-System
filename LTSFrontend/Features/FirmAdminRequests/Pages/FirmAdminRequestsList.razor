@@ -82,11 +82,14 @@
                     {
                         <tr>
                             <td>
-                                <div class="fw-semibold">@r.FirmName</div>
-                                <div class="text-muted small">@r.FirmCode</div>
+                                <div class="fw-semibold">@(string.IsNullOrWhiteSpace(r.FirmName) ? "(named after approval)" : r.FirmName)</div>
+                                @if (!string.IsNullOrWhiteSpace(r.FirmCode))
+                                {
+                                    <div class="text-muted small">@r.FirmCode</div>
+                                }
                             </td>
                             <td>
-                                <div class="fw-semibold">@r.AdminFullName</div>
+                                <div class="fw-semibold">@(string.IsNullOrWhiteSpace(r.AdminFullName) ? "(profile pending)" : r.AdminFullName)</div>
                                 <div class="text-muted small">@r.AdminEmail</div>
                             </td>
                             <td>
@@ -183,8 +186,8 @@
     private async Task HandleApproveAsync(FirmAdminRequestDTO r)
     {
         var confirmed = await _confirmDialog.ShowAsync(
-            $"Approve \"{r.FirmName}\"?",
-            $"This creates the firm workspace and makes {r.AdminFullName} ({r.AdminEmail}) its Firm Admin. They'll be able to log in right away.",
+            $"Approve request from \"{r.AdminEmail}\"?",
+            $"This creates a firm workspace and makes {r.AdminEmail} its Firm Admin. They'll be able to log in and complete their profile and firm setup right away.",
             "Approve", "primary");
 
         if (!confirmed) return;
@@ -193,7 +196,7 @@
         {
             await FirmAdminRequestService.ApproveAsync(r.RequestID);
             await LoadAsync();
-            Toast.Success("Request approved", $"\"{r.FirmName}\" is now a live firm workspace.");
+            Toast.Success("Request approved", $"A firm workspace has been created for \"{r.AdminEmail}\".");
         }
         catch (ApiException ex)
         {

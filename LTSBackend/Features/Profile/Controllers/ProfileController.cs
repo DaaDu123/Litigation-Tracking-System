@@ -69,6 +69,33 @@ public class ProfileController : ControllerBase
         var request = command with { UserID = userId };
         var result = await _mediator.Send(request);
 
-        return Ok(ApiResponse<bool>.SuccessResponse(result,"Profile updated successfully!"));
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "Profile updated successfully!"));
+    }
+
+    // =====================================================
+    // COMPLETE FIRM ADMIN PROFILE — Any authenticated user (Firm Admin)
+    // Mandatory one-time step immediately after a newly approved Firm
+    // Admin's first login. Blocked/allowed regardless of role by
+    // ProfileCompletionBehavior's allowlist - restricting to FirmAdmin
+    // specifically isn't needed here since a Firm User calling this by
+    // mistake simply gets "no firm workspace is associated" from the handler.
+    // =====================================================
+    [HttpPost("complete/firm-admin")]
+    public async Task<IActionResult> CompleteFirmAdminProfile([FromBody] Commands.CompleteFirmAdminProfile.CompleteFirmAdminProfileCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(ApiResponse<ProfileCompletionResultDTO>.SuccessResponse(result, result.Message));
+    }
+
+    // =====================================================
+    // COMPLETE FIRM USER PROFILE — Any authenticated user (Firm User)
+    // Mandatory step after registration and before the Firm-request
+    // functionality unlocks (enforced by ProfileCompletionBehavior).
+    // =====================================================
+    [HttpPost("complete/firm-user")]
+    public async Task<IActionResult> CompleteFirmUserProfile([FromBody] Commands.CompleteFirmUserProfile.CompleteFirmUserProfileCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(ApiResponse<ProfileCompletionResultDTO>.SuccessResponse(result, result.Message));
     }
 }

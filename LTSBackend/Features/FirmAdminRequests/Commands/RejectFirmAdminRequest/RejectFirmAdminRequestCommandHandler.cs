@@ -31,7 +31,7 @@ public class RejectFirmAdminRequestCommandHandler(AppDbContext _context,IEmailSe
         firmAdminRequest.ReviewedAt = DateTime.UtcNow;
         firmAdminRequest.RejectionReason = request.Reason;
 
-        var auditLog = _auditService.Create(request.ActingUserID,$"Rejected Firm Admin request #{firmAdminRequest.RequestID} for firm '{firmAdminRequest.FirmName}' ({firmAdminRequest.FirmCode})");
+        var auditLog = _auditService.Create(request.ActingUserID,$"Rejected Firm Admin request #{firmAdminRequest.RequestID} for {firmAdminRequest.AdminEmail}");
         _context.AuditLogs.Add(auditLog);
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -44,9 +44,9 @@ public class RejectFirmAdminRequestCommandHandler(AppDbContext _context,IEmailSe
             var reasonText = string.IsNullOrWhiteSpace(request.Reason) ? string.Empty : $" Reason: {request.Reason}";
             await _emailService.SendNotificationEmailAsync(
                 firmAdminRequest.AdminEmail,
-                firmAdminRequest.AdminFullName,
+                firmAdminRequest.AdminFullName ?? firmAdminRequest.AdminEmail,
                 "Your Firm Admin Request Was Not Approved",
-                $"Your request to create the firm workspace \"{firmAdminRequest.FirmName}\" was not approved.{reasonText} " +
+                $"Your request to create a firm workspace was not approved.{reasonText} " +
                 $"You're welcome to submit a new request.");
         }
         catch (Exception ex)

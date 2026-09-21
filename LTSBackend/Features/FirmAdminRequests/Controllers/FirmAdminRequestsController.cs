@@ -30,9 +30,9 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
     [EnableRateLimiting("auth-moderate")]
     public async Task<IActionResult> Submit([FromBody] SubmitFirmAdminRequestCommand command)
     {
-        _logger.LogInformation("Firm Admin request submitted for firm code: {FirmCode}", command.FirmCode);
+        _logger.LogInformation("Firm Admin request submitted for email: {Email}", command.Email);
         var requestId = await _mediator.Send(command);
-        return Ok(ApiResponse<int>.SuccessResponse(requestId,"Your request has been submitted. A Super Admin will review it and you'll be notified by email."));
+        return Ok(ApiResponse<int>.SuccessResponse(requestId, "Your request has been submitted. A Super Admin will review it and you'll be notified by email."));
     }
 
     // =====================================================

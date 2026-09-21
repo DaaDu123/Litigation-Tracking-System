@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using LTSBackend.Models.Audit;
 using LTSBackend.Models.Cases;
 using LTSBackend.Models.Masters;
@@ -71,6 +71,7 @@ public class AppDbContext : DbContext
     public DbSet<Firm> Firms { get; set; } = null!;
     public DbSet<FirmAdminRequest> FirmAdminRequests { get; set; } = null!;
     public DbSet<UserJoinRequest> UserJoinRequests { get; set; } = null!;
+    public DbSet<FirmMembershipEvent> FirmMembershipEvents { get; set; } = null!;
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<Permission> Permissions { get; set; } = null!;
     public DbSet<NotificationType> NotificationTypes { get; set; } = null!;
@@ -134,6 +135,13 @@ public class AppDbContext : DbContext
             entity.Property(e => e.FullName).IsRequired();
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.HasIndex(e => e.Email).IsUnique().HasFilter("[IsDeleted] = 0");
+            // Phone/CNIC are always normalized (PakistaniFormat) before
+            // being written, so these indexes are the real database-level
+            // backstop for uniqueness (never relying on FluentValidation
+            // alone - see spec §30). Filtered so multiple NULLs (not yet
+            // set) and soft-deleted rows never collide.
+            entity.HasIndex(e => e.Phone).IsUnique().HasDatabaseName("IX_Users_Phone").HasFilter("[Phone] IS NOT NULL AND [IsDeleted] = 0");
+            entity.HasIndex(e => e.CNIC).IsUnique().HasDatabaseName("IX_Users_CNIC").HasFilter("[CNIC] IS NOT NULL AND [IsDeleted] = 0");
             entity.HasOne(e => e.Firm).WithMany(f => f.Users).HasForeignKey(e => e.FirmID).OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(e => e.FirmID);
             entity.HasMany(e => e.RefreshTokens).WithOne(r => r.User).OnDelete(DeleteBehavior.Cascade);
@@ -163,9 +171,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<FirmAdminRequest>(entity =>
         {
             entity.HasKey(e => e.RequestID);
-            entity.Property(e => e.FirmName).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.FirmCode).IsRequired().HasMaxLength(30);
-            entity.Property(e => e.AdminFullName).IsRequired().HasMaxLength(150);
+            // FirmName/FirmCode/AdminFullName are no longer collected at
+            // submission (registration is Email+Password only) - system
+            // generates placeholders on Approve, so these stay optional here.
+            entity.Property(e => e.FirmName).HasMaxLength(150);
+            entity.Property(e => e.FirmCode).HasMaxLength(30);
+            entity.Property(e => e.AdminFullName).HasMaxLength(150);
             entity.Property(e => e.AdminEmail).IsRequired().HasMaxLength(150);
             entity.Property(e => e.AdminPasswordHash).IsRequired().HasMaxLength(255);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Pending");
@@ -185,14 +196,33 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<UserJoinRequest>(entity =>
         {
             entity.HasKey(e => e.RequestID);
-            entity.Property(e => e.FullName).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(255);
+            // FullName/Email/PasswordHash are legacy/display-only now - the
+            // requester already has an account (see UserID) by submission
+            // time in the new flow, so these are no longer required here.
+            entity.Property(e => e.FullName).HasMaxLength(150);
+            entity.Property(e => e.Email).HasMaxLength(150);
+            entity.Property(e => e.PasswordHash).HasMaxLength(255);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Pending");
             entity.HasOne(e => e.Firm).WithMany().HasForeignKey(e => e.FirmID).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserID).OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(e => e.FirmID);
+            entity.HasIndex(e => e.UserID);
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.Status);
+            entity.HasQueryFilter(e => BypassTenantFilter || e.FirmID == RequestFirmId);
+        });
+
+        // FIRM MEMBERSHIP EVENT ENTITY CONFIGURATION (block/unblock/remove
+        // history). Tenant-scoped the same way as UserJoinRequest - a
+        // FirmAdmin only ever sees events for their own FirmID.
+        modelBuilder.Entity<FirmMembershipEvent>(entity =>
+        {
+            entity.HasKey(e => e.EventID);
+            entity.Property(e => e.ActionType).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.Reason).HasMaxLength(500);
+            entity.HasOne(e => e.Firm).WithMany().HasForeignKey(e => e.FirmID).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserID).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.UserID, e.FirmID });
             entity.HasQueryFilter(e => BypassTenantFilter || e.FirmID == RequestFirmId);
         });
 
@@ -651,7 +681,15 @@ public class AppDbContext : DbContext
             new Permission { PermissionID = (int)PermissionEnum.PerformResearch, PermissionName = nameof(PermissionEnum.PerformResearch), Description = "Perform legal research" },
 
             // Cross-role: every role has its own dashboard
-            new Permission { PermissionID = (int)PermissionEnum.ViewDashboard, PermissionName = nameof(PermissionEnum.ViewDashboard), Description = "View one's own role-scoped dashboard" }
+            new Permission { PermissionID = (int)PermissionEnum.ViewDashboard, PermissionName = nameof(PermissionEnum.ViewDashboard), Description = "View one's own role-scoped dashboard" },
+
+            // Firm/User workflow: block, remove, role change, Firm Admin availability
+            new Permission { PermissionID = (int)PermissionEnum.BlockFirmUser, PermissionName = nameof(PermissionEnum.BlockFirmUser), Description = "Block a firm user" },
+            new Permission { PermissionID = (int)PermissionEnum.UnblockFirmUser, PermissionName = nameof(PermissionEnum.UnblockFirmUser), Description = "Unblock a previously blocked firm user" },
+            new Permission { PermissionID = (int)PermissionEnum.RemoveFirmUser, PermissionName = nameof(PermissionEnum.RemoveFirmUser), Description = "Remove a user from the firm" },
+            new Permission { PermissionID = (int)PermissionEnum.ChangeFirmUserRole, PermissionName = nameof(PermissionEnum.ChangeFirmUserRole), Description = "Change a firm user's role" },
+            new Permission { PermissionID = (int)PermissionEnum.ManageFirmAdminAvailability, PermissionName = nameof(PermissionEnum.ManageFirmAdminAvailability), Description = "Set own Active/Inactive availability (Firm Admin)" },
+            new Permission { PermissionID = (int)PermissionEnum.ViewFirmAdminAvailability, PermissionName = nameof(PermissionEnum.ViewFirmAdminAvailability), Description = "View Firm Admin's availability status" }
         );
     }
 
@@ -704,7 +742,15 @@ public class AppDbContext : DbContext
             // reach them. Both are firm-scoped for FirmAdmin (see
             // GetAuditLogsHandler / GetFirmDashboardHandler).
             PermissionEnum.ViewAuditLogs,
-            PermissionEnum.ViewDashboard);
+            PermissionEnum.ViewDashboard,
+            // Firm/User workflow: FirmAdmin is the only role that manages
+            // firm-user membership state and its own availability.
+            PermissionEnum.BlockFirmUser,
+            PermissionEnum.UnblockFirmUser,
+            PermissionEnum.RemoveFirmUser,
+            PermissionEnum.ChangeFirmUserRole,
+            PermissionEnum.ManageFirmAdminAvailability,
+            PermissionEnum.ViewFirmAdminAvailability);
 
         Map(UserRole.Partner,
             PermissionEnum.ViewFirmCaseDirectory,
@@ -719,7 +765,8 @@ public class AppDbContext : DbContext
             PermissionEnum.UploadDocuments,
             PermissionEnum.ApproveFilings,
             PermissionEnum.ViewFirmAnalytics,
-            PermissionEnum.ViewDashboard);
+            PermissionEnum.ViewDashboard,
+            PermissionEnum.ViewFirmAdminAvailability);
 
         Map(UserRole.AssociateLawyer,
             PermissionEnum.ViewAssignedCases,
@@ -728,19 +775,22 @@ public class AppDbContext : DbContext
             PermissionEnum.AddCaseNotes,
             PermissionEnum.TrackDeadlines,
             PermissionEnum.LogBillableHours,
-            PermissionEnum.ViewDashboard);
+            PermissionEnum.ViewDashboard,
+            PermissionEnum.ViewFirmAdminAvailability);
 
         Map(UserRole.Moharrir,
             PermissionEnum.EnterCaseData,
             PermissionEnum.UploadCaseDocuments,
             PermissionEnum.MaintainCaseRecords,
-            PermissionEnum.ViewDashboard);
+            PermissionEnum.ViewDashboard,
+            PermissionEnum.ViewFirmAdminAvailability);
 
         Map(UserRole.InternParalegal,
             PermissionEnum.ViewDocumentsReadOnly,
             PermissionEnum.DraftDocuments,
             PermissionEnum.PerformResearch,
-            PermissionEnum.ViewDashboard);
+            PermissionEnum.ViewDashboard,
+            PermissionEnum.ViewFirmAdminAvailability);
 
         modelBuilder.Entity<RolePermission>().HasData(rolePermissions);
     }
@@ -825,6 +875,16 @@ public class AppDbContext : DbContext
                 TypeName = "CompleteProfile",
                 Description = "Sent to a newly quick-added user (Email + Temp Password only), prompting them to complete their profile",
                 IsEmail = true,
+                IsSMS = false,
+                IsInApp = true,
+                IsActive = true
+            },
+            new NotificationType
+            {
+                NotificationTypeID = 9,
+                TypeName = "FirmMembershipChange",
+                Description = "Sent to a firm user when they are blocked, unblocked, or removed from their firm",
+                IsEmail = false,
                 IsSMS = false,
                 IsInApp = true,
                 IsActive = true

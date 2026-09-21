@@ -4,6 +4,7 @@ using LTSBackend.Features.Auth.ForgotPassword;
 using LTSBackend.Features.Auth.Login;
 using LTSBackend.Features.Auth.Logout;
 using LTSBackend.Features.Auth.RefreshToken;
+using LTSBackend.Features.Auth.Register;
 using LTSBackend.Features.Auth.ResendOtp;
 using LTSBackend.Features.Auth.ResetPassword;
 using LTSBackend.Features.Auth.VerifyOtp;
@@ -26,6 +27,24 @@ public class AuthController : ControllerBase
     {
         _mediator = mediator;
         _logger = logger;
+    }
+
+    // =====================================================
+    // REGISTER — Anonymous, Firm User self-registration
+    // Email + Password only - no FirmCode, no firm selection, no personal
+    // details. Creates the account right away (FirmID/RoleID both null)
+    // so the user can verify their email, log in, complete their profile,
+    // and then browse/request a firm from their own dashboard.
+    // SECURITY: rate limited ("auth-moderate") to slow account-creation abuse.
+    // =====================================================
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth-moderate")]
+    public async Task<IActionResult> Register([FromBody] RegisterCommand command)
+    {
+        _logger.LogInformation("Registration attempt for email: {Email}", command.Email);
+        var result = await _mediator.Send(command);
+        return Ok(ApiResponse<RegisterResponseDTO>.SuccessResponse(result, result.Message));
     }
 
     // =====================================================

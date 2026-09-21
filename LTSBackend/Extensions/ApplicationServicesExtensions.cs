@@ -47,6 +47,7 @@ public static class ApplicationServicesExtensions
         services.AddHostedService<ReminderService>();
         services.AddHostedService<NotificationEmailDispatcherService>();
         services.AddHostedService<RefreshTokenCleanupService>();
+        services.AddHostedService<FirmAdminAvailabilityReactivationService>();
 
         return services;
     }

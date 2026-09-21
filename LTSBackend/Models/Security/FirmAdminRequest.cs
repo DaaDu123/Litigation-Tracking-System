@@ -10,11 +10,18 @@ public class FirmAdminRequest
     public int RequestID { get; set; }
 
     // ---- Proposed firm details ----
-    [Required, MaxLength(150)]
-    public string FirmName { get; set; } = string.Empty;
+    // No longer collected at submission (the workflow now asks only for
+    // Email+Password up front - see SubmitFirmAdminRequestCommand). These
+    // are filled with system-generated placeholders on Approve and then
+    // set for real by the Firm Admin during mandatory profile completion
+    // (CompleteFirmAdminProfileCommand). Columns are kept (rather than
+    // removed) so the existing Firm entity/approval flow doesn't need a
+    // second, parallel code path.
+    [MaxLength(150)]
+    public string? FirmName { get; set; }
 
-    [Required, MaxLength(30)]
-    public string FirmCode { get; set; } = string.Empty;
+    [MaxLength(30)]
+    public string? FirmCode { get; set; }
 
     [MaxLength(255)]
     public string? Address { get; set; }
@@ -26,8 +33,11 @@ public class FirmAdminRequest
     public string? ContactPhone { get; set; }
 
     // ---- Requester (future Firm Admin) details ----
-    [Required, MaxLength(150)]
-    public string AdminFullName { get; set; } = string.Empty;
+    // AdminFullName is likewise no longer collected up front - filled
+    // with a placeholder derived from the email and then set for real
+    // during profile completion.
+    [MaxLength(150)]
+    public string? AdminFullName { get; set; }
 
     [Required, MaxLength(150)]
     public string AdminEmail { get; set; } = string.Empty;

@@ -1,0 +1,184 @@
+@page "/join-firm"
+@attribute [Authorize]
+@using LTSFrontend.State
+@using LTSFrontend.Features.UserJoinRequests.DTOs
+@using LTSFrontend.Features.UserJoinRequests.Services
+@inject IUserJoinRequestService JoinRequestService
+@inject UserSessionState Session
+@inject ToastService Toast
+
+<PageTitle>Join a Firm - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Join a Firm</h1>
+        <p class="lts-page-subtitle">Browse Firm Admins and send a request to join their firm.</p>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+}
+else if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger py-2">@_errorMessage</div>
+}
+else if (_myRequest is { Status: "Pending" })
+{
+    <div class="lts-card">
+        <h5 class="mb-2"><i class="bi bi-hourglass-split text-warning me-2"></i>Request Pending</h5>
+        <p class="mb-1"><strong>Requested Firm:</strong> @_myRequest.FirmName</p>
+        <p class="mb-3"><strong>Requested At:</strong> @_myRequest.RequestedAt.ToLocalTime().ToString("dd MMMM yyyy, h:mm tt")</p>
+        <p class="text-muted">You cannot request another firm while this one is pending.</p>
+        <button class="lts-btn lts-btn-danger" @onclick="HandleCancelAsync" disabled="@_isBusy">
+            @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Cancel Request
+        </button>
+    </div>
+}
+else
+{
+    @if (_myRequest is { Status: "Rejected" })
+    {
+        <div class="alert alert-warning py-2">
+            Your previous request to <strong>@_myRequest.FirmName</strong> was not approved
+            @if (!string.IsNullOrWhiteSpace(_myRequest.RejectionReason))
+            {
+                <text> - Reason: @_myRequest.RejectionReason</text>
+            }
+            . You're welcome to request a different firm below.
+        </div>
+    }
+    else if (_myRequest is { Status: "Cancelled" })
+    {
+        <div class="alert alert-info py-2">Your previous request was cancelled. You can send a new one below.</div>
+    }
+
+    @if (_firms.Count == 0)
+    {
+        <div class="lts-card text-center text-muted py-4">No firms are available to join right now.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var firm in _firms)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="lts-card h-100">
+                        <h5 class="mb-1">@firm.FirmName</h5>
+                        @if (!string.IsNullOrWhiteSpace(firm.FirmAdminName))
+                        {
+                            <p class="text-muted mb-1"><i class="bi bi-person-badge me-1"></i>@firm.FirmAdminName</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(firm.FirmAdminContactNumber))
+                        {
+                            <p class="text-muted mb-1"><i class="bi bi-telephone me-1"></i>@firm.FirmAdminContactNumber</p>
+                        }
+                        <p class="mb-3">
+                            @if (firm.IsFirmAdminAvailable)
+                            {
+                                <span class="badge bg-success">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Unavailable</span>
+                                @if (firm.FirmAdminAvailableAgainAtUtc.HasValue)
+                                {
+                                    <span class="text-muted small ms-1">until @firm.FirmAdminAvailableAgainAtUtc.Value.ToLocalTime().ToString("dd MMM, h:mm tt")</span>
+                                }
+                            }
+                        </p>
+                        <button class="lts-btn lts-btn-primary w-100" @onclick="() => HandleSendRequestAsync(firm)" disabled="@_isBusy">
+                            <i class="bi bi-send"></i> Send Request
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<JoinableFirmDTO> _firms = new();
+    private UserJoinRequestDTO? _myRequest;
+    private bool _isLoading = true;
+    private bool _isBusy;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        try
+        {
+            _myRequest = await JoinRequestService.GetMineAsync();
+
+            if (_myRequest is not { Status: "Pending" })
+            {
+                _firms = await JoinRequestService.GetJoinableFirmsAsync();
+            }
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not load firms. Please refresh and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleSendRequestAsync(JoinableFirmDTO firm)
+    {
+        _isBusy = true;
+        try
+        {
+            await JoinRequestService.SubmitAsync(firm.FirmID);
+            Toast.Success("Request sent", $"Your request to join \"{firm.FirmName}\" has been sent.");
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Could not send request", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Could not send request", "Please try again.");
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task HandleCancelAsync()
+    {
+        if (_myRequest == null) return;
+        _isBusy = true;
+        try
+        {
+            await JoinRequestService.CancelAsync(_myRequest.RequestID);
+            Toast.Success("Request cancelled", "You can now request a different firm.");
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Could not cancel request", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Could not cancel request", "Please try again.");
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

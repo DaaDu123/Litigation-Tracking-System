@@ -10,9 +10,8 @@
     <div class="lts-card">
         <h4>Welcome, @Session.FullName!</h4>
         <p class="text-muted mb-0">
-            You're signed in as <strong>@(string.IsNullOrWhiteSpace(Session.Role) ? "User" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(Session.Role))</strong>, but your role isn't
-            recognised for a dedicated dashboard yet. You can head to
-            <a href="/cases">Cases</a> or <a href="/users">User Management</a> if your role allows it.
+            You're not a member of a firm yet.
+            <a href="/join-firm">Browse Firm Admins and send a request to join</a> to get started.
         </p>
     </div>
 }

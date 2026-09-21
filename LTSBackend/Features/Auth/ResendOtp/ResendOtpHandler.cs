@@ -80,7 +80,13 @@ public class ResendOtpHandler(AppDbContext _context, IEmailService _emailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send OTP email to: {Email}", request.Email);
-            throw;
+
+            // A clean, actionable message instead of letting the raw SMTP
+            // exception surface as a generic "unexpected error" - this
+            // screen already has its own Resend OTP button, so there's no
+            // navigation dead-end here (unlike Register) and it's safe to
+            // report the failure plainly.
+            throw new ValidationException(["We couldn't send the verification email right now. Please try again in a moment."]);
         }
 
         return new ResendOtpResponseDTO

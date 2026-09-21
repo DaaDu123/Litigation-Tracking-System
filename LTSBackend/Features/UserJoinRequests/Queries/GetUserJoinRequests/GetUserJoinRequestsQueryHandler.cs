@@ -28,6 +28,7 @@ public class GetUserJoinRequestsQueryHandler(AppDbContext _context) : IRequestHa
                 RequestID = x.RequestID,
                 FirmID = x.FirmID,
                 FirmName = x.Firm != null ? x.Firm.FirmName : null,
+                UserID = x.UserID,
                 FullName = x.FullName,
                 Email = x.Email,
                 Phone = x.Phone,

@@ -15,15 +15,11 @@ namespace LTSFrontend.Features.Auth.Services
         public async Task<RegisterResponseDTO> RegisterAsync(RegisterRequest request)
         {
             // ConfirmPassword is a client-only field (used for validation);
-            // the backend RegisterCommand doesn't have it, so we don't send it.
+            // the backend RegisterCommand is Email + Password only now.
             var payload = new
             {
-                request.FullName,
                 request.Email,
-                request.Password,
-                request.Phone,
-                request.Department,
-                request.FirmCode
+                request.Password
             };
 
             var result = await _api.PostAsync<RegisterResponseDTO>(ApiEndpoints.Auth.Register, payload);

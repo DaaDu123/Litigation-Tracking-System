@@ -44,5 +44,17 @@ namespace LTSFrontend.Features.Profile.Services
 
             return await _api.PutFormAsync<bool>(ApiEndpoints.Profile.Me, content);
         }
+
+        public async Task<ProfileCompletionResultDTO> CompleteFirmAdminProfileAsync(CompleteFirmAdminProfileRequest request)
+        {
+            var result = await _api.PostAsync<ProfileCompletionResultDTO>(ApiEndpoints.Profile.CompleteFirmAdmin, request);
+            return result!;
+        }
+
+        public async Task<ProfileCompletionResultDTO> CompleteFirmUserProfileAsync(CompleteFirmUserProfileRequest request)
+        {
+            var result = await _api.PostAsync<ProfileCompletionResultDTO>(ApiEndpoints.Profile.CompleteFirmUser, request);
+            return result!;
+        }
     }
 }

@@ -25,6 +25,17 @@ public class GetAllUsersQueryHandler(AppDbContext _context,ICurrentUserService _
         // (route-level [Authorize] excludes it - user directory is FirmAdmin's job).
             query = query.Where(x => x.FirmID == _currentUser.FirmID);
 
+        // Server-side search by Name or Contact Number - never loads the
+        // full firm directory client-side just to filter it there.
+        // Phone is normalized at write time (PakistaniFormat), so a
+        // partial digit search still matches regardless of how the
+        // caller typed it, as long as the digits themselves match.
+        if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+        {
+            var term = request.SearchTerm.Trim();
+            query = query.Where(x => EF.Functions.Like(x.FullName, $"%{term}%") || (x.Phone != null && EF.Functions.Like(x.Phone, $"%{term}%")));
+        }
+
         var users = await query
             .Include(x => x.Role)
             .OrderBy(x => x.FullName)
@@ -41,11 +52,27 @@ public class GetAllUsersQueryHandler(AppDbContext _context,ICurrentUserService _
                 IsActive = x.IsActive,
                 IsLockedOut = x.LockoutEndUtc != null && x.LockoutEndUtc > DateTime.UtcNow,
                 CreatedAt = x.CreatedAt,
-                UpdatedAt = x.UpdatedAt
+                UpdatedAt = x.UpdatedAt,
+                MembershipStatus = x.MembershipStatus,
+                IsAvailable = x.IsAvailable,
+                InactiveUntilUtc = x.InactiveUntilUtc
             })
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Retrieved {Count} active users", users.Count);
+        // Availability is evaluated per-row through the same lazy-healing
+        // rule as everywhere else, rather than trusting the raw
+        // IsAvailable/InactiveUntilUtc columns directly - a FirmAdmin row
+        // whose window has already expired should read as Available here too.
+        foreach (var dto in users.Where(u => !u.IsAvailable))
+        {
+            if (dto.InactiveUntilUtc.HasValue && dto.InactiveUntilUtc.Value <= DateTime.UtcNow)
+            {
+                dto.IsAvailable = true;
+                dto.InactiveUntilUtc = null;
+            }
+        }
+
+        _logger.LogInformation("Retrieved {Count} users (search: {Search})", users.Count, request.SearchTerm ?? "(none)");
 
         return users;
     }

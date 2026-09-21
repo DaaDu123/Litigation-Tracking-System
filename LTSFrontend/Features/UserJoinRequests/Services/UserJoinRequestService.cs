@@ -18,17 +18,14 @@ namespace LTSFrontend.Features.UserJoinRequests.Services
             return result ?? new List<JoinableFirmDTO>();
         }
 
-        public Task<int> SubmitAsync(SubmitUserJoinRequest request) =>
-            _api.PostAsync<int>(ApiEndpoints.UserJoinRequests.Base_, new
-            {
-                request.FirmID,
-                request.FullName,
-                request.Email,
-                Password = request.Password,
-                Phone = Norm(request.Phone),
-                Department = Norm(request.Department),
-                request.RequestedRoleID
-            });
+        public Task<int> SubmitAsync(int firmId) =>
+            _api.PostAsync<int>(ApiEndpoints.UserJoinRequests.Base_, new SubmitUserJoinRequest { FirmID = firmId });
+
+        public Task<UserJoinRequestDTO?> GetMineAsync() =>
+            _api.GetAsync<UserJoinRequestDTO?>(ApiEndpoints.UserJoinRequests.Mine);
+
+        public Task<bool> CancelAsync(int requestId) =>
+            _api.PutAsync<bool>(ApiEndpoints.UserJoinRequests.Cancel(requestId));
 
         public async Task<List<UserJoinRequestDTO>> GetAllAsync(string? status = null)
         {

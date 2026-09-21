@@ -1,0 +1,88 @@
+@* Generic reason-required confirmation modal, for actions where the
+   reason is mandatory (Block, Remove) - unlike ConfirmDialog/
+   RejectFirmAdminRequestModal, this one won't let the caller confirm
+   with a blank reason.
+   Usage: <ReasonRequiredModal @ref="_blockModal" OnConfirmed="HandleBlockConfirmedAsync" />
+          _blockModal.Open(user.UserID, $"Block \"{user.FullName}\"?", "...", "Block", "danger"); *@
+@using LTSFrontend.Features.Users.DTOs
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-@Variant">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">@_title</h5>
+                @if (!string.IsNullOrWhiteSpace(_subtitle))
+                {
+                    <p class="lts-modal-subtitle mb-0">@_subtitle</p>
+                }
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            <div class="lts-form-group">
+                <label class="lts-form-label">Reason <span class="text-danger">*</span></label>
+                <textarea class="lts-form-control" rows="3" @bind="_reason" placeholder="Please explain why..."></textarea>
+                @if (_showValidation && string.IsNullOrWhiteSpace(_reason))
+                {
+                    <div class="text-danger small mt-1">A reason is required.</div>
+                }
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-@Variant" @onclick="Confirm">
+                @ConfirmText
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<(int UserId, string Reason)> OnConfirmed { get; set; }
+
+    private bool _isOpen;
+    private int _userId;
+    private string _title = string.Empty;
+    private string? _subtitle;
+    private string ConfirmText { get; set; } = "Confirm";
+    private string Variant { get; set; } = "danger";
+    private string _reason = string.Empty;
+    private bool _showValidation;
+
+    public void Open(int userId, string title, string? subtitle = null, string confirmText = "Confirm", string variant = "danger")
+    {
+        _userId = userId;
+        _title = title;
+        _subtitle = subtitle;
+        ConfirmText = confirmText;
+        Variant = variant;
+        _reason = string.Empty;
+        _showValidation = false;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        if (string.IsNullOrWhiteSpace(_reason))
+        {
+            _showValidation = true;
+            StateHasChanged();
+            return;
+        }
+
+        _isOpen = false;
+        await OnConfirmed.InvokeAsync((_userId, _reason.Trim()));
+    }
+}

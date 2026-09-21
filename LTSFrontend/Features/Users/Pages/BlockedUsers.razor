@@ -1,0 +1,125 @@
+@page "/blocked-users"
+@attribute [Authorize(Roles = "FirmAdmin")]
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IUserService UserService
+@inject ToastService Toast
+
+<PageTitle>Blocked Users - LTS</PageTitle>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Blocked Users</h1>
+        <p class="lts-page-subtitle">Users blocked from accessing your firm. Unblock to restore their previous access.</p>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    @if (_isLoading)
+    {
+        <div class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger m-3">@_errorMessage</div>
+    }
+    else if (_blocked.Count == 0)
+    {
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-person-check display-6 d-block mb-2"></i>
+            No blocked users.
+        </div>
+    }
+    else
+    {
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Contact</th>
+                    <th>Blocked Date</th>
+                    <th>Blocked Reason</th>
+                    <th>Blocked By</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in _blocked)
+                {
+                    <tr>
+                        <td>@user.FullName</td>
+                        <td class="text-muted">@user.Email</td>
+                        <td class="text-muted">@(user.Phone ?? "-")</td>
+                        <td>@(user.BlockedAtUtc?.ToLocalTime().ToString("dd MMM yyyy, h:mm tt") ?? "-")</td>
+                        <td>@user.BlockedReason</td>
+                        <td class="text-muted">@(user.BlockedByName ?? "-")</td>
+                        <td class="text-end">
+                            <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => HandleUnblockAsync(user)">
+                                <i class="bi bi-unlock"></i> Unblock
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<BlockedFirmUserDTO> _blocked = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        try
+        {
+            _blocked = await UserService.GetBlockedAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not load blocked users. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleUnblockAsync(BlockedFirmUserDTO user)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Unblock \"{user.FullName}\"?",
+            "They will regain their previous access to this firm.",
+            "Unblock", "warning");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await UserService.UnblockAsync(user.UserID);
+            await LoadAsync();
+            Toast.Success("User unblocked", $"\"{user.FullName}\" can access the firm again.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't unblock user", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't unblock user", "Please try again.");
+        }
+    }
+}

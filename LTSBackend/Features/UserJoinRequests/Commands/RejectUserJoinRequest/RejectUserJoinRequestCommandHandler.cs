@@ -41,18 +41,23 @@ public class RejectUserJoinRequestCommandHandler(AppDbContext _context, IEmailSe
         _logger.LogInformation("User join request {RequestId} rejected by {ActingUserId}", joinRequest.RequestID, request.ActingUserID);
 
         // Best-effort - don't fail the rejection itself if the email send fails.
-        try
+        // The user's own account (if UserID-linked) still exists and can
+        // request a different firm right away - rejection never deletes it.
+        if (!string.IsNullOrWhiteSpace(joinRequest.Email))
         {
-            var reasonText = string.IsNullOrWhiteSpace(request.Reason) ? string.Empty : $" Reason: {request.Reason}";
-            await _emailService.SendNotificationEmailAsync(
-                joinRequest.Email,
-                joinRequest.FullName,
-                "Your Request to Join the Firm Was Not Approved",
-                $"Your request to join the firm was not approved.{reasonText} You're welcome to submit a new request.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send rejection email to {Email}", joinRequest.Email);
+            try
+            {
+                var reasonText = string.IsNullOrWhiteSpace(request.Reason) ? string.Empty : $" Reason: {request.Reason}";
+                await _emailService.SendNotificationEmailAsync(
+                    joinRequest.Email,
+                    joinRequest.FullName ?? joinRequest.Email,
+                    "Your Request to Join the Firm Was Not Approved",
+                    $"Your request to join the firm was not approved.{reasonText} You're welcome to request a different firm.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send rejection email to {Email}", joinRequest.Email);
+            }
         }
 
         return true;

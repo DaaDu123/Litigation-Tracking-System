@@ -8,7 +8,6 @@ namespace LTSFrontend.Features.Firms.DTOs
     public class CreateFirmDTO
     {
         public string FirmName { get; set; } = string.Empty;
-        public string FirmCode { get; set; } = string.Empty;
         public string? Address { get; set; }
         public string? ContactEmail { get; set; }
         public string? ContactPhone { get; set; }

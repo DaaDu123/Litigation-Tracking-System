@@ -8,7 +8,7 @@
 <PageTitle>Register - LTS</PageTitle>
 
 <h2>Create Account</h2>
-<p class="auth-subtitle">Register to start tracking your firm's litigation</p>
+<p class="auth-subtitle">Register with your email - you'll pick your firm and finish your profile after signing in.</p>
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
@@ -18,19 +18,11 @@
 <EditForm Model="_model" OnValidSubmit="HandleRegisterAsync">
     <DataAnnotationsValidator />
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" placeholder="Enter your full name"
-                   @bind="_model.FullName" @bind:event="oninput" disabled="@_isBusy" required />
-            <ValidationMessage For="() => _model.FullName" class="text-danger small" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" placeholder="Enter your email address"
-                   @bind="_model.Email" @bind:event="oninput" disabled="@_isBusy" required />
-            <ValidationMessage For="() => _model.Email" class="text-danger small" />
-        </div>
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" placeholder="Enter your email address"
+               @bind="_model.Email" @bind:event="oninput" disabled="@_isBusy" required />
+        <ValidationMessage For="() => _model.Email" class="text-danger small" />
     </div>
 
     <div class="row">
@@ -60,28 +52,6 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Phone <span class="text-muted fw-normal">(optional)</span></label>
-            <input type="text" class="form-control" placeholder="03xx-xxxxxxx"
-                   @bind="_model.Phone" @bind:event="oninput" disabled="@_isBusy" />
-            <ValidationMessage For="() => _model.Phone" class="text-danger small" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Department <span class="text-muted fw-normal">(optional)</span></label>
-            <input type="text" class="form-control" placeholder="e.g. Litigation"
-                   @bind="_model.Department" @bind:event="oninput" disabled="@_isBusy" />
-            <ValidationMessage For="() => _model.Department" class="text-danger small" />
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Firm Code</label>
-        <input type="text" class="form-control" placeholder="Ask your Firm Admin for the code"
-               @bind="_model.FirmCode" @bind:event="oninput" disabled="@_isBusy" required />
-        <ValidationMessage For="() => _model.FirmCode" class="text-danger small" />
-    </div>
-
     <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
         @if (_isBusy)
         {
@@ -95,10 +65,7 @@
     Already have an account? <a class="auth-link" href="/login">Sign in</a>
 </div>
 <div class="auth-footer">
-    Joining as Partner, Associate Lawyer, Moharrir, or Intern/Paralegal? <a class="auth-link" href="/request-to-join">Request to join a firm</a>
-</div>
-<div class="auth-footer">
-    Starting a new firm? <a class="auth-link" href="/request-firm-admin">Request Firm Admin access</a>
+    Starting a new firm instead? <a class="auth-link" href="/request-firm-admin">Request Firm Admin access</a>
 </div>
 
 @code {
@@ -123,7 +90,7 @@
         }
         catch (Exception)
         {
-            _errorMessage = "Registration nahi ho saki. Please try again.";
+            _errorMessage = "Registration could not be completed. Please try again.";
         }
         finally
         {

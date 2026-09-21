@@ -4,16 +4,12 @@ namespace LTSBackend.Features.Firms.Commands.CreateFirm;
 
 public class CreateFirmValidator : AbstractValidator<CreateFirmCommand>
 {
-    // Requires the firm's name/code (letters, numbers, hyphens only) and
-    // its first FirmAdmin's name/email/password (standard complexity
-    // rules).
+    // Requires the firm's name and its first FirmAdmin's name/email/
+    // password (standard complexity rules). FirmCode is generated
+    // internally by the handler, never entered by the SuperAdmin.
     public CreateFirmValidator()
     {
         RuleFor(x => x.FirmName).NotEmpty().MaximumLength(150);
-
-        RuleFor(x => x.FirmCode)
-            .NotEmpty().MaximumLength(30)
-            .Matches("^[A-Za-z0-9-]+$").WithMessage("Firm code can only contain letters, numbers, and hyphens.");
 
         RuleFor(x => x.ContactEmail).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.ContactEmail));
 

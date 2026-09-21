@@ -1,0 +1,74 @@
+@* Topbar widget: for a FirmAdmin, shows/sets their own availability;
+   for any other firm role, shows their FirmAdmin's current availability
+   (read-only). Renders nothing for SuperAdmin or a role-less user. *@
+@using LTSFrontend.State
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IUserService UserService
+@inject UserSessionState Session
+
+@if (Session.Role == "FirmAdmin")
+{
+    <button class="lts-icon-btn lts-availability-btn" title="Set your availability" @onclick="OpenModal">
+        @if (_myAvailability?.IsAvailable == false)
+        {
+            <span class="badge bg-warning text-dark">Inactive</span>
+        }
+        else
+        {
+            <span class="badge bg-success">Available</span>
+        }
+    </button>
+    <SetAvailabilityModal @ref="_modal" OnSaved="LoadAsync" />
+}
+else if (IsFirmRole)
+{
+    @if (_firmAdminAvailability != null)
+    {
+        @if (_firmAdminAvailability.IsAvailable)
+        {
+            <span class="badge bg-success" title="@_firmAdminAvailability.FirmAdminName is available">Firm Admin: Available</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary" title="@_firmAdminAvailability.Reason">
+                Firm Admin: Inactive
+                @if (_firmAdminAvailability.InactiveUntilUtc.HasValue)
+                {
+                    <text> (until @_firmAdminAvailability.InactiveUntilUtc.Value.ToLocalTime().ToString("dd MMM, h:mm tt"))</text>
+                }
+            </span>
+        }
+    }
+}
+
+@code {
+    private SetAvailabilityModal _modal = default!;
+    private FirmAdminAvailabilityDTO? _myAvailability;
+    private FirmAdminAvailabilityDTO? _firmAdminAvailability;
+
+    private bool IsFirmRole => Session.Role is "Partner" or "AssociateLawyer" or "Moharrir" or "InternParalegal";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            if (Session.Role == "FirmAdmin")
+            {
+                _myAvailability = await UserService.GetFirmAdminAvailabilityAsync();
+            }
+            else if (IsFirmRole)
+            {
+                _firmAdminAvailability = await UserService.GetFirmAdminAvailabilityAsync();
+            }
+        }
+        catch
+        {
+            // Non-critical widget - fail silently rather than blocking the topbar.
+        }
+    }
+
+    private void OpenModal() => _modal.Open(_myAvailability?.IsAvailable ?? true);
+}

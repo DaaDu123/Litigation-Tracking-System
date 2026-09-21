@@ -1,0 +1,224 @@
+@* Wraps the app's main content. For an authenticated user whose profile
+   is incomplete, this renders a mandatory, non-dismissable completion
+   form INSTEAD of ChildContent - dashboard/navigation/everything else is
+   blocked until the profile is completed, matching the backend's
+   ProfileCompletionBehavior (which independently enforces the same rule
+   on every API call, so this is a UX convenience, not the real gate). *@
+@using LTSFrontend.Core.Auth
+@using LTSFrontend.Features.Profile.DTOs
+@using LTSFrontend.Features.Profile.Services
+@using LTSFrontend.State
+@inject ProfileCompletionState ProfileState
+@inject UserSessionState Session
+@inject IProfileService ProfileService
+
+<style>
+    .lts-profile-gate-backdrop {
+        position: fixed; inset: 0; z-index: 2000;
+        background: rgba(15, 23, 42, 0.55);
+        display: flex; align-items: center; justify-content: center;
+        padding: 1rem; overflow-y: auto;
+    }
+    .lts-profile-gate-card {
+        background: #fff; border-radius: 0.75rem; padding: 1.75rem;
+        width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        max-height: 90vh; overflow-y: auto;
+    }
+    .lts-gate-loading {
+        display: flex; align-items: center; gap: 0.5rem; justify-content: center;
+        padding: 3rem 1rem; color: #6c757d;
+    }
+</style>
+
+@if (!Session.IsAuthenticated)
+{
+    @ChildContent
+}
+else if (!_checked)
+{
+    <div class="lts-gate-loading">
+        <span class="spinner-border spinner-border-sm"></span> Loading your profile…
+    </div>
+}
+else if (ProfileState.Profile is { IsProfileCompleted: false })
+{
+    <div class="lts-profile-gate-backdrop">
+        <div class="lts-profile-gate-card">
+            <div class="text-center mb-3">
+                <i class="bi bi-person-check display-5 text-primary"></i>
+                <h4 class="mt-2 mb-1">Complete Your Profile</h4>
+                <p class="text-muted mb-0">
+                    @(IsFirmAdmin
+                        ? "Your account has been approved. Please complete your profile and firm details before continuing."
+                        : "Please complete your profile before you can browse and request to join a firm.")
+                </p>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="alert alert-danger py-2" style="white-space: pre-line;">@_errorMessage</div>
+            }
+
+            @if (IsFirmAdmin)
+            {
+                <EditForm Model="_adminModel" OnValidSubmit="HandleCompleteFirmAdminAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Your Full Name</label>
+                        <input class="form-control" @bind="_adminModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+                        <ValidationMessage For="() => _adminModel.FullName" class="text-danger small" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contact Number</label>
+                            <input class="form-control" placeholder="03XXXXXXXXX" @bind="_adminModel.Phone" @bind:event="oninput" disabled="@_isBusy" required />
+                            <ValidationMessage For="() => _adminModel.Phone" class="text-danger small" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">CNIC</label>
+                            <input class="form-control" placeholder="35202-1234567-1" @bind="_adminModel.CNIC" @bind:event="oninput" disabled="@_isBusy" required />
+                            <ValidationMessage For="() => _adminModel.CNIC" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label">Firm Name</label>
+                        <input class="form-control" @bind="_adminModel.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
+                        <ValidationMessage For="() => _adminModel.FirmName" class="text-danger small" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Firm Address <span class="text-muted fw-normal">(optional)</span></label>
+                        <input class="form-control" @bind="_adminModel.Address" @bind:event="oninput" disabled="@_isBusy" />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Firm Contact Email <span class="text-muted fw-normal">(optional)</span></label>
+                            <input class="form-control" @bind="_adminModel.ContactEmail" @bind:event="oninput" disabled="@_isBusy" />
+                            <ValidationMessage For="() => _adminModel.ContactEmail" class="text-danger small" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Firm Contact Phone <span class="text-muted fw-normal">(optional)</span></label>
+                            <input class="form-control" placeholder="03XXXXXXXXX" @bind="_adminModel.ContactPhone" @bind:event="oninput" disabled="@_isBusy" />
+                            <ValidationMessage For="() => _adminModel.ContactPhone" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" disabled="@_isBusy">
+                        @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                        Complete Profile
+                    </button>
+                </EditForm>
+            }
+            else
+            {
+                <EditForm Model="_userModel" OnValidSubmit="HandleCompleteFirmUserAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input class="form-control" @bind="_userModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+                        <ValidationMessage For="() => _userModel.FullName" class="text-danger small" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contact Number</label>
+                        <input class="form-control" placeholder="03XXXXXXXXX" @bind="_userModel.Phone" @bind:event="oninput" disabled="@_isBusy" required />
+                        <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">CNIC</label>
+                        <input class="form-control" placeholder="35202-1234567-1" @bind="_userModel.CNIC" @bind:event="oninput" disabled="@_isBusy" required />
+                        <ValidationMessage For="() => _userModel.CNIC" class="text-danger small" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" disabled="@_isBusy">
+                        @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                        Complete Profile
+                    </button>
+                </EditForm>
+            }
+        </div>
+    </div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool _checked;
+    private bool _isBusy;
+    private string? _errorMessage;
+
+    private readonly CompleteFirmAdminProfileRequest _adminModel = new();
+    private readonly CompleteFirmUserProfileRequest _userModel = new();
+
+    // FirmAdmin is the only role that completes the "firm admin" variant
+    // of the form (with Firm details); every other role (or no role yet,
+    // for a Firm User who hasn't joined a firm) gets the simpler form.
+    private bool IsFirmAdmin => Session.Role == "FirmAdmin";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Session.IsAuthenticated && !_checked)
+        {
+            await ProfileState.EnsureLoadedAsync();
+            if (ProfileState.Profile != null)
+            {
+                _adminModel.FullName = ProfileState.Profile.FullName;
+                _userModel.FullName = ProfileState.Profile.FullName;
+            }
+            _checked = true;
+        }
+    }
+
+    private async Task HandleCompleteFirmAdminAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            await ProfileService.CompleteFirmAdminProfileAsync(_adminModel);
+            ProfileState.MarkCompleted();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not save your profile. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task HandleCompleteFirmUserAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            await ProfileService.CompleteFirmUserProfileAsync(_userModel);
+            ProfileState.MarkCompleted();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not save your profile. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

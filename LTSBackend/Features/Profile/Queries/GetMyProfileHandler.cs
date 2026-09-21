@@ -22,6 +22,7 @@ public class GetMyProfileHandler(AppDbContext _context, ILogger<GetMyProfileHand
         var user = await _context.Users
             .AsNoTracking()
             .Include(x => x.Role)
+            .Include(x => x.Firm)
             .FirstOrDefaultAsync(x => x.UserID == request.UserID,cancellationToken);
 
         if (user == null)
@@ -36,9 +37,14 @@ public class GetMyProfileHandler(AppDbContext _context, ILogger<GetMyProfileHand
             FullName = user.FullName,
             Email = user.Email,
             Phone = user.Phone,
+            CNIC = Comman.Validation.PakistaniFormat.FormatCnic(user.CNIC),
             Department = user.Department,
             ProfileImage = user.ProfileImage,
-            RoleName = user.Role?.RoleName
+            RoleName = user.Role?.RoleName,
+            IsProfileCompleted = user.IsProfileCompleted,
+            FirmID = user.FirmID,
+            FirmName = user.Firm?.FirmName,
+            IsAvailable = Services.Availability.AvailabilityEvaluator.GetEffective(user).IsAvailable
         };
 
         _logger.LogInformation("Profile fetched for user: {UserId}", request.UserID);

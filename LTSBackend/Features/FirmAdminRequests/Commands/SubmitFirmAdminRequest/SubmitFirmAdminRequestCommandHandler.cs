@@ -17,40 +17,25 @@ public class SubmitFirmAdminRequestCommandHandler(AppDbContext _context,IPasswor
     private const int FirmAdminRequestNotificationTypeId = 6;
 
     // =====================================================
-    // HANDLE — anonymous self-service request for a new firm workspace
-    // Checks the FirmCode and admin email aren't already a live
-    // firm/user OR already tied to another still-pending request,
-    // hashes the password immediately (plaintext is never stored),
-    // saves the request as Pending, and alerts every active SuperAdmin
-    // (in-app notification + an immediate email, not the 2-minute
-    // dispatcher poll).
+    // HANDLE — anonymous self-service request for a new firm workspace.
+    // Firm Admin registration is deliberately reduced to Email + Password
+    // only - no FirmCode, no firm name, no personal details. The Firm and
+    // the requester's profile are both filled in with system-generated
+    // placeholders on SuperAdmin approval and then completed for real by
+    // the Firm Admin during the mandatory post-login profile-completion
+    // step (CompleteFirmAdminProfileCommand). Checks the admin email
+    // isn't already a live user or tied to another still-pending request,
+    // hashes the password immediately (plaintext is never stored), saves
+    // the request as Pending, and alerts every active SuperAdmin.
     // =====================================================
     public async Task<int> Handle(SubmitFirmAdminRequestCommand request, CancellationToken cancellationToken)
     {
-        var firmCode = request.FirmCode.Trim().ToUpperInvariant();
-        var adminEmail = request.AdminEmail.Trim();
-        var firmName = request.FirmName?.Trim() ?? string.Empty;
-        var address = string.IsNullOrWhiteSpace(request.Address) ? request.Address : request.Address.Trim();
-        var contactEmail = string.IsNullOrWhiteSpace(request.ContactEmail) ? request.ContactEmail : request.ContactEmail.Trim();
-        var contactPhone = string.IsNullOrWhiteSpace(request.ContactPhone) ? request.ContactPhone : request.ContactPhone.Trim();
-        var adminFullName = request.AdminFullName?.Trim() ?? string.Empty;
-        var adminPhone = string.IsNullOrWhiteSpace(request.AdminPhone) ? request.AdminPhone : request.AdminPhone.Trim();
+        var adminEmail = request.Email.Trim();
 
-        // 1. Firm code must not already belong to a live firm, and must not
-        // already be tied to another still-Pending request.
-        bool firmCodeTaken = await _context.Firms.AsNoTracking().AnyAsync(x => x.FirmCode == firmCode, cancellationToken);
-
-        if (firmCodeTaken)
-            throw new ValidationException([$"Firm code '{firmCode}' is already in use."]);
-
-        bool firmCodePending = await _context.FirmAdminRequests.AsNoTracking().AnyAsync(x => x.FirmCode == firmCode && x.Status == "Pending", cancellationToken);
-
-        if (firmCodePending)
-            throw new ValidationException([$"A request for firm code '{firmCode}' is already pending Super Admin review."]);
-
-        // 2. Admin email must not already exist as a real user, and must
-        // not already be tied to another still-Pending request.
-        bool emailTaken = await _context.Users.AsNoTracking().AnyAsync(x => x.Email == adminEmail, cancellationToken);
+        // Admin email must not already exist as a real user, and must
+        // not already be tied to another still-Pending request (either
+        // kind - Firm Admin or Firm User).
+        bool emailTaken = await _context.Users.AsNoTracking().AnyAsync(x => x.Email == adminEmail && !x.IsDeleted, cancellationToken);
 
         if (emailTaken)
             throw new ValidationException([$"Email '{adminEmail}' already exists."]);
@@ -60,20 +45,19 @@ public class SubmitFirmAdminRequestCommandHandler(AppDbContext _context,IPasswor
         if (emailPending)
             throw new ValidationException([$"A request for email '{adminEmail}' is already pending Super Admin review."]);
 
-        // 3. Persist the pending request. Password is hashed now - the
+        bool joinPending = await _context.UserJoinRequests.AsNoTracking().AnyAsync(x => x.Email == adminEmail && x.Status == "Pending", cancellationToken);
+
+        if (joinPending)
+            throw new ValidationException([$"A request for email '{adminEmail}' is already pending review."]);
+
+        // Persist the pending request. Password is hashed now - the
         // plaintext is never stored - so Approve just copies the hash
-        // onto the new User row.
+        // onto the new User row. Firm/admin detail fields are left null;
+        // ApproveFirmAdminRequestCommandHandler fills placeholders.
         var firmAdminRequest = new FirmAdminRequest
         {
-            FirmName = firmName,
-            FirmCode = firmCode,
-            Address = address,
-            ContactEmail = contactEmail,
-            ContactPhone = contactPhone,
-            AdminFullName = adminFullName,
             AdminEmail = adminEmail,
-            AdminPasswordHash = _passwordService.HashPassword(request.AdminPassword),
-            AdminPhone = adminPhone,
+            AdminPasswordHash = _passwordService.HashPassword(request.Password),
             Status = "Pending",
             RequestedAt = DateTime.UtcNow
         };
@@ -81,11 +65,8 @@ public class SubmitFirmAdminRequestCommandHandler(AppDbContext _context,IPasswor
         _context.FirmAdminRequests.Add(firmAdminRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Firm Admin request {RequestId} submitted for firm code {FirmCode} by {AdminEmail}",firmAdminRequest.RequestID, firmCode, adminEmail);
+        _logger.LogInformation("Firm Admin request {RequestId} submitted by {AdminEmail}", firmAdminRequest.RequestID, adminEmail);
 
-        // 4. Alert every Super Admin - in-app Notification AND an
-        // immediate email (not the 2-minute background dispatcher,
-        // this needs to reach them right away).
         await NotifySuperAdminsAsync(firmAdminRequest, cancellationToken);
 
         return firmAdminRequest.RequestID;
@@ -102,9 +83,8 @@ public class SubmitFirmAdminRequestCommandHandler(AppDbContext _context,IPasswor
         }
 
         var subject = "New Firm Admin Request";
-        var message = $"{firmAdminRequest.AdminFullName} ({firmAdminRequest.AdminEmail}) has requested to create a " +
-                       $"new firm workspace \"{firmAdminRequest.FirmName}\" (code: {firmAdminRequest.FirmCode}) and " +
-                       $"become its Firm Admin. Please review and Approve or Reject this request.";
+        var message = $"{firmAdminRequest.AdminEmail} has requested to create a new firm workspace and become its Firm Admin. " +
+                       $"Please review and Approve or Reject this request.";
 
         foreach (var superAdmin in superAdmins)
         {
@@ -119,10 +99,6 @@ public class SubmitFirmAdminRequestCommandHandler(AppDbContext _context,IPasswor
             };
             _context.Notifications.Add(notification);
 
-            // Send the email immediately, right here, instead of waiting
-            // for NotificationEmailDispatcherService's 2-minute poll - a
-            // pending Firm Admin request should reach the Super Admin's
-            // inbox without delay.
             try
             {
                 await _emailService.SendNotificationEmailAsync(superAdmin.Email, superAdmin.FullName, subject, message);
@@ -131,10 +107,6 @@ public class SubmitFirmAdminRequestCommandHandler(AppDbContext _context,IPasswor
             }
             catch (Exception ex)
             {
-                // Don't fail the whole request just because email delivery
-                // failed - the in-app notification (and, as a fallback,
-                // NotificationEmailDispatcherService's next 2-minute pass)
-                // still gets it to the Super Admin.
                 _logger.LogError(ex, "Failed to send immediate Firm Admin request email to Super Admin {Email}", superAdmin.Email);
             }
         }

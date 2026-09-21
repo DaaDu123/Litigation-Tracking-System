@@ -1,83 +1,79 @@
 using LTSBackend.Comman.Enum;
 using LTSBackend.Comman.Exceptions;
 using LTSBackend.Data;
-using LTSBackend.Models.Cases;
 using LTSBackend.Models.Security;
-using LTSBackend.Services;
-using LTSBackend.Services.Email;
+using LTSBackend.Services.CurrentUser;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LTSBackend.Features.UserJoinRequests.Commands.SubmitUserJoinRequest;
 
-public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, IPasswordService _passwordService, IEmailService _emailService,
+public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, ICurrentUserService _currentUser,
     ILogger<SubmitUserJoinRequestCommandHandler> _logger) : IRequestHandler<SubmitUserJoinRequestCommand, int>
 {
-    // NotificationTypeID = 7 ("UserJoinRequest") - seeded in AppDbContext.SeedNotificationTypes.
-    private const int UserJoinRequestNotificationTypeId = 7;
-
     // =====================================================
-    // HANDLE — anonymous self-service request to join an existing firm
-    // Confirms the target firm is real and not blocked/removed, that the
-    // requested role is one of the four joinable roles, that the email
-    // isn't already a live user or tied to another still-pending request
-    // (to this firm or any other), hashes the password immediately
-    // (plaintext is never stored), saves the request as Pending, and
-    // alerts every active FirmAdmin of that specific firm (in-app
-    // notification + an immediate email, not the 2-minute dispatcher poll).
+    // HANDLE — an already-registered, profile-completed Firm User sends
+    // ONE request to join a firm, from their own dashboard.
+    //
+    // Enforces, at the backend (never trusting the frontend to have
+    // already checked these):
+    //   - the caller must be a real, authenticated user (not SuperAdmin -
+    //     they don't join firms);
+    //   - the target firm must exist and not be blocked/deleted;
+    //   - the caller must not already belong to a firm (one firm per
+    //     user - "cannot join multiple firms");
+    //   - the caller must not already have another Pending request
+    //     outstanding ("one active request at a time");
+    //   - the caller must not currently be Blocked from that specific
+    //     firm (checked via FirmMembershipEvents history, since a block
+    //     record survives even if the user was later fully Removed).
     // =====================================================
     public async Task<int> Handle(SubmitUserJoinRequestCommand request, CancellationToken cancellationToken)
     {
-        var email = request.Email.Trim();
-        var fullName = request.FullName?.Trim() ?? string.Empty;
-        var phone = string.IsNullOrWhiteSpace(request.Phone) ? request.Phone : request.Phone.Trim();
-        var department = string.IsNullOrWhiteSpace(request.Department) ? request.Department : request.Department.Trim();
+        if (_currentUser.UserID is null)
+            throw new UnauthorizedException("You must be logged in to request a firm.");
 
-        // 1. Target firm must exist and must currently be usable.
-        var firm = await _context.Firms.AsNoTracking().FirstOrDefaultAsync(x => x.FirmID == request.FirmID, cancellationToken);
+        var userId = _currentUser.UserID.Value;
 
-        if (firm == null || firm.IsDeleted)
-            throw new ValidationException(["The selected firm could not be found."]);
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.UserID == userId, cancellationToken);
+
+        if (user == null)
+            throw new NotFoundException("User not found.");
+
+        if (user.FirmID.HasValue)
+            throw new ValidationException(["You are already a member of a firm."]);
+
+        var firm = await _context.Firms.AsNoTracking().FirstOrDefaultAsync(x => x.FirmID == request.FirmID && !x.IsDeleted, cancellationToken);
+
+        if (firm == null)
+            throw new NotFoundException("Firm not found.");
 
         if (firm.IsBlocked)
-            throw new ValidationException(["This firm workspace is currently blocked and cannot accept new join requests."]);
+            throw new ValidationException(["This firm is not currently accepting requests."]);
 
-        // 2. Requested role must be one of the four joinable roles -
-        // re-checked here too (not just in the validator) since this is
-        // the actual security boundary, not just form UX.
-        if (!RoleHierarchy.IsJoinableRole(request.RequestedRoleID))
-            throw new ValidationException(["Invalid requested role."]);
+        bool alreadyPending = await _context.UserJoinRequests.AsNoTracking().AnyAsync(x => x.UserID == userId && x.Status == "Pending", cancellationToken);
 
-        // 3. Email must not already belong to a live user anywhere, and
-        // must not already be tied to another still-Pending join request
-        // OR a still-Pending Firm Admin request.
-        bool emailTaken = await _context.Users.AsNoTracking().AnyAsync(x => x.Email == email && !x.IsDeleted, cancellationToken);
+        if (alreadyPending)
+            throw new ValidationException(["You already have a pending request. Cancel it before requesting another firm."]);
 
-        if (emailTaken)
-            throw new ValidationException([$"Email '{email}' already exists."]);
+        // A live Blocked record (no later Unblocked event) for this
+        // specific user+firm pair means "cannot re-request this firm".
+        // Being merely Removed does not block re-requesting.
+        var lastEventForFirm = await _context.FirmMembershipEvents.AsNoTracking().IgnoreQueryFilters()
+            .Where(x => x.UserID == userId && x.FirmID == request.FirmID)
+            .OrderByDescending(x => x.PerformedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        bool joinPending = await _context.UserJoinRequests.AsNoTracking().AnyAsync(x => x.Email == email && x.Status == "Pending", cancellationToken);
+        if (lastEventForFirm?.ActionType == "Blocked")
+            throw new ValidationException(["You are blocked from this firm and cannot request to join it."]);
 
-        if (joinPending)
-            throw new ValidationException([$"A request for email '{email}' is already pending review."]);
-
-        bool firmAdminRequestPending = await _context.FirmAdminRequests.AsNoTracking().AnyAsync(x => x.AdminEmail == email && x.Status == "Pending", cancellationToken);
-
-        if (firmAdminRequestPending)
-            throw new ValidationException([$"A Firm Admin request for email '{email}' is already pending review."]);
-
-        // 4. Persist the pending request. Password is hashed now - the
-        // plaintext is never stored - so Approve just copies the hash
-        // onto the new User row.
         var joinRequest = new UserJoinRequest
         {
             FirmID = request.FirmID,
-            FullName = fullName,
-            Email = email,
-            PasswordHash = _passwordService.HashPassword(request.Password),
-            Phone = phone,
-            Department = department,
-            RequestedRoleID = request.RequestedRoleID,
+            UserID = user.UserID,
+            FullName = user.FullName,
+            Email = user.Email,
+            Phone = user.Phone,
             Status = "Pending",
             RequestedAt = DateTime.UtcNow
         };
@@ -85,65 +81,8 @@ public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, IPasswor
         _context.UserJoinRequests.Add(joinRequest);
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("User join request {RequestId} submitted for firm {FirmId} by {Email}, requested role {RoleId}",joinRequest.RequestID, request.FirmID, email, request.RequestedRoleID);
-
-        // 5. Alert every FirmAdmin of THIS firm - in-app Notification AND
-        // an immediate email (not the 2-minute background dispatcher,
-        // this needs to reach them right away).
-        await NotifyFirmAdminsAsync(joinRequest, firm, cancellationToken);
+        _logger.LogInformation("User {UserId} submitted a join request {RequestId} for firm {FirmId}", userId, joinRequest.RequestID, request.FirmID);
 
         return joinRequest.RequestID;
-    }
-
-    private async Task NotifyFirmAdminsAsync(UserJoinRequest joinRequest, Firm firm, CancellationToken cancellationToken)
-    {
-        var firmAdmins = await _context.Users.AsNoTracking()
-            .Where(x => x.FirmID == joinRequest.FirmID && x.RoleID == (int)UserRole.FirmAdmin && x.IsActive && !x.IsDeleted)
-            .ToListAsync(cancellationToken);
-
-        if (firmAdmins.Count == 0)
-        {
-            _logger.LogWarning("No active Firm Admin found for firm {FirmId} to notify about join request {RequestId}", joinRequest.FirmID, joinRequest.RequestID);
-            return;
-        }
-
-        var subject = "New Request to Join Your Firm";
-        var message = $"{joinRequest.FullName} ({joinRequest.Email}) has requested to join \"{firm.FirmName}\" as " +
-                       $"{((UserRole)joinRequest.RequestedRoleID)}. Please review and Approve or Reject this request.";
-
-        foreach (var firmAdmin in firmAdmins)
-        {
-            var notification = new Notification
-            {
-                NotificationTypeID = UserJoinRequestNotificationTypeId,
-                UserID = firmAdmin.UserID,
-                Subject = subject,
-                Message = message,
-                Priority = "High",
-                CreatedDate = DateTime.UtcNow
-            };
-            _context.Notifications.Add(notification);
-
-            // Send the email immediately, right here, instead of waiting
-            // for NotificationEmailDispatcherService's 2-minute poll - a
-            // pending join request should reach the Firm Admin's inbox
-            // without delay.
-            try
-            {
-                await _emailService.SendNotificationEmailAsync(firmAdmin.Email, firmAdmin.FullName, subject, message);
-                notification.IsSent = true;
-                notification.SentDate = DateTime.UtcNow;
-            }
-            catch (Exception ex)
-            {
-                // Don't fail the whole request just because email delivery
-                // failed - the in-app notification (and, as a fallback,
-                // NotificationEmailDispatcherService's next 2-minute pass)
-                // still gets it to the Firm Admin.
-                _logger.LogError(ex, "Failed to send immediate join-request email to Firm Admin {Email}", firmAdmin.Email);
-            }
-        }
-
-        await _context.SaveChangesAsync(cancellationToken);
     }
 }

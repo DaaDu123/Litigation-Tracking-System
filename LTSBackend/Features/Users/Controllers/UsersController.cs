@@ -66,11 +66,11 @@ public class UsersController(IMediator _mediator, ILogger<UsersController> _logg
     // =====================================================
     [HttpGet]
     [Authorize(Roles = RoleNames.PartnerAndAbove)]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] string? search)
     {
-        _logger.LogInformation("Get all users request");
+        _logger.LogInformation("Get all users request (search: {Search})", search ?? "(none)");
 
-        var users = await _mediator.Send(new GetAllUsersQuery());
+        var users = await _mediator.Send(new GetAllUsersQuery(search));
 
         return Ok(ApiResponse<List<UserDTO>>.SuccessResponse(users, "Users successfully fetched"));
     }
@@ -253,4 +253,88 @@ public class UsersController(IMediator _mediator, ILogger<UsersController> _logg
 
         return Ok(ApiResponse<UserDTO>.SuccessResponse(user, "Profile successfully fetched"));
     }
+
+    // =====================================================
+    // BLOCK FIRM USER — FirmAdmin ONLY
+    // Locks a firm user out of the firm entirely (reversible via Unblock).
+    // =====================================================
+    [HttpPut("{id}/block")]
+    [Authorize(Roles = RoleNames.FirmAdminOnly)]
+    public async Task<IActionResult> Block(int id, [FromBody] BlockUserBody body)
+    {
+        var result = await _mediator.Send(new Commands.BlockFirmUser.BlockFirmUserCommand(id, body.Reason));
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "User blocked."));
+    }
+
+    // =====================================================
+    // UNBLOCK FIRM USER — FirmAdmin ONLY
+    // =====================================================
+    [HttpPut("{id}/unblock")]
+    [Authorize(Roles = RoleNames.FirmAdminOnly)]
+    public async Task<IActionResult> Unblock(int id)
+    {
+        var result = await _mediator.Send(new Commands.UnblockFirmUser.UnblockFirmUserCommand(id));
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "User unblocked."));
+    }
+
+    // =====================================================
+    // GET BLOCKED FIRM USERS — FirmAdmin ONLY
+    // =====================================================
+    [HttpGet("blocked")]
+    [Authorize(Roles = RoleNames.FirmAdminOnly)]
+    public async Task<IActionResult> GetBlocked()
+    {
+        var result = await _mediator.Send(new Queries.GetBlockedFirmUsers.GetBlockedFirmUsersQuery());
+        return Ok(ApiResponse<List<Users.DTOs.BlockedFirmUserDTO>>.SuccessResponse(result, "Blocked users fetched"));
+    }
+
+    // =====================================================
+    // REMOVE FIRM USER — FirmAdmin ONLY
+    // Detaches the user from the firm entirely (distinct from Block) -
+    // a mandatory reason is required and shown to the removed user.
+    // =====================================================
+    [HttpPut("{id}/remove")]
+    [Authorize(Roles = RoleNames.FirmAdminOnly)]
+    public async Task<IActionResult> Remove(int id, [FromBody] RemoveUserBody body)
+    {
+        var result = await _mediator.Send(new Commands.RemoveFirmUser.RemoveFirmUserCommand(id, body.Reason));
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "User removed from the firm."));
+    }
+
+    // =====================================================
+    // CHANGE FIRM USER ROLE — FirmAdmin ONLY
+    // =====================================================
+    [HttpPut("{id}/role")]
+    [Authorize(Roles = RoleNames.FirmAdminOnly)]
+    public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleBody body)
+    {
+        var result = await _mediator.Send(new Commands.ChangeUserRole.ChangeUserRoleCommand(id, body.NewRoleID));
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "Role updated."));
+    }
+
+    // =====================================================
+    // SET MY AVAILABILITY — FirmAdmin ONLY
+    // Firm Admin sets their own Active/Inactive status.
+    // =====================================================
+    [HttpPut("me/availability")]
+    [Authorize(Roles = RoleNames.FirmAdminOnly)]
+    public async Task<IActionResult> SetAvailability([FromBody] Commands.SetAvailability.SetAvailabilityCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(ApiResponse<bool>.SuccessResponse(result, command.IsAvailable ? "You are now Active." : "You are now Inactive."));
+    }
+
+    // =====================================================
+    // GET MY FIRM ADMIN'S AVAILABILITY — Any authenticated firm user
+    // =====================================================
+    [HttpGet("firm-admin/availability")]
+    public async Task<IActionResult> GetFirmAdminAvailability()
+    {
+        var result = await _mediator.Send(new Queries.GetFirmAdminAvailability.GetFirmAdminAvailabilityQuery());
+        return Ok(ApiResponse<Users.DTOs.FirmAdminAvailabilityDTO>.SuccessResponse(result, "Availability fetched"));
+    }
 }
+
+public record BlockUserBody(string Reason);
+public record RemoveUserBody(string Reason);
+public record ChangeRoleBody(int NewRoleID);

@@ -99,6 +99,7 @@ namespace LTSFrontend.Core.Extensions
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<ProfileCompletionState>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<INotificationService, NotificationService>();
 

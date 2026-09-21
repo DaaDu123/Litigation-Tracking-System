@@ -2,13 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Auth.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Auth.Register.RegisterCommand / RegisterValidator</summary>
+    /// <summary>
+    /// Mirrors LTSBackend.Features.Auth.Register.RegisterCommand -
+    /// Firm User self-registration is Email + Password only now. Full
+    /// name, phone, CNIC, and firm membership are all collected/chosen
+    /// later (profile completion, then a join request from the dashboard).
+    /// </summary>
     public class RegisterRequest : IValidatableObject
     {
-        [Required(ErrorMessage = "Full name is required.")]
-        [StringLength(150, ErrorMessage = "Full name cannot exceed 150 characters.")]
-        public string FullName { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Invalid email format.")]
         [StringLength(150, ErrorMessage = "Email cannot exceed 150 characters.")]
@@ -22,16 +23,6 @@ namespace LTSFrontend.Features.Auth.DTOs
 
         [Required(ErrorMessage = "Please confirm your password.")]
         public string ConfirmPassword { get; set; } = string.Empty;
-
-        [StringLength(20, ErrorMessage = "Phone cannot exceed 20 characters.")]
-        [RegularExpression(@"^\+?[0-9\-\(\)\s]*$", ErrorMessage = "Phone format is invalid.")]
-        public string? Phone { get; set; }
-
-        [StringLength(100, ErrorMessage = "Department cannot exceed 100 characters.")]
-        public string? Department { get; set; }
-
-        [Required(ErrorMessage = "Firm code is required - ask your Firm Admin for your firm's registration code.")]
-        public string FirmCode { get; set; } = string.Empty;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

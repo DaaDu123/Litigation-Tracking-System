@@ -10,11 +10,11 @@
 @if (_submitted)
 {
     <h2>Request Submitted</h2>
-    <p class="auth-subtitle">Thank you, @_submittedAdminName.</p>
 
     <div class="alert alert-success py-2">
-        Your request to create <strong>@_submittedFirmName</strong> has been sent to a Super Admin for review.
-        You'll receive an email once it's approved (or if it's declined). You can close this page now.
+        Your request has been sent to a Super Admin for review.
+        You'll receive an email once it's approved (or if it's declined). After approval, log in and you'll be
+        asked to complete your profile and set up your firm's details. You can close this page now.
     </div>
 
     <div class="auth-footer">
@@ -24,7 +24,7 @@
 else
 {
     <h2>Request Firm Admin Access</h2>
-    <p class="auth-subtitle">Propose a new firm workspace and become its first Firm Admin. A Super Admin will review and approve your request.</p>
+    <p class="auth-subtitle">Register with your email - you'll set up your firm's name and details after a Super Admin approves your request.</p>
 
     @if (!string.IsNullOrWhiteSpace(_errorMessage))
     {
@@ -34,63 +34,39 @@ else
     <EditForm Model="_model" OnValidSubmit="HandleSubmitAsync">
         <DataAnnotationsValidator />
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Firm Name</label>
-            <input type="text" class="form-control" placeholder="e.g. Alpha Law Associates"
-                   @bind="_model.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
-            <ValidationMessage For="() => _model.FirmName" class="text-danger small" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Firm Code</label>
-            <input type="text" class="form-control" placeholder="e.g. ALPHA-LAW"
-                   @bind="_model.FirmCode" @bind:event="oninput" disabled="@_isBusy" required />
-            <ValidationMessage For="() => _model.FirmCode" class="text-danger small" />
-        </div>
-    </div>
-    <div class="form-text mb-3">This is the code your team members will use to register once approved.</div>
-
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Your Full Name</label>
-            <input type="text" class="form-control" placeholder="Enter your full name"
-                   @bind="_model.AdminFullName" @bind:event="oninput" disabled="@_isBusy" required />
-            <ValidationMessage For="() => _model.AdminFullName" class="text-danger small" />
-        </div>
-        <div class="col-md-6 mb-3">
+        <div class="mb-3">
             <label class="form-label">Your Email</label>
             <input type="email" class="form-control" placeholder="Enter your email address"
-                   @bind="_model.AdminEmail" @bind:event="oninput" disabled="@_isBusy" required />
-            <ValidationMessage For="() => _model.AdminEmail" class="text-danger small" />
+                   @bind="_model.Email" @bind:event="oninput" disabled="@_isBusy" required />
+            <ValidationMessage For="() => _model.Email" class="text-danger small" />
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Password</label>
-            <div class="password-toggle-wrap">
-                <input type="@(_showPassword ? "text" : "password")" class="form-control"
-                       placeholder="8+ chars, mixed case, number & symbol"
-                       @bind="_model.AdminPassword" @bind:event="oninput" disabled="@_isBusy" required />
-                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
-                    <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
-                </button>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Password</label>
+                <div class="password-toggle-wrap">
+                    <input type="@(_showPassword ? "text" : "password")" class="form-control"
+                           placeholder="8+ chars, mixed case, number & symbol"
+                           @bind="_model.Password" @bind:event="oninput" disabled="@_isBusy" required />
+                    <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
+                        <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                    </button>
+                </div>
+                <ValidationMessage For="() => _model.Password" class="text-danger small" />
             </div>
-            <ValidationMessage For="() => _model.AdminPassword" class="text-danger small" />
-        </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Confirm Password</label>
-            <div class="password-toggle-wrap">
-                <input type="@(_showConfirmPassword ? "text" : "password")" class="form-control"
-                       placeholder="Re-enter your password"
-                       @bind="_model.ConfirmPassword" @bind:event="oninput" disabled="@_isBusy" required />
-                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showConfirmPassword = !_showConfirmPassword">
-                    <i class="bi @(_showConfirmPassword ? "bi-eye-slash" : "bi-eye")"></i>
-                </button>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Confirm Password</label>
+                <div class="password-toggle-wrap">
+                    <input type="@(_showConfirmPassword ? "text" : "password")" class="form-control"
+                           placeholder="Re-enter your password"
+                           @bind="_model.ConfirmPassword" @bind:event="oninput" disabled="@_isBusy" required />
+                    <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showConfirmPassword = !_showConfirmPassword">
+                        <i class="bi @(_showConfirmPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                    </button>
+                </div>
+                <ValidationMessage For="() => _model.ConfirmPassword" class="text-danger small" />
             </div>
-            <ValidationMessage For="() => _model.ConfirmPassword" class="text-danger small" />
         </div>
-    </div>
 
         <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
             @if (_isBusy)
@@ -102,10 +78,10 @@ else
     </EditForm>
 
     <div class="auth-footer">
-        <div class="auth-footer">
-            Already have an account? <a class="auth-link" href="/login">Sign in</a>
-        </div><br/>
-        Joining an existing firm instead? <a class="auth-link" href="/request-to-join">Request to join with a Firm Code</a>
+        Already have an account? <a class="auth-link" href="/login">Sign in</a>
+    </div>
+    <div class="auth-footer">
+        Joining an existing firm instead? <a class="auth-link" href="/register">Create a Firm User account</a>
     </div>
 }
 
@@ -115,10 +91,7 @@ else
     private bool _showPassword;
     private bool _showConfirmPassword;
     private string? _errorMessage;
-
     private bool _submitted;
-    private string _submittedFirmName = string.Empty;
-    private string _submittedAdminName = string.Empty;
 
     private async Task HandleSubmitAsync()
     {
@@ -127,8 +100,6 @@ else
         try
         {
             await FirmAdminRequestService.SubmitAsync(_model);
-            _submittedFirmName = _model.FirmName;
-            _submittedAdminName = _model.AdminFullName;
             _submitted = true;
         }
         catch (ApiException ex)
@@ -137,7 +108,7 @@ else
         }
         catch (Exception)
         {
-            _errorMessage = "Request nahi bhej saka. Please try again.";
+            _errorMessage = "Could not submit your request. Please try again.";
         }
         finally
         {

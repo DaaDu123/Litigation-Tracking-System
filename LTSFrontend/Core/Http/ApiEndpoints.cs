@@ -32,6 +32,15 @@
             public static string PermanentDelete(int id) => $"{Root}/{id}/permanent";
             public const string Deleted = Root + "/deleted";
             public static string Release(int id) => $"{Root}/{id}/release";
+            public static string WithSearch(string? search) =>
+                string.IsNullOrWhiteSpace(search) ? Root : $"{Root}?search={Uri.EscapeDataString(search)}";
+            public static string Block(int id) => $"{Root}/{id}/block";
+            public static string Unblock(int id) => $"{Root}/{id}/unblock";
+            public static string Remove(int id) => $"{Root}/{id}/remove";
+            public static string Role(int id) => $"{Root}/{id}/role";
+            public const string Blocked = Root + "/blocked";
+            public const string MyAvailability = Root + "/me/availability";
+            public const string FirmAdminAvailability = Root + "/firm-admin/availability";
         }
 
         public static class Roles
@@ -211,6 +220,8 @@
             private const string Root = Base + "/userjoinrequests";
             public const string Base_ = Root;
             public const string Firms = Root + "/firms";
+            public const string Mine = Root + "/mine";
+            public static string Cancel(int id) => $"{Root}/{id}/cancel";
             public static string WithStatus(string? status)
             {
                 return string.IsNullOrWhiteSpace(status) ? Root : $"{Root}?status={status}";
@@ -232,6 +243,8 @@
         {
             private const string Root = Base + "/profile";
             public const string Me = Root + "/me";
+            public const string CompleteFirmAdmin = Root + "/complete/firm-admin";
+            public const string CompleteFirmUser = Root + "/complete/firm-user";
         }
 
         public static class Dashboard

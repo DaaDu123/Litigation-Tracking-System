@@ -1,0 +1,67 @@
+@* Firm Admin changes a firm user's role among Partner/AssociateLawyer/
+   Moharrir/InternParalegal.
+   Usage: <ChangeRoleModal @ref="_roleModal" OnConfirmed="HandleRoleChangedAsync" />
+          _roleModal.Open(user); *@
+@using LTSFrontend.Core.Enums
+@using LTSFrontend.Features.Users.DTOs
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-person-gear"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Change Role</h5>
+                <p class="lts-modal-subtitle mb-0">@_user?.FullName - current role: @LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(_user?.RoleName)</p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            <div class="lts-form-group">
+                <label class="lts-form-label">New Role</label>
+                <select class="lts-form-control" @bind="_newRoleId">
+                    @foreach (var role in UserRoleExtensions.AssignableByFirmAdmin)
+                    {
+                        <option value="@role.Id">@role.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="Confirm">Save</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<(int UserId, int NewRoleId)> OnConfirmed { get; set; }
+
+    private bool _isOpen;
+    private UserDTO? _user;
+    private int _newRoleId;
+
+    public void Open(UserDTO user)
+    {
+        _user = user;
+        _newRoleId = user.RoleID ?? UserRoleExtensions.AssignableByFirmAdmin.First().Id;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        if (_user == null) return;
+        _isOpen = false;
+        await OnConfirmed.InvokeAsync((_user.UserID, _newRoleId));
+    }
+}

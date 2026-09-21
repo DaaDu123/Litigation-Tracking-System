@@ -7,6 +7,20 @@
         </NavLink>
     </div>
 
+    @* Not yet a member of any firm (new self-registered Firm User, before
+       their join request is accepted) - Session.Role is null in this
+       state. Shown instead of (never alongside) the firm-operational
+       nav above, since AuthorizeView Roles="..." above already excludes
+       a null-role user from all of it. *@
+    @if (string.IsNullOrEmpty(Session.Role))
+    {
+        <div class="nav-item">
+            <NavLink class="nav-link" href="join-firm">
+                <i class="bi bi-building-add"></i> <span class="nav-label">Join a Firm</span>
+            </NavLink>
+        </div>
+    }
+
     @* Firm-operational area - every role except SuperAdmin. SuperAdmin is a
        platform-level role (Firms + system Audit Logs only) and must not see
        case/hearing/deadline/user/master-data screens - see RoleNames.cs and
@@ -64,6 +78,11 @@
             <div class="nav-item">
                 <NavLink class="nav-link" href="user-join-requests">
                     <i class="bi bi-person-plus"></i> <span class="nav-label">Join Requests</span>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="blocked-users">
+                    <i class="bi bi-person-x-fill"></i> <span class="nav-label">Blocked Users</span>
                 </NavLink>
             </div>
         </Authorized>

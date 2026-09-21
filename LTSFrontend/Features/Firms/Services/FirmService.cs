@@ -29,7 +29,6 @@ namespace LTSFrontend.Features.Firms.Services
             _api.PostAsync<int>(ApiEndpoints.Firms.Base_, new
             {
                 dto.FirmName,
-                dto.FirmCode,
                 Address = Norm(dto.Address),
                 ContactEmail = Norm(dto.ContactEmail),
                 ContactPhone = Norm(dto.ContactPhone),

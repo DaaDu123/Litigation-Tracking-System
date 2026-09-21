@@ -14,5 +14,8 @@ namespace LTSFrontend.Features.Users.DTOs
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public string MembershipStatus { get; set; } = "Active";
+        public bool IsAvailable { get; set; } = true;
+        public DateTime? InactiveUntilUtc { get; set; }
     }
 }

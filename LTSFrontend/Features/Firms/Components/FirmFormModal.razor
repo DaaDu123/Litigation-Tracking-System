@@ -41,18 +41,7 @@
                         <div class="lts-form-error">Firm name is required.</div>
                     }
                 </div>
-                @if (!_isEdit)
-                {
-                    <div class="col-md-6 lts-form-group">
-                        <label class="lts-form-label">Firm Code <span class="required">*</span></label>
-                        <input class="lts-form-control" @bind="_firmCode" disabled="@_isSaving" placeholder="e.g. ABC-LAW" />
-                        @if (_showValidation && string.IsNullOrWhiteSpace(_firmCode))
-                        {
-                            <div class="lts-form-error">Firm code is required.</div>
-                        }
-                    </div>
-                }
-                else
+                @if (_isEdit)
                 {
                     <div class="col-md-6 lts-form-group">
                         <label class="lts-form-label">Custom Domain</label>
@@ -136,7 +125,6 @@
 
     private int _firmId;
     private string _firmName = string.Empty;
-    private string _firmCode = string.Empty;
     private string? _customDomain;
     private string? _contactEmail;
     private string? _contactPhone;
@@ -149,7 +137,7 @@
     {
         _isEdit = false;
         _firmId = 0;
-        _firmName = _firmCode = _adminFullName = _adminEmail = _adminPassword = string.Empty;
+        _firmName = _adminFullName = _adminEmail = _adminPassword = string.Empty;
         _customDomain = _contactEmail = _contactPhone = _address = null;
         ResetAndOpen();
     }
@@ -159,7 +147,6 @@
         _isEdit = true;
         _firmId = firm.FirmID;
         _firmName = firm.FirmName;
-        _firmCode = firm.FirmCode;
         _customDomain = firm.CustomDomain;
         _contactEmail = firm.ContactEmail;
         _contactPhone = firm.ContactPhone;
@@ -186,8 +173,7 @@
     {
         if (string.IsNullOrWhiteSpace(_firmName)) return false;
         if (_isEdit) return true;
-        return !string.IsNullOrWhiteSpace(_firmCode)
-            && !string.IsNullOrWhiteSpace(_adminFullName)
+        return !string.IsNullOrWhiteSpace(_adminFullName)
             && !string.IsNullOrWhiteSpace(_adminEmail)
             && !string.IsNullOrWhiteSpace(_adminPassword);
     }
@@ -221,7 +207,6 @@
                 await FirmService.CreateAsync(new CreateFirmDTO
                 {
                     FirmName = _firmName.Trim(),
-                    FirmCode = _firmCode.Trim(),
                     Address = _address,
                     ContactEmail = _contactEmail,
                     ContactPhone = _contactPhone,

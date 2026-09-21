@@ -44,8 +44,8 @@
 <div class="lts-card p-0">
     <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
         <div class="lts-toolbar-left">
-            <SearchBox @bind-Value="_searchTerm" @bind-Value:after="ResetToFirstPage"
-                       Placeholder="Search by name or email..." />
+            <SearchBox @bind-Value="_searchTerm" @bind-Value:after="HandleSearchChangedAsync"
+                       Placeholder="Search by name or contact number..." />
         </div>
         <div class="lts-toolbar-right">
             <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
@@ -58,17 +58,21 @@
         <UserTable Users="PagedUsers" IsLoading="_isLoading" HasError="_hasError" ErrorMessage="_errorMessage"
                    OnRetry="LoadAsync" CanManage="CanManageUsers" CurrentUserId="Session.UserID"
                    HasActiveFilters="!string.IsNullOrWhiteSpace(_searchTerm)"
-                   OnEdit="OpenEditAsync" OnDeactivate="HandleDeactivateAsync" OnActivate="HandleActivateAsync" OnDelete="HandlePermanentDeleteAsync" />
+                   OnEdit="OpenEditAsync" OnDeactivate="HandleDeactivateAsync" OnActivate="HandleActivateAsync" OnDelete="HandlePermanentDeleteAsync"
+                   OnBlock="HandleBlockAsync" OnUnblock="HandleUnblockAsync" OnRemove="HandleRemoveAsync" OnChangeRole="HandleChangeRoleAsync" />
 
-        @if (!_isLoading && !_hasError && FilteredUsers.Count > 0)
+        @if (!_isLoading && !_hasError && _users.Count > 0)
         {
-            <Pagination CurrentPage="_currentPage" TotalItems="FilteredUsers.Count" PageSize="_pageSize" PageChanged="OnPageChanged" />
+            <Pagination CurrentPage="_currentPage" TotalItems="_users.Count" PageSize="_pageSize" PageChanged="OnPageChanged" />
         }
     </div>
 </div>
 
 <UserFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
 <ConfirmDialog @ref="_confirmDialog" />
+<ReasonRequiredModal @ref="_blockModal" OnConfirmed="HandleBlockConfirmedAsync" />
+<ReasonRequiredModal @ref="_removeModal" OnConfirmed="HandleRemoveConfirmedAsync" />
+<ChangeRoleModal @ref="_roleModal" OnConfirmed="HandleRoleConfirmedAsync" />
 
 @code {
     private List<UserDTO> _users = new();
@@ -82,14 +86,17 @@
 
     private UserFormModal _formModal = default!;
     private ConfirmDialog _confirmDialog = default!;
+    private ReasonRequiredModal _blockModal = default!;
+    private ReasonRequiredModal _removeModal = default!;
+    private ChangeRoleModal _roleModal = default!;
 
     /// <summary>
-    /// Gates Edit/Deactivate/Activate/PermanentDelete (the Actions column in
-    /// UserTable). FirmAdmin-only: Partner CAN view this page/list (see the
-    /// page's own @attribute above, now "FirmAdmin,Partner") but has NO
-    /// Create/Update/Delete access to users - view-only. SuperAdmin is
-    /// likewise excluded: firm user management is the firm's own domain,
-    /// not the platform owner's.
+    /// Gates Edit/Deactivate/Activate/PermanentDelete/Block/Remove/Role
+    /// (the Actions column in UserTable). FirmAdmin-only: Partner CAN view
+    /// this page/list (see the page's own @attribute above, now
+    /// "FirmAdmin,Partner") but has NO Create/Update/Delete access to
+    /// users - view-only. SuperAdmin is likewise excluded: firm user
+    /// management is the firm's own domain, not the platform owner's.
     /// </summary>
     private bool CanManageUsers => Session.Role is "FirmAdmin";
 
@@ -100,15 +107,8 @@
     /// </summary>
     private bool CanCreateUsers => Session.Role is "FirmAdmin";
 
-    private List<UserDTO> FilteredUsers =>
-        string.IsNullOrWhiteSpace(_searchTerm)
-            ? _users
-            : _users.Where(u =>
-                u.FullName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                u.Email.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
-
     private List<UserDTO> PagedUsers =>
-        FilteredUsers.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+        _users.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,7 +122,9 @@
         _errorMessage = null;
         try
         {
-            _users = await UserService.GetAllAsync();
+            // Server-side search (per spec) - never fetches the full firm
+            // directory just to filter it client-side.
+            _users = await UserService.GetAllAsync(_searchTerm);
         }
         catch (ApiException ex)
         {
@@ -140,7 +142,11 @@
         }
     }
 
-    private void ResetToFirstPage() => _currentPage = 1;
+    private async Task HandleSearchChangedAsync()
+    {
+        _currentPage = 1;
+        await LoadAsync();
+    }
 
     private void OnPageChanged(int page) => _currentPage = page;
 
@@ -226,6 +232,106 @@
         catch (Exception)
         {
             Toast.Error("Couldn't delete user", "Please try again.");
+        }
+    }
+
+    private Task HandleBlockAsync(UserDTO user)
+    {
+        _blockModal.Open(user.UserID, $"Block \"{user.FullName}\"?",
+            "This user will no longer be able to access or see this firm.", "Block", "danger");
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleBlockConfirmedAsync((int UserId, string Reason) args)
+    {
+        try
+        {
+            await UserService.BlockAsync(args.UserId, args.Reason);
+            await LoadAsync();
+            Toast.Success("User blocked", "They can no longer access this firm.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't block user", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't block user", "Please try again.");
+        }
+    }
+
+    private async Task HandleUnblockAsync(UserDTO user)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Unblock \"{user.FullName}\"?",
+            "They will regain their previous access to this firm.",
+            "Unblock", "warning");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await UserService.UnblockAsync(user.UserID);
+            await LoadAsync();
+            Toast.Success("User unblocked", $"\"{user.FullName}\" can access the firm again.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't unblock user", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't unblock user", "Please try again.");
+        }
+    }
+
+    private Task HandleRemoveAsync(UserDTO user)
+    {
+        _removeModal.Open(user.UserID, $"Remove \"{user.FullName}\" from the firm?",
+            "They will no longer belong to this firm and will be free to request another firm. Please provide a reason.",
+            "Remove", "danger");
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleRemoveConfirmedAsync((int UserId, string Reason) args)
+    {
+        try
+        {
+            await UserService.RemoveAsync(args.UserId, args.Reason);
+            await LoadAsync();
+            Toast.Success("User removed", "They no longer belong to this firm.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't remove user", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't remove user", "Please try again.");
+        }
+    }
+
+    private Task HandleChangeRoleAsync(UserDTO user)
+    {
+        _roleModal.Open(user);
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleRoleConfirmedAsync((int UserId, int NewRoleId) args)
+    {
+        try
+        {
+            await UserService.ChangeRoleAsync(args.UserId, args.NewRoleId);
+            await LoadAsync();
+            Toast.Success("Role updated", "The user's role has been changed.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't change role", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't change role", "Please try again.");
         }
     }
 }

@@ -6,8 +6,9 @@ namespace LTSFrontend.Features.UserJoinRequests.DTOs
         public int RequestID { get; set; }
         public int FirmID { get; set; }
         public string? FirmName { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        public int? UserID { get; set; }
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Department { get; set; }
         public int RequestedRoleID { get; set; }

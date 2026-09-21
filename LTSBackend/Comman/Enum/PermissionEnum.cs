@@ -207,5 +207,37 @@ public enum PermissionEnum
     /// broadly does NOT mean everyone sees the same data (Roles SRS: "no
     /// one can use or view another role's dashboard").
     /// </summary>
-    ViewDashboard = 701
+    ViewDashboard = 701,
+
+    // FIRM/USER WORKFLOW (block, remove, role change, Firm Admin availability)
+    /// <summary>
+    /// Block a firm user (locks them out of the firm entirely, reversible).
+    /// </summary>
+    BlockFirmUser = 209,
+
+    /// <summary>
+    /// Unblock a previously blocked firm user, restoring their prior access.
+    /// </summary>
+    UnblockFirmUser = 210,
+
+    /// <summary>
+    /// Permanently remove a user from the firm (detaches FirmID; the user
+    /// is free to request another firm afterward). Distinct from Block.
+    /// </summary>
+    RemoveFirmUser = 211,
+
+    /// <summary>
+    /// Change a firm user's role among Partner/AssociateLawyer/Moharrir/InternParalegal.
+    /// </summary>
+    ChangeFirmUserRole = 212,
+
+    /// <summary>
+    /// Firm Admin sets their own Active/Inactive availability status.
+    /// </summary>
+    ManageFirmAdminAvailability = 213,
+
+    /// <summary>
+    /// Firm users view their Firm Admin's current availability status.
+    /// </summary>
+    ViewFirmAdminAvailability = 214
 }

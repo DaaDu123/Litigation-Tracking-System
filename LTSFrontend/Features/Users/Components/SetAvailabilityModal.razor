@@ -1,0 +1,131 @@
+@* Firm Admin sets their own Active/Inactive availability.
+   Usage: <SetAvailabilityModal @ref="_availabilityModal" OnSaved="HandleAvailabilitySavedAsync" /> *@
+@using LTSFrontend.Features.Users.DTOs
+@using LTSFrontend.Features.Users.Services
+@inject IUserService UserService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary">
+                <i class="bi bi-toggle-on"></i>
+            </div>
+            <div>
+                <h5 class="lts-modal-title">Set Your Availability</h5>
+            </div>
+        </div>
+
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <div class="alert alert-danger py-2">@_errorMessage</div>
+            }
+
+            <div class="mb-3">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" checked="@_model.IsAvailable" @onchange="() => _model.IsAvailable = true" />
+                    <label class="form-check-label">Active</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" checked="@(!_model.IsAvailable)" @onchange="() => _model.IsAvailable = false" />
+                    <label class="form-check-label">Inactive</label>
+                </div>
+            </div>
+
+            @if (!_model.IsAvailable)
+            {
+                <div class="lts-form-group mb-3">
+                    <label class="lts-form-label">Reason</label>
+                    <textarea class="lts-form-control" rows="2" @bind="_model.Reason" placeholder="I will be unavailable because..."></textarea>
+                </div>
+
+                <label class="lts-form-label">Duration</label>
+                <div class="row g-2 mb-2">
+                    <div class="col-4">
+                        <input type="number" min="0" class="form-control" @bind="_model.Days" placeholder="Days" />
+                        <div class="form-text">Days</div>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" min="0" max="23" class="form-control" @bind="_model.Hours" placeholder="Hours" />
+                        <div class="form-text">Hours</div>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" min="0" max="59" class="form-control" @bind="_model.Minutes" placeholder="Minutes" />
+                        <div class="form-text">Minutes</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close" disabled="@_isBusy">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="Confirm" disabled="@_isBusy">
+                @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isBusy;
+    private string? _errorMessage;
+    private SetAvailabilityRequest _model = new();
+
+    public void Open(bool currentlyAvailable)
+    {
+        _model = new SetAvailabilityRequest { IsAvailable = currentlyAvailable };
+        _errorMessage = null;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task Confirm()
+    {
+        _errorMessage = null;
+
+        if (!_model.IsAvailable)
+        {
+            if (string.IsNullOrWhiteSpace(_model.Reason))
+            {
+                _errorMessage = "Inactive reason is required.";
+                return;
+            }
+            if (_model.Days <= 0 && _model.Hours <= 0 && _model.Minutes <= 0)
+            {
+                _errorMessage = "Inactive duration is required and must be greater than zero.";
+                return;
+            }
+        }
+
+        _isBusy = true;
+        try
+        {
+            await UserService.SetMyAvailabilityAsync(_model);
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not save your availability. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

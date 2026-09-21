@@ -4,12 +4,12 @@ namespace LTSFrontend.Features.FirmAdminRequests.DTOs
     public class FirmAdminRequestDTO
     {
         public int RequestID { get; set; }
-        public string FirmName { get; set; } = string.Empty;
-        public string FirmCode { get; set; } = string.Empty;
+        public string? FirmName { get; set; }
+        public string? FirmCode { get; set; }
         public string? Address { get; set; }
         public string? ContactEmail { get; set; }
         public string? ContactPhone { get; set; }
-        public string AdminFullName { get; set; } = string.Empty;
+        public string? AdminFullName { get; set; }
         public string AdminEmail { get; set; } = string.Empty;
         public string? AdminPhone { get; set; }
         public string Status { get; set; } = string.Empty;

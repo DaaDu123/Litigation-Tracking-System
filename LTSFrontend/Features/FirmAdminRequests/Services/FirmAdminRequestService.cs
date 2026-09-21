@@ -15,15 +15,8 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         public Task<int> SubmitAsync(SubmitFirmAdminRequest request) =>
             _api.PostAsync<int>(ApiEndpoints.FirmAdminRequests.Base_, new
             {
-                request.FirmName,
-                request.FirmCode,
-                Address = Norm(request.Address),
-                ContactEmail = Norm(request.ContactEmail),
-                ContactPhone = Norm(request.ContactPhone),
-                request.AdminFullName,
-                request.AdminEmail,
-                request.AdminPassword,
-                AdminPhone = Norm(request.AdminPhone)
+                request.Email,
+                request.Password
             });
 
         public async Task<List<FirmAdminRequestDTO>> GetAllAsync(string? status = null)

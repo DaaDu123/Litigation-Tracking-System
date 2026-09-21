@@ -2,11 +2,13 @@
 @using LTSFrontend.Core.Auth
 @using LTSFrontend.Features.Auth.Services
 @using LTSFrontend.Features.Notifications.Components
+@using LTSFrontend.Features.Users.Components
 @inject UserSessionState Session
 @inject IAuthService AuthService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject ProfileCompletionState ProfileState
 
 <div class="lts-app-shell @(_sidebarCollapsed ? "sidebar-collapsed" : "") @(_mobileNavOpen ? "mobile-nav-open" : "")">
     <div class="lts-sidebar-backdrop" @onclick="CloseMobileNav"></div>
@@ -31,6 +33,7 @@
                 <span class="brand-text">UniCom Technologies</span>
             </div>
             <div class="lts-topbar-right">
+                <FirmAdminAvailabilityWidget />
                 <button class="lts-icon-btn" title="Toggle theme" @onclick="ToggleThemeAsync">
                     <i class="bi @(_isDarkTheme ? "bi-sun" : "bi-moon-stars")"></i>
                 </button>
@@ -50,7 +53,9 @@
         </div>
 
         <div class="lts-content-body">
-            @Body
+            <ProfileCompletionGate>
+                @Body
+            </ProfileCompletionGate>
         </div>
     </div>
 </div>
@@ -109,6 +114,7 @@
 
         var provider = (CustomAuthStateProvider)AuthStateProvider;
         await provider.MarkUserAsLoggedOutAsync();
+        ProfileState.Reset();
 
         Navigation.NavigateTo("/login", forceLoad: true);
     }

@@ -86,7 +86,7 @@
                                 <div class="fw-semibold">@r.FullName</div>
                                 <div class="text-muted small">@r.Email</div>
                             </td>
-                            <td>@(r.RequestedRoleName ?? UserRoleExtensions.NameOf(r.RequestedRoleID))</td>
+                            <td>@(r.RequestedRoleName ?? "Intern / Paralegal (default)")</td>
                             <td>
                                 @if (r.Status == "Pending")
                                 {
@@ -181,7 +181,7 @@
     private async Task HandleApproveAsync(UserJoinRequestDTO r)
     {
         var confirmed = await _confirmDialog.ShowAsync($"Approve request from \"{r.FullName}\"?",
-            $"This creates and activates their account as {(r.RequestedRoleName ?? UserRoleExtensions.NameOf(r.RequestedRoleID))} in your firm. They'll be able to log in right away.","Approve", "primary");
+            $"This adds them to your firm as {(r.RequestedRoleName ?? "Intern / Paralegal")}. You can change their role afterward from User Management.","Approve", "primary");
 
         if (!confirmed) return;
 

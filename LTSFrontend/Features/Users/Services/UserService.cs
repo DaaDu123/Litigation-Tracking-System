@@ -14,9 +14,9 @@ namespace LTSFrontend.Features.Users.Services
             _api = api;
         }
 
-        public async Task<List<UserDTO>> GetAllAsync()
+        public async Task<List<UserDTO>> GetAllAsync(string? search = null)
         {
-            var result = await _api.GetAsync<List<UserDTO>>(ApiEndpoints.Users.Base_);
+            var result = await _api.GetAsync<List<UserDTO>>(ApiEndpoints.Users.WithSearch(search));
             return result ?? new List<UserDTO>();
         }
 
@@ -69,6 +69,30 @@ namespace LTSFrontend.Features.Users.Services
         {
             return await _api.PutAsync<bool>(ApiEndpoints.Users.Release(id), null);
         }
+
+        public Task<bool> BlockAsync(int id, string reason) =>
+            _api.PutAsync<bool>(ApiEndpoints.Users.Block(id), new { Reason = reason });
+
+        public Task<bool> UnblockAsync(int id) =>
+            _api.PutAsync<bool>(ApiEndpoints.Users.Unblock(id), null);
+
+        public Task<bool> RemoveAsync(int id, string reason) =>
+            _api.PutAsync<bool>(ApiEndpoints.Users.Remove(id), new { Reason = reason });
+
+        public async Task<List<BlockedFirmUserDTO>> GetBlockedAsync()
+        {
+            var result = await _api.GetAsync<List<BlockedFirmUserDTO>>(ApiEndpoints.Users.Blocked);
+            return result ?? new List<BlockedFirmUserDTO>();
+        }
+
+        public Task<bool> ChangeRoleAsync(int id, int newRoleId) =>
+            _api.PutAsync<bool>(ApiEndpoints.Users.Role(id), new { NewRoleID = newRoleId });
+
+        public Task<bool> SetMyAvailabilityAsync(SetAvailabilityRequest request) =>
+            _api.PutAsync<bool>(ApiEndpoints.Users.MyAvailability, request);
+
+        public Task<FirmAdminAvailabilityDTO?> GetFirmAdminAvailabilityAsync() =>
+            _api.GetAsync<FirmAdminAvailabilityDTO?>(ApiEndpoints.Users.FirmAdminAvailability);
 
         private static async Task<MultipartFormDataContent> BuildFormAsync(
             CreateUserDTO dto, IBrowserFile? profileImage, bool includePassword)

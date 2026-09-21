@@ -12,12 +12,13 @@
            ErrorMessage="ErrorMessage" OnRetry="OnRetry"
            EmptyIcon="bi-people" EmptyTitle="@(HasActiveFilters ? "No matching users" : "No users yet")"
            EmptyDescription="@(HasActiveFilters ? "Try adjusting your search." : "Add your first user to get started.")"
-           SkeletonColumnCount="@(CanManage ? 5 : 4)">
+           SkeletonColumnCount="@(CanManage ? 6 : 5)">
     <HeaderContent>
         <th>Name</th>
         <th>Email</th>
         <th>Role</th>
         <th>Status</th>
+        <th>Membership</th>
         @if (CanManage)
         {
             <th class="text-end">Actions</th>
@@ -30,6 +31,34 @@
         <td class="lts-cell-muted">@user.Email</td>
         <td>@(string.IsNullOrWhiteSpace(user.RoleName) ? "-" : LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(user.RoleName))</td>
         <td><StatusBadge IsActive="user.IsActive" /></td>
+        <td>
+            @switch (user.MembershipStatus)
+            {
+                case "Blocked":
+                    <span class="badge bg-danger">Blocked</span>
+                    break;
+                case "Removed":
+                    <span class="badge bg-secondary">Removed</span>
+                    break;
+                default:
+                    @if (user.RoleName == "FirmAdmin")
+                    {
+                        @if (user.IsAvailable)
+                        {
+                            <span class="badge bg-success">Available</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Inactive</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    break;
+            }
+        </td>
         @if (CanManage)
         {
             <td class="text-end">
@@ -53,6 +82,35 @@
                             <i class="bi bi-check-circle text-success"></i>
                         </button>
                     }
+
+                    @if (user.RoleName != "FirmAdmin" && user.UserID != CurrentUserId)
+                    {
+                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Change Role"
+                                @onclick="() => OnChangeRole.InvokeAsync(user)">
+                            <i class="bi bi-person-gear"></i>
+                        </button>
+
+                        @if (user.MembershipStatus == "Blocked")
+                        {
+                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Unblock"
+                                    @onclick="() => OnUnblock.InvokeAsync(user)">
+                                <i class="bi bi-unlock text-success"></i>
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Block from this firm"
+                                    @onclick="() => OnBlock.InvokeAsync(user)">
+                                <i class="bi bi-lock text-danger"></i>
+                            </button>
+                        }
+
+                        <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Remove from this firm"
+                                @onclick="() => OnRemove.InvokeAsync(user)">
+                            <i class="bi bi-person-dash text-danger"></i>
+                        </button>
+                    }
+
                     <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete permanently (cannot be undone)"
                             disabled="@(user.UserID == CurrentUserId)"
                             @onclick="() => OnDelete.InvokeAsync(user)">
@@ -74,7 +132,7 @@
     /// <summary>Whether the current viewer (FirmAdmin/SuperAdmin) can edit/deactivate users - hides the Actions column entirely when false.</summary>
     [Parameter] public bool CanManage { get; set; }
 
-    /// <summary>The signed-in user's own ID, so they can't deactivate themselves from the table.</summary>
+    /// <summary>The signed-in user's own ID, so they can't deactivate/block/remove themselves from the table.</summary>
     [Parameter] public int CurrentUserId { get; set; }
 
     [Parameter] public bool HasActiveFilters { get; set; }
@@ -89,4 +147,16 @@
 
     /// <summary>Permanent, irreversible removal. Frees up the user's email for reuse.</summary>
     [Parameter] public EventCallback<UserDTO> OnDelete { get; set; }
+
+    /// <summary>Locks the user out of the firm entirely (reversible via OnUnblock).</summary>
+    [Parameter] public EventCallback<UserDTO> OnBlock { get; set; }
+
+    /// <summary>Restores a previously blocked user's access.</summary>
+    [Parameter] public EventCallback<UserDTO> OnUnblock { get; set; }
+
+    /// <summary>Detaches the user from the firm entirely (distinct from Block) - a mandatory reason is required.</summary>
+    [Parameter] public EventCallback<UserDTO> OnRemove { get; set; }
+
+    /// <summary>Opens the role-change modal for this user.</summary>
+    [Parameter] public EventCallback<UserDTO> OnChangeRole { get; set; }
 }

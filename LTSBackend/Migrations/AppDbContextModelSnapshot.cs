@@ -1051,7 +1051,6 @@ namespace LTSBackend.Migrations
                         .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("AdminFullName")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -1076,12 +1075,10 @@ namespace LTSBackend.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("FirmCode")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("FirmName")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -1114,6 +1111,44 @@ namespace LTSBackend.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("FirmAdminRequests");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Security.FirmMembershipEvent", b =>
+                {
+                    b.Property<long>("EventID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("EventID"));
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("FirmID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PerformedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("PerformedByUserID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("EventID");
+
+                    b.HasIndex("FirmID");
+
+                    b.HasIndex("UserID", "FirmID");
+
+                    b.ToTable("FirmMembershipEvents");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.LoginHistory", b =>
@@ -1273,6 +1308,16 @@ namespace LTSBackend.Migrations
                             IsInApp = true,
                             IsSMS = false,
                             TypeName = "CompleteProfile"
+                        },
+                        new
+                        {
+                            NotificationTypeID = 9,
+                            Description = "Sent to a firm user when they are blocked, unblocked, or removed from their firm",
+                            IsActive = true,
+                            IsEmail = false,
+                            IsInApp = true,
+                            IsSMS = false,
+                            TypeName = "FirmMembershipChange"
                         });
                 });
 
@@ -1550,6 +1595,42 @@ namespace LTSBackend.Migrations
                             PermissionID = 701,
                             Description = "View one's own role-scoped dashboard",
                             PermissionName = "ViewDashboard"
+                        },
+                        new
+                        {
+                            PermissionID = 209,
+                            Description = "Block a firm user",
+                            PermissionName = "BlockFirmUser"
+                        },
+                        new
+                        {
+                            PermissionID = 210,
+                            Description = "Unblock a previously blocked firm user",
+                            PermissionName = "UnblockFirmUser"
+                        },
+                        new
+                        {
+                            PermissionID = 211,
+                            Description = "Remove a user from the firm",
+                            PermissionName = "RemoveFirmUser"
+                        },
+                        new
+                        {
+                            PermissionID = 212,
+                            Description = "Change a firm user's role",
+                            PermissionName = "ChangeFirmUserRole"
+                        },
+                        new
+                        {
+                            PermissionID = 213,
+                            Description = "Set own Active/Inactive availability (Firm Admin)",
+                            PermissionName = "ManageFirmAdminAvailability"
+                        },
+                        new
+                        {
+                            PermissionID = 214,
+                            Description = "View Firm Admin's availability status",
+                            PermissionName = "ViewFirmAdminAvailability"
                         });
                 });
 
@@ -1810,169 +1891,229 @@ namespace LTSBackend.Migrations
                         new
                         {
                             RolePermissionID = 20,
+                            PermissionID = 209,
+                            RoleID = 2
+                        },
+                        new
+                        {
+                            RolePermissionID = 21,
+                            PermissionID = 210,
+                            RoleID = 2
+                        },
+                        new
+                        {
+                            RolePermissionID = 22,
+                            PermissionID = 211,
+                            RoleID = 2
+                        },
+                        new
+                        {
+                            RolePermissionID = 23,
+                            PermissionID = 212,
+                            RoleID = 2
+                        },
+                        new
+                        {
+                            RolePermissionID = 24,
+                            PermissionID = 213,
+                            RoleID = 2
+                        },
+                        new
+                        {
+                            RolePermissionID = 25,
+                            PermissionID = 214,
+                            RoleID = 2
+                        },
+                        new
+                        {
+                            RolePermissionID = 26,
                             PermissionID = 202,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 21,
+                            RolePermissionID = 27,
                             PermissionID = 203,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 22,
+                            RolePermissionID = 28,
                             PermissionID = 304,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 23,
+                            RolePermissionID = 29,
                             PermissionID = 205,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 24,
+                            RolePermissionID = 30,
                             PermissionID = 301,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 25,
+                            RolePermissionID = 31,
                             PermissionID = 302,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 26,
+                            RolePermissionID = 32,
                             PermissionID = 303,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 27,
+                            RolePermissionID = 33,
                             PermissionID = 305,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 28,
+                            RolePermissionID = 34,
                             PermissionID = 306,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 29,
+                            RolePermissionID = 35,
                             PermissionID = 402,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 30,
+                            RolePermissionID = 36,
                             PermissionID = 307,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 31,
+                            RolePermissionID = 37,
                             PermissionID = 308,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 32,
+                            RolePermissionID = 38,
                             PermissionID = 701,
                             RoleID = 3
                         },
                         new
                         {
-                            RolePermissionID = 33,
+                            RolePermissionID = 39,
+                            PermissionID = 214,
+                            RoleID = 3
+                        },
+                        new
+                        {
+                            RolePermissionID = 40,
                             PermissionID = 401,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 34,
+                            RolePermissionID = 41,
                             PermissionID = 402,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 35,
+                            RolePermissionID = 42,
                             PermissionID = 403,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 36,
+                            RolePermissionID = 43,
                             PermissionID = 404,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 37,
+                            RolePermissionID = 44,
                             PermissionID = 405,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 38,
+                            RolePermissionID = 45,
                             PermissionID = 406,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 39,
+                            RolePermissionID = 46,
                             PermissionID = 701,
                             RoleID = 4
                         },
                         new
                         {
-                            RolePermissionID = 40,
+                            RolePermissionID = 47,
+                            PermissionID = 214,
+                            RoleID = 4
+                        },
+                        new
+                        {
+                            RolePermissionID = 48,
                             PermissionID = 501,
                             RoleID = 5
                         },
                         new
                         {
-                            RolePermissionID = 41,
+                            RolePermissionID = 49,
                             PermissionID = 502,
                             RoleID = 5
                         },
                         new
                         {
-                            RolePermissionID = 42,
+                            RolePermissionID = 50,
                             PermissionID = 505,
                             RoleID = 5
                         },
                         new
                         {
-                            RolePermissionID = 43,
+                            RolePermissionID = 51,
                             PermissionID = 701,
                             RoleID = 5
                         },
                         new
                         {
-                            RolePermissionID = 44,
+                            RolePermissionID = 52,
+                            PermissionID = 214,
+                            RoleID = 5
+                        },
+                        new
+                        {
+                            RolePermissionID = 53,
                             PermissionID = 601,
                             RoleID = 6
                         },
                         new
                         {
-                            RolePermissionID = 45,
+                            RolePermissionID = 54,
                             PermissionID = 602,
                             RoleID = 6
                         },
                         new
                         {
-                            RolePermissionID = 46,
+                            RolePermissionID = 55,
                             PermissionID = 603,
                             RoleID = 6
                         },
                         new
                         {
-                            RolePermissionID = 47,
+                            RolePermissionID = 56,
                             PermissionID = 701,
+                            RoleID = 6
+                        },
+                        new
+                        {
+                            RolePermissionID = 57,
+                            PermissionID = 214,
                             RoleID = 6
                         });
                 });
@@ -1984,6 +2125,10 @@ namespace LTSBackend.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserID"));
+
+                    b.Property<string>("CNIC")
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -2017,7 +2162,20 @@ namespace LTSBackend.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<DateTime?>("InactiveFromUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InactiveReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("InactiveUntilUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
@@ -2026,14 +2184,45 @@ namespace LTSBackend.Migrations
                     b.Property<bool>("IsExternal")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsProfileCompleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsReleasedForReuse")
                         .HasColumnType("bit");
+
+                    b.Property<int?>("LastFirmID")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("LockoutEndUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("MembershipBlockedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("MembershipBlockedByUserID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MembershipBlockedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("MembershipRemovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("MembershipRemovedByUserID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MembershipRemovedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MembershipStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("PasswordChangedDate")
                         .HasColumnType("datetime2");
@@ -2064,11 +2253,21 @@ namespace LTSBackend.Migrations
 
                     b.HasKey("UserID");
 
+                    b.HasIndex("CNIC")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_CNIC")
+                        .HasFilter("[CNIC] IS NOT NULL AND [IsDeleted] = 0");
+
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("FirmID");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_Phone")
+                        .HasFilter("[Phone] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.HasIndex("RoleID");
 
@@ -2085,9 +2284,12 @@ namespace LTSBackend.Migrations
                             FailedLoginAttempts = 0,
                             FullName = "Super Administrator",
                             IsActive = true,
+                            IsAvailable = true,
                             IsDeleted = false,
                             IsExternal = false,
+                            IsProfileCompleted = true,
                             IsReleasedForReuse = false,
+                            MembershipStatus = "Active",
                             PasswordHash = "$2b$12$AGEF6nAJGVAKB/AtUDhyFuq23a7GuZLpG4g7dUeYvYPXmEimSSXN6",
                             RoleID = 1,
                             SecurityStamp = "SEED-STAMP-USER-0001"
@@ -2110,7 +2312,6 @@ namespace LTSBackend.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -2118,12 +2319,10 @@ namespace LTSBackend.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("FullName")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -2154,6 +2353,9 @@ namespace LTSBackend.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("Pending");
 
+                    b.Property<int?>("UserID")
+                        .HasColumnType("int");
+
                     b.HasKey("RequestID");
 
                     b.HasIndex("Email");
@@ -2161,6 +2363,8 @@ namespace LTSBackend.Migrations
                     b.HasIndex("FirmID");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("UserID");
 
                     b.ToTable("UserJoinRequests");
                 });
@@ -2523,6 +2727,25 @@ namespace LTSBackend.Migrations
                     b.Navigation("Firm");
                 });
 
+            modelBuilder.Entity("LTSBackend.Models.Security.FirmMembershipEvent", b =>
+                {
+                    b.HasOne("LTSBackend.Models.Security.Firm", "Firm")
+                        .WithMany()
+                        .HasForeignKey("FirmID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LTSBackend.Models.Security.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Firm");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LTSBackend.Models.Security.LoginHistory", b =>
                 {
                     b.HasOne("LTSBackend.Models.Security.User", "User")
@@ -2599,7 +2822,14 @@ namespace LTSBackend.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("LTSBackend.Models.Security.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Firm");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.UserOtp", b =>
