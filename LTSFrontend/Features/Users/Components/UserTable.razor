@@ -2,10 +2,14 @@
    loading/empty/error states match every other list in the app (see
    RoleList.razor). The caller owns data loading, search, and pagination -
    this component only renders the given page of users and raises callbacks.
+   No general "Edit" action is exposed here: a Firm Admin may only change a
+   user's role (ChangeRoleModal) or lifecycle status (activate/deactivate/
+   block/remove/delete) - never another person's name, contact info, or
+   profile photo, which only that person can edit for themselves.
    Usage:
      <UserTable Users="PagedUsers" IsLoading="_isLoading" HasError="_hasError"
                 ErrorMessage="_errorMessage" OnRetry="LoadAsync" CanManage="CanManageUsers"
-                CurrentUserId="Session.UserID" OnEdit="OpenEditAsync" OnDelete="HandleDeleteAsync" /> *@
+                CurrentUserId="Session.UserID" OnDelete="HandleDeleteAsync" /> *@
 @using LTSFrontend.Features.Users.DTOs
 
 <DataTable TItem="UserDTO" Items="Users" IsLoading="IsLoading" HasError="HasError"
@@ -63,10 +67,6 @@
         {
             <td class="text-end">
                 <div class="lts-row-actions">
-                    <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit"
-                            @onclick="() => OnEdit.InvokeAsync(user)">
-                        <i class="bi bi-pencil"></i>
-                    </button>
                     @if (user.IsActive)
                     {
                         <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Deactivate (reversible - blocks sign-in, keeps the account)"
@@ -136,8 +136,6 @@
     [Parameter] public int CurrentUserId { get; set; }
 
     [Parameter] public bool HasActiveFilters { get; set; }
-
-    [Parameter] public EventCallback<UserDTO> OnEdit { get; set; }
 
     /// <summary>Reversible: sets IsActive = false. User keeps showing in the list and can be turned back on.</summary>
     [Parameter] public EventCallback<UserDTO> OnDeactivate { get; set; }

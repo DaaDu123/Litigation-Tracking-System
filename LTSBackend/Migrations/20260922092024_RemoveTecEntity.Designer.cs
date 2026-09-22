@@ -4,6 +4,7 @@ using LTSBackend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LTSBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922092024_RemoveTecEntity")]
+    partial class RemoveTecEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,7 +70,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("AuditLogs", (string)null);
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Case", b =>
@@ -197,7 +200,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("StatusID");
 
-                    b.ToTable("Cases", (string)null);
+                    b.ToTable("Cases");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseAssignment", b =>
@@ -242,7 +245,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("CaseID", "EndDate");
 
-                    b.ToTable("CaseAssignments", (string)null);
+                    b.ToTable("CaseAssignments");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseMilestone", b =>
@@ -278,7 +281,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("CaseID");
 
-                    b.ToTable("CaseMilestones", (string)null);
+                    b.ToTable("CaseMilestones");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseNote", b =>
@@ -313,7 +316,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("CaseNotes", (string)null);
+                    b.ToTable("CaseNotes");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseParty", b =>
@@ -373,7 +376,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("CaseID");
 
-                    b.ToTable("CaseParties", (string)null);
+                    b.ToTable("CaseParties");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseStatusHistory", b =>
@@ -407,7 +410,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("CaseID");
 
-                    b.ToTable("CaseStatusHistory", (string)null);
+                    b.ToTable("CaseStatusHistory");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Deadline", b =>
@@ -448,7 +451,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("CaseID", "Completed");
 
-                    b.ToTable("Deadlines", (string)null);
+                    b.ToTable("Deadlines");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Document", b =>
@@ -514,7 +517,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("DocumentTypeID");
 
-                    b.ToTable("Documents", (string)null);
+                    b.ToTable("Documents");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.DocumentPermission", b =>
@@ -556,7 +559,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("DocumentID", "UserID");
 
-                    b.ToTable("DocumentPermissions", (string)null);
+                    b.ToTable("DocumentPermissions");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Hearing", b =>
@@ -613,7 +616,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("HearingDate");
 
-                    b.ToTable("Hearings", (string)null);
+                    b.ToTable("Hearings");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.HearingAttendance", b =>
@@ -654,7 +657,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("HearingID", "UserID")
                         .IsUnique();
 
-                    b.ToTable("HearingAttendance", (string)null);
+                    b.ToTable("HearingAttendance");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Notification", b =>
@@ -709,7 +712,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.CaseCategory", b =>
@@ -739,7 +742,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("FirmID");
 
-                    b.ToTable("CaseCategories", (string)null);
+                    b.ToTable("CaseCategories");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.CaseStage", b =>
@@ -769,7 +772,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("FirmID");
 
-                    b.ToTable("CaseStages", (string)null);
+                    b.ToTable("CaseStages");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.CaseStatus", b =>
@@ -806,7 +809,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("FirmID");
 
-                    b.ToTable("CaseStatus", (string)null);
+                    b.ToTable("CaseStatus");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.Court", b =>
@@ -847,7 +850,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("FirmID");
 
-                    b.ToTable("Courts", (string)null);
+                    b.ToTable("Courts");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.Department", b =>
@@ -881,7 +884,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("FirmID");
 
-                    b.ToTable("Departments", (string)null);
+                    b.ToTable("Departments");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.DocumentType", b =>
@@ -911,7 +914,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("FirmID");
 
-                    b.ToTable("DocumentTypes", (string)null);
+                    b.ToTable("DocumentTypes");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.Firm", b =>
@@ -1004,7 +1007,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("FirmCode")
                         .IsUnique();
 
-                    b.ToTable("Firms", (string)null);
+                    b.ToTable("Firms");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.FirmAdminRequest", b =>
@@ -1084,7 +1087,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("FirmAdminRequests", (string)null);
+                    b.ToTable("FirmAdminRequests");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.FirmMembershipEvent", b =>
@@ -1122,7 +1125,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID", "FirmID");
 
-                    b.ToTable("FirmMembershipEvents", (string)null);
+                    b.ToTable("FirmMembershipEvents");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.LoginHistory", b =>
@@ -1163,7 +1166,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("UserID", "LoginTime")
                         .IsDescending(false, true);
 
-                    b.ToTable("LoginHistories", (string)null);
+                    b.ToTable("LoginHistories");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.NotificationType", b =>
@@ -1200,7 +1203,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("TypeName")
                         .IsUnique();
 
-                    b.ToTable("NotificationTypes", (string)null);
+                    b.ToTable("NotificationTypes");
 
                     b.HasData(
                         new
@@ -1332,7 +1335,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("PasswordResetTokens", (string)null);
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.Permission", b =>
@@ -1357,7 +1360,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("PermissionName")
                         .IsUnique();
 
-                    b.ToTable("Permissions", (string)null);
+                    b.ToTable("Permissions");
 
                     b.HasData(
                         new
@@ -1640,7 +1643,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID", "IsRevoked");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.Role", b =>
@@ -1671,7 +1674,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("RoleName")
                         .IsUnique();
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("Roles");
 
                     b.HasData(
                         new
@@ -1745,7 +1748,7 @@ namespace LTSBackend.Migrations
                     b.HasIndex("RoleID", "PermissionID")
                         .IsUnique();
 
-                    b.ToTable("RolePermissions", (string)null);
+                    b.ToTable("RolePermissions");
 
                     b.HasData(
                         new
@@ -2245,7 +2248,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("RoleID");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
@@ -2340,7 +2343,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("UserJoinRequests", (string)null);
+                    b.ToTable("UserJoinRequests");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.UserOtp", b =>
@@ -2382,7 +2385,7 @@ namespace LTSBackend.Migrations
 
                     b.HasIndex("Email", "OtpCode");
 
-                    b.ToTable("UserOtps", (string)null);
+                    b.ToTable("UserOtps");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Audit.AuditLog", b =>

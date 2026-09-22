@@ -4,7 +4,6 @@ using LTSBackend.Features.Users.Commands.CreateUser;
 using LTSBackend.Features.Users.Commands.DeleteUser;
 using LTSBackend.Features.Users.Commands.PermanentDeleteUser;
 using LTSBackend.Features.Users.Commands.ReleaseUserEmail;
-using LTSBackend.Features.Users.Commands.UpdateUser;
 using LTSBackend.Features.Users.DTOs;
 using LTSBackend.Features.Users.Queries.GetAllUsers;
 using LTSBackend.Features.Users.Queries.GetDeletedUsers;
@@ -96,30 +95,16 @@ public class UsersController(IMediator _mediator, ILogger<UsersController> _logg
     }
 
     // =====================================================
-    // UPDATE USER — FirmAdmin ONLY
-    // Edits an existing user's details (name, contact info, role, photo,
-    // etc.). The route id and the command's UserID must match, guarding
-    // against a mismatched/forged request body. The acting user's ID is
-    // taken from the JWT claim and stamped onto the command for auditing
-    // and role-hierarchy checks inside the handler.
+    // NOTE: there is deliberately no generic "Update User" endpoint here.
+    // By policy, nobody may change another person's profile (name,
+    // contact info, or photo) — that's only ever editable by the user
+    // themselves via PUT /api/profile/me (ProfileController). A Firm
+    // Admin's only levers over an existing user are role
+    // (PUT /api/users/{id}/role, below) and lifecycle status
+    // (activate/deactivate/block/unblock/remove/permanent-delete, all
+    // FirmAdminOnly, all below). This mirrors the frontend, which has no
+    // "Edit User" screen anymore either.
     // =====================================================
-    [HttpPut("{id}")]
-    [Authorize(Roles = RoleNames.FirmAdminOnly)]
-    public async Task<IActionResult> Update(int id, [FromForm] UpdateUserCommand command)
-    {
-        _logger.LogInformation("Update user request: {UserID}", id);
-
-        if (id != command.UserID)
-            return BadRequest(ApiResponse<bool>.FailureResponse("URL and body user ID do not match"));
-
-        var actingUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(actingUserIdClaim, out var actingUserId))
-            return Unauthorized(ApiResponse<bool>.FailureResponse("Invalid identity."));
-
-        var result = await _mediator.Send(command with { ActingUserID = actingUserId });
-
-        return Ok(ApiResponse<bool>.SuccessResponse(result, "User successfully updated"));
-    }
 
     // =====================================================
     // DELETE USER (Deactivate — reversible) — FirmAdmin ONLY

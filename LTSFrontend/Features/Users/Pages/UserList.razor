@@ -58,7 +58,7 @@
         <UserTable Users="PagedUsers" IsLoading="_isLoading" HasError="_hasError" ErrorMessage="_errorMessage"
                    OnRetry="LoadAsync" CanManage="CanManageUsers" CurrentUserId="Session.UserID"
                    HasActiveFilters="!string.IsNullOrWhiteSpace(_searchTerm)"
-                   OnEdit="OpenEditAsync" OnDeactivate="HandleDeactivateAsync" OnActivate="HandleActivateAsync" OnDelete="HandlePermanentDeleteAsync"
+                   OnDeactivate="HandleDeactivateAsync" OnActivate="HandleActivateAsync" OnDelete="HandlePermanentDeleteAsync"
                    OnBlock="HandleBlockAsync" OnUnblock="HandleUnblockAsync" OnRemove="HandleRemoveAsync" OnChangeRole="HandleChangeRoleAsync" />
 
         @if (!_isLoading && !_hasError && _users.Count > 0)
@@ -152,13 +152,10 @@
 
     private Task OpenCreateAsync() => _formModal.OpenForCreateAsync();
 
-    private Task OpenEditAsync(UserDTO user) => _formModal.OpenForEditAsync(user);
-
     private async Task HandleSavedAsync(bool wasEdit)
     {
         await LoadAsync();
-        Toast.Success(wasEdit ? "User updated" : "User created",
-            wasEdit ? "The user's details have been saved." : "The new user can now sign in with their password.");
+        Toast.Success("User created", "The new user can now sign in with their password.");
     }
 
     private async Task HandleDeactivateAsync(UserDTO user)

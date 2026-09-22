@@ -50,9 +50,14 @@ public class ProfileController : ControllerBase
     // =====================================================
     // UPDATE MY PROFILE — Any authenticated user
     // Lets a user edit their own profile fields (name, contact info,
-    // photo, etc.). Per SRS FR-19, a user cannot change their own role
-    // through this endpoint — role changes are FirmAdmin/SuperAdmin-only,
-    // handled elsewhere (UsersController.Update).
+    // photo, etc.) — and ONLY their own: UserID is always overwritten
+    // from the caller's own JWT claim just below, never trusted from the
+    // request body, so nobody can point this at someone else's account.
+    // Per SRS FR-19, a user cannot change their own role through this
+    // endpoint — role changes are FirmAdmin-only, via
+    // PUT /api/users/{id}/role (UsersController.ChangeRole). There is no
+    // endpoint, for any role, that edits another user's name/contact
+    // info/photo — see UsersController for that policy.
     // =====================================================
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMyProfile([FromForm] UpdateMyProfileCommand command)

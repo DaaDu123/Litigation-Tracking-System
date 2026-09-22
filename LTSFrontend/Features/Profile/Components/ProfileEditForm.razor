@@ -8,6 +8,7 @@
                        ApiError="_apiError" FileSelected="OnFileSelected"
                        OnValidSubmit="HandleSubmitAsync" /> *@
 @using LTSFrontend.Features.Profile.DTOs
+@using LTSFrontend.Shared.Validation
 
 @if (!string.IsNullOrWhiteSpace(ApiError))
 {
@@ -51,8 +52,9 @@
         <div class="col-md-6">
             <div class="lts-form-group">
                 <label class="lts-form-label">Phone</label>
-                <InputText @bind-Value="Form.Phone" class="lts-form-control" maxlength="20"
-                           placeholder="e.g. +92 300 1234567" disabled="@IsSaving" />
+                <InputText @bind-Value:get="Form.Phone" @bind-Value:set="v => Form.Phone = InputSanitizers.SanitizePhone(v)"
+                           class="lts-form-control" maxlength="20" inputmode="tel"
+                           placeholder="e.g. 03001234567 or +923001234567" disabled="@IsSaving" />
                 <ValidationMessage For="() => Form.Phone" class="lts-form-error" />
             </div>
         </div>

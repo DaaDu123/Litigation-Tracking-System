@@ -18,13 +18,13 @@ public static class RoleHierarchy
         // A user can only assign a role that is STRICTLY lower privilege
         // than their own (numerically greater), never equal or higher.
         // This is what enforces the SRS rule "Firm Admin cannot create
-        // another Firm Admin" - the only caller of this method today is
-        // FirmAdmin (Create/UpdateUser are both [Authorize(Roles =
-        // RoleNames.FirmAdminAndAbove)], i.e. FirmAdmin only), and with a
-        // strict ">" a FirmAdmin(2) can no longer assign FirmAdmin(2) to
-        // someone else - only Partner/AssociateLawyer/Moharrir/InternParalegal
-        // (3,4,5,6), exactly as the SRS's "Firm Admin can create only:
-        // Partner, Associate Lawyer, Moharrir, Intern/Paralegal" states.
+        // another Firm Admin" - the only callers of this method today are
+        // CreateUserCommandHandler and ChangeUserRoleCommandHandler, both
+        // FirmAdmin-only, and with a strict ">" a FirmAdmin(2) can no
+        // longer assign FirmAdmin(2) to someone else - only
+        // Partner/AssociateLawyer/Moharrir/InternParalegal (3,4,5,6),
+        // exactly as the SRS's "Firm Admin can create only: Partner,
+        // Associate Lawyer, Moharrir, Intern/Paralegal" states.
         return (int)targetRole > (int)actingUserRole;
     }
 

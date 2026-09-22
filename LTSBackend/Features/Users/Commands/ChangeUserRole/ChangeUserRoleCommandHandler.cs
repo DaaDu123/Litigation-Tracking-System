@@ -18,7 +18,15 @@ public class ChangeUserRoleCommandHandler(AppDbContext _context, ICurrentUserSer
     // Firm A cannot even load a Firm B user, let alone change their
     // role). Reuses RoleHierarchy.CanAssignRole - the same rule that
     // stops a FirmAdmin creating another FirmAdmin also stops this from
-    // ever assigning FirmAdmin/SuperAdmin.
+    // ever assigning FirmAdmin/SuperAdmin. Also refuses to touch a target
+    // who is themselves FirmAdmin/SuperAdmin, matching
+    // BlockFirmUserCommandHandler/RemoveFirmUserCommandHandler.
+    // Immediately invalidates the target's current session (SecurityStamp
+    // + revoke refresh tokens) so the new role takes effect right away,
+    // not just on their next login — this is now the ONLY way a role
+    // changes (there is no more general "Update User" endpoint), so it
+    // has to carry the same session-invalidation guarantee that endpoint
+    // used to.
     // =====================================================
     public async Task<bool> Handle(ChangeUserRoleCommand request, CancellationToken cancellationToken)
     {
@@ -31,11 +39,19 @@ public class ChangeUserRoleCommandHandler(AppDbContext _context, ICurrentUserSer
         var user = await _context.Users.FirstOrDefaultAsync(x => x.UserID == request.UserID, cancellationToken)
             ?? throw new NotFoundException("This user is not a member of this firm.");
 
+        if (user.RoleID == (int)UserRole.FirmAdmin || user.RoleID == (int)UserRole.SuperAdmin)
+            throw new ValidationException(["This user's role cannot be changed."]);
+
         if (!RoleHierarchy.CanAssignRole(UserRole.FirmAdmin, request.NewRoleID))
             throw new ValidationException(["That role cannot be assigned."]);
 
         var oldRoleId = user.RoleID;
         user.RoleID = request.NewRoleID;
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+
+        var activeTokens = await _context.RefreshTokens.Where(x => x.UserID == user.UserID && !x.IsRevoked).ToListAsync(cancellationToken);
+        foreach (var token in activeTokens)
+            token.IsRevoked = true;
 
         _context.AuditLogs.Add(_auditService.Create(_currentUser.UserID,
             $"Changed role for user {user.Email} (UserID {user.UserID}) from {oldRoleId} to {(UserRole)request.NewRoleID}"));

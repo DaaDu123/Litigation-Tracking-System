@@ -27,6 +27,14 @@ public class LoginHandler(AppDbContext _context, IPasswordService _passwordServi
     // rejects deleted/unverified accounts and blocked/removed firm
     // workspaces, then issues an access + refresh token pair, records the
     // login in LoginHistory, and writes an audit log entry.
+    //
+    // SECURITY: an unknown email and a wrong password both return the
+    // exact same "Invalid credentials." message (and take about the same
+    // time, via the dummy password verify below) on purpose - this is an
+    // anti-enumeration measure so an attacker can't tell which emails are
+    // registered by watching for a different error message or response
+    // time. Do not special-case "account not found" with a distinct
+    // message.
     // =====================================================
     public async Task<LoginResponseDTO> Handle(LoginCommand request, CancellationToken cancellationToken)
     {

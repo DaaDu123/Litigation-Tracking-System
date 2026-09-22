@@ -1,5 +1,6 @@
 @page "/users/details/{UserId:int}"
 @attribute [Authorize(Roles = "FirmAdmin,Partner")]
+@using LTSFrontend.Features.Users.Components
 @using LTSFrontend.Features.Users.DTOs
 @using LTSFrontend.Features.Users.Services
 @inject IUserService UserService
@@ -47,11 +48,11 @@ else
                 <StatusBadge IsActive="_user.IsActive" />
             </p>
         </div>
-        @if (CanManage)
+        @if (CanChangeRole)
         {
             <div class="lts-page-header-actions">
-                <button class="lts-btn lts-btn-outline" @onclick='() => Nav.NavigateTo($"/users/edit/{UserId}")'>
-                    <i class="bi bi-pencil"></i> Edit
+                <button class="lts-btn lts-btn-outline" @onclick="OpenChangeRoleModal">
+                    <i class="bi bi-person-gear"></i> Change Role
                 </button>
             </div>
         }
@@ -85,6 +86,8 @@ else
             </div>
         </div>
     </div>
+
+    <ChangeRoleModal @ref="_roleModal" OnConfirmed="HandleRoleConfirmedAsync" />
 }
 
 @code {
@@ -93,13 +96,21 @@ else
     private UserDTO? _user;
     private bool _isLoading = true;
     private bool _notFound;
+    private ChangeRoleModal _roleModal = default!;
 
-    /// <summary>Gates the "Edit" button. FirmAdmin-only - Partner can VIEW
+    /// <summary>Gates the "Change Role" button - the only lever a Firm
+    /// Admin has over another user from this page (see UserTable.razor:
+    /// a Firm Admin can change role and lifecycle status, but never
+    /// another person's name, contact info, or profile photo - that stays
+    /// self-service via "My Profile"). FirmAdmin-only - Partner can VIEW
     /// this page (see the page's own [Authorize(Roles =
-    /// "FirmAdmin,Partner")] above) but has no Create/Update/Delete access
-    /// to users, matching EditUser.razor's [Authorize(Roles =
-    /// "FirmAdmin")].</summary>
-    private bool CanManage => Session.Role is "FirmAdmin";
+    /// "FirmAdmin,Partner")] above) but has no manage access to users.
+    /// Also excludes the workspace's own FirmAdmin and the acting user
+    /// themselves, mirroring UserTable.razor's rule.</summary>
+    private bool CanChangeRole =>
+        Session.Role is "FirmAdmin" &&
+        _user is { RoleName: not "FirmAdmin" } &&
+        _user.UserID != Session.UserID;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -121,6 +132,29 @@ else
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private void OpenChangeRoleModal()
+    {
+        if (_user != null) _roleModal.Open(_user);
+    }
+
+    private async Task HandleRoleConfirmedAsync((int UserId, int NewRoleId) args)
+    {
+        try
+        {
+            await UserService.ChangeRoleAsync(args.UserId, args.NewRoleId);
+            Toast.Success("Role updated", "The user's role has been changed.");
+            await OnParametersSetAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't change role", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't change role", "Please try again.");
         }
     }
 }

@@ -31,7 +31,7 @@ namespace LTSBackend.Features.Roles.Controllers;
 // "ManageRoles" more broadly here.
 // Assigning EXISTING permissions to a user within one's own firm is a
 // separate, already-scoped concern - see Features/Permissions (per-user
-// grants) and CreateUser/UpdateUser's RoleHierarchy.CanAssignRole check.
+// grants) and CreateUser/ChangeUserRole's RoleHierarchy.CanAssignRole check.
 [Route("api/[controller]")]
 [ApiController]
 [HasPermission("ManageRoles")]

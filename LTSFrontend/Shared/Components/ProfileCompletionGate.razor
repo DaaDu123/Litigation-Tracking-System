@@ -1,12 +1,7 @@
-@* Wraps the app's main content. For an authenticated user whose profile
-   is incomplete, this renders a mandatory, non-dismissable completion
-   form INSTEAD of ChildContent - dashboard/navigation/everything else is
-   blocked until the profile is completed, matching the backend's
-   ProfileCompletionBehavior (which independently enforces the same rule
-   on every API call, so this is a UX convenience, not the real gate). *@
 @using LTSFrontend.Core.Auth
 @using LTSFrontend.Features.Profile.DTOs
 @using LTSFrontend.Features.Profile.Services
+@using LTSFrontend.Shared.Validation
 @using LTSFrontend.State
 @inject ProfileCompletionState ProfileState
 @inject UserSessionState Session
@@ -20,13 +15,54 @@
         padding: 1rem; overflow-y: auto;
     }
     .lts-profile-gate-card {
-        background: #fff; border-radius: 0.75rem; padding: 1.75rem;
-        width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        background: var(--lts-surface, #fff);
+        color: var(--lts-text, #16213e);
+        border: 1px solid var(--lts-border-color, #e3e7f0);
+        border-radius: 0.75rem; padding: 1.75rem;
+        width: 100%; max-width: 560px;
+        box-shadow: var(--lts-shadow-lg, 0 20px 60px rgba(0,0,0,0.25));
         max-height: 90vh; overflow-y: auto;
+    }
+    .lts-profile-gate-card .form-label {
+        color: var(--lts-text, #16213e);
+    }
+    .lts-profile-gate-card .text-muted {
+        color: var(--lts-text-muted, #6b7280) !important;
+    }
+    .lts-profile-gate-card .form-control {
+        background: var(--lts-surface-2, #f8f9fc);
+        color: var(--lts-text, #16213e);
+        border-color: var(--lts-border-color, #e3e7f0);
+    }
+    .lts-profile-gate-card .form-control:focus {
+        background: var(--lts-surface-2, #f8f9fc);
+        color: var(--lts-text, #16213e);
+    }
+    .lts-profile-gate-card .form-control::placeholder {
+        color: var(--lts-text-muted, #6b7280);
+        opacity: 0.7;
+    }
+    .lts-profile-gate-card hr {
+        border-color: var(--lts-border-color, #e3e7f0);
+        opacity: 1;
     }
     .lts-gate-loading {
         display: flex; align-items: center; gap: 0.5rem; justify-content: center;
         padding: 3rem 1rem; color: #6c757d;
+    }
+    .lts-profile-gate-card {
+        position: relative;
+    }
+    .lts-profile-gate-close {
+        position: absolute; top: 0.75rem; right: 0.75rem;
+        width: 2rem; height: 2rem; border-radius: 50%; border: none;
+        background: transparent; color: var(--lts-text-muted, #6b7280);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; line-height: 1; cursor: pointer;
+    }
+    .lts-profile-gate-close:hover {
+        background: var(--lts-surface-2, #f1f3f9);
+        color: var(--lts-text, #16213e);
     }
 </style>
 
@@ -40,10 +76,13 @@ else if (!_checked)
         <span class="spinner-border spinner-border-sm"></span> Loading your profile…
     </div>
 }
-else if (ProfileState.Profile is { IsProfileCompleted: false })
+else if (ProfileState.Profile is { IsProfileCompleted: false } && !_dismissed)
 {
     <div class="lts-profile-gate-backdrop">
         <div class="lts-profile-gate-card">
+            <button type="button" class="lts-profile-gate-close" title="Close and log out instead" @onclick="() => _dismissed = true">
+                <i class="bi bi-x-lg"></i>
+            </button>
             <div class="text-center mb-3">
                 <i class="bi bi-person-check display-5 text-primary"></i>
                 <h4 class="mt-2 mb-1">Complete Your Profile</h4>
@@ -73,12 +112,16 @@ else if (ProfileState.Profile is { IsProfileCompleted: false })
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Contact Number</label>
-                            <input class="form-control" placeholder="03XXXXXXXXX" @bind="_adminModel.Phone" @bind:event="oninput" disabled="@_isBusy" required />
+                            <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                   @bind:get="_adminModel.Phone" @bind:set="v => _adminModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                                   disabled="@_isBusy" required />
                             <ValidationMessage For="() => _adminModel.Phone" class="text-danger small" />
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">CNIC</label>
-                            <input class="form-control" placeholder="35202-1234567-1" @bind="_adminModel.CNIC" @bind:event="oninput" disabled="@_isBusy" required />
+                            <input class="form-control" placeholder="35202-1234567-1" inputmode="numeric"
+                                   @bind:get="_adminModel.CNIC" @bind:set="v => _adminModel.CNIC = InputSanitizers.SanitizeCnic(v)" @bind:event="oninput"
+                                   disabled="@_isBusy" required />
                             <ValidationMessage For="() => _adminModel.CNIC" class="text-danger small" />
                         </div>
                     </div>
@@ -101,7 +144,9 @@ else if (ProfileState.Profile is { IsProfileCompleted: false })
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Firm Contact Phone <span class="text-muted fw-normal">(optional)</span></label>
-                            <input class="form-control" placeholder="03XXXXXXXXX" @bind="_adminModel.ContactPhone" @bind:event="oninput" disabled="@_isBusy" />
+                            <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                   @bind:get="_adminModel.ContactPhone" @bind:set="v => _adminModel.ContactPhone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                                   disabled="@_isBusy" />
                             <ValidationMessage For="() => _adminModel.ContactPhone" class="text-danger small" />
                         </div>
                     </div>
@@ -124,12 +169,16 @@ else if (ProfileState.Profile is { IsProfileCompleted: false })
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Contact Number</label>
-                        <input class="form-control" placeholder="03XXXXXXXXX" @bind="_userModel.Phone" @bind:event="oninput" disabled="@_isBusy" required />
+                        <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                               @bind:get="_userModel.Phone" @bind:set="v => _userModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                               disabled="@_isBusy" required />
                         <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">CNIC</label>
-                        <input class="form-control" placeholder="35202-1234567-1" @bind="_userModel.CNIC" @bind:event="oninput" disabled="@_isBusy" required />
+                        <input class="form-control" placeholder="35202-1234567-1" inputmode="numeric"
+                               @bind:get="_userModel.CNIC" @bind:set="v => _userModel.CNIC = InputSanitizers.SanitizeCnic(v)" @bind:event="oninput"
+                               disabled="@_isBusy" required />
                         <ValidationMessage For="() => _userModel.CNIC" class="text-danger small" />
                     </div>
 
@@ -152,6 +201,7 @@ else
 
     private bool _checked;
     private bool _isBusy;
+    private bool _dismissed;
     private string? _errorMessage;
 
     private readonly CompleteFirmAdminProfileRequest _adminModel = new();

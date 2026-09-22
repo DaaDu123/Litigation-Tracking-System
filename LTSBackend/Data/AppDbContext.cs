@@ -111,21 +111,10 @@ public class AppDbContext : DbContext
 
     // NOTIFICATIONS
     public DbSet<Notification> Notifications { get; set; } = null!;
-    public DbSet<Teacher> Teachers { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-
-        modelBuilder.Entity<Teacher>(e =>
-        {
-            e.HasKey(t => t.TeacherId);
-            e.Property(t => t.Name).IsRequired().HasMaxLength(100);
-            e.Property(t => t.Email).IsRequired().HasMaxLength(100);
-            e.HasIndex(t => t.Email).IsUnique();
-        });
-      
 
         // USER ENTITY CONFIGURATION
         modelBuilder.Entity<User>(entity =>
