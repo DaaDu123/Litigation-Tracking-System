@@ -4,230 +4,237 @@
 @using LTSFrontend.Features.Profile.Services
 @using LTSFrontend.Shared.Validation
 @using LTSFrontend.State
+@using LTSFrontend.Layout
 @inject ProfileCompletionState ProfileState
 @inject UserSessionState Session
 @inject IProfileService ProfileService
 @inject IAuthService AuthService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<style>
-    .lts-profile-gate-page {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        background: var(--lts-body-bg, #f4f6fb);
-    }
-    .lts-profile-gate-topbar {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        padding: 0.85rem 1.25rem;
-        background: var(--lts-surface, #fff);
-        border-bottom: 1px solid var(--lts-border-color, #e3e7f0);
-    }
-    .lts-profile-gate-topbar img {
-        height: 32px; width: 32px; object-fit: contain;
-    }
-    .lts-profile-gate-brand {
-        font-weight: 600;
-        color: var(--lts-text, #16213e);
-    }
-    .lts-profile-gate-body {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem 1rem;
-    }
-    .lts-profile-gate-card {
-        background: var(--lts-surface, #fff);
-        color: var(--lts-text, #16213e);
-        border: 1px solid var(--lts-border-color, #e3e7f0);
-        border-radius: 0.75rem; padding: 1.75rem;
-        width: 100%; max-width: 560px;
-        box-shadow: var(--lts-shadow-lg, 0 20px 60px rgba(0,0,0,0.08));
-    }
-    .lts-profile-gate-card .form-label {
-        color: var(--lts-text, #16213e);
-    }
-    .lts-profile-gate-card .text-muted {
-        color: var(--lts-text-muted, #6b7280) !important;
-    }
-    .lts-profile-gate-card .form-control {
-        background: var(--lts-surface-2, #f8f9fc);
-        color: var(--lts-text, #16213e);
-        border-color: var(--lts-border-color, #e3e7f0);
-    }
-    .lts-profile-gate-card .form-control:focus {
-        background: var(--lts-surface-2, #f8f9fc);
-        color: var(--lts-text, #16213e);
-    }
-    .lts-profile-gate-card .form-control::placeholder {
-        color: var(--lts-text-muted, #6b7280);
-        opacity: 0.7;
-    }
-    .lts-profile-gate-card hr {
-        border-color: var(--lts-border-color, #e3e7f0);
-        opacity: 1;
-    }
-    .lts-gate-loading {
-        display: flex; align-items: center; gap: 0.5rem; justify-content: center;
-        padding: 3rem 1rem; color: #6c757d;
-    }
-</style>
+<div class="public-shell">
+    <header class="public-navbar">
+        <span class="public-navbar-brand">
+            <img src="images/justice-scale-logo.png" alt="Litigation Tracking System" />
+            <span class="public-navbar-brand-text">
+                <span class="brand-title">LITIGATION TRACKING SYSTEM</span>
+                <span class="brand-subtitle">MANAGE. MONITOR. RESOLVE.</span>
+            </span>
+        </span>
 
-<div class="lts-profile-gate-page">
-    <div class="lts-profile-gate-topbar">
-        <img src="images/justice-scale-logo.png" alt="Litigation Tracking System" />
-        <span class="lts-profile-gate-brand">Litigation Tracking System</span>
-        <button type="button" class="lts-btn lts-btn-outline lts-btn-sm ms-auto" @onclick="HandleLogoutAsync" disabled="@_isBusy">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </button>
-    </div>
+        <div class="public-navbar-actions ms-auto">
+            <button class="public-navbar-theme-btn" type="button" title="Toggle theme" @onclick="ToggleThemeAsync">
+                <i class="bi @(_isDarkTheme ? "bi-sun" : "bi-moon-stars")"></i>
+            </button>
+            <button type="button" class="lts-btn lts-btn-outline lts-btn-sm" @onclick="HandleLogoutAsync" disabled="@_isBusy">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </button>
+        </div>
+    </header>
 
-    <div class="lts-profile-gate-body">
-        @if (!_checked)
-        {
-            <div class="lts-gate-loading">
-                <span class="spinner-border spinner-border-sm"></span> Loading your profile…
-            </div>
-        }
-        else
-        {
-            <div class="lts-profile-gate-card">
-                <div class="text-center mb-3">
-                    <i class="bi bi-person-check display-5 text-primary"></i>
-                    <h4 class="mt-2 mb-1">Complete Your Profile</h4>
-                    <p class="text-muted mb-0">
-                        @(IsFirmAdmin
-                            ? "Your account has been approved. Please complete your profile and firm details before continuing."
-                            : "Please complete your profile before you can browse and request to join a firm.")
-                    </p>
+    <div class="auth-hero-section">
+        <div class="auth-hero-left">
+            <div class="auth-hero-rule"></div>
+            <h1>One last step <span class="text-gold">before you're in</span></h1>
+            <p class="auth-hero-lead">
+                @(IsFirmAdmin
+                    ? "Your account has been approved. Complete your profile and firm details to set up your workspace and unlock your dashboard."
+                    : "Complete your profile so we can get you into your workspace and connect you with your firm.")
+            </p>
+
+            <div class="hero-feature-grid">
+                <div class="hero-feature-item">
+                    <i class="bi bi-shield-lock"></i>
+                    <h4>Secure by Design</h4>
+                    <p>Your details stay private and role-protected</p>
                 </div>
+                <div class="hero-feature-item">
+                    <i class="bi bi-person-badge"></i>
+                    <h4>Verified Identity</h4>
+                    <p>CNIC & contact details confirm who you are</p>
+                </div>
+                <div class="hero-feature-item">
+                    <i class="bi bi-speedometer2"></i>
+                    <h4>Instant Access</h4>
+                    <p>Your dashboard unlocks the moment you're done</p>
+                </div>
+                <div class="hero-feature-item">
+                    <i class="bi bi-life-preserver"></i>
+                    <h4>Need Help?</h4>
+                    <p>Use Logout above if you'd rather finish later</p>
+                </div>
+            </div>
+        </div>
 
-                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        <div class="auth-hero-right">
+            <div class="auth-form-card">
+                @if (!_checked)
                 {
-                    <div class="alert alert-danger py-2" style="white-space: pre-line;">@_errorMessage</div>
+                    <div class="text-center py-4">
+                        <span class="spinner-border spinner-border-sm me-2"></span> Loading your profile…
+                    </div>
                 }
-
-                @if (IsFirmAdmin)
+                else
                 {
-                    <EditForm Model="_adminModel" OnValidSubmit="HandleCompleteFirmAdminAsync">
-                        <DataAnnotationsValidator />
+                    <h2><i class="bi bi-person-check me-2"></i>Complete Your Profile</h2>
+                    <p class="auth-subtitle">
+                        @(IsFirmAdmin ? "Firm Admin setup" : "Just a couple of quick details")
+                    </p>
 
-                        <div class="mb-3">
-                            <label class="form-label">Your Full Name</label>
-                            <input class="form-control" @bind="_adminModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
-                            <ValidationMessage For="() => _adminModel.FullName" class="text-danger small" />
-                        </div>
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <div class="alert alert-danger py-2" style="white-space: pre-line;">@_errorMessage</div>
+                    }
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                    @if (IsFirmAdmin)
+                    {
+                        <EditForm Model="_adminModel" OnValidSubmit="HandleCompleteFirmAdminAsync">
+                            <DataAnnotationsValidator />
+
+                            <div class="auth-section-title">Your Details</div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Your Full Name</label>
+                                <input class="form-control" @bind="_adminModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+                                <ValidationMessage For="() => _adminModel.FullName" class="text-danger small" />
+                            </div>
+
+                            <div class="mb-3">
                                 <label class="form-label">Contact Number</label>
                                 <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
                                        @bind:get="_adminModel.Phone" @bind:set="v => _adminModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
                                        disabled="@_isBusy" required />
                                 <ValidationMessage For="() => _adminModel.Phone" class="text-danger small" />
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="mb-3">
                                 <label class="form-label">CNIC</label>
                                 <input class="form-control" placeholder="35202-1234567-1" inputmode="numeric"
                                        @bind:get="_adminModel.CNIC" @bind:set="v => _adminModel.CNIC = InputSanitizers.SanitizeCnic(v)" @bind:event="oninput"
                                        disabled="@_isBusy" required />
                                 <ValidationMessage For="() => _adminModel.CNIC" class="text-danger small" />
                             </div>
-                        </div>
 
-                        <hr />
-                        <div class="mb-3">
-                            <label class="form-label">Firm Name</label>
-                            <input class="form-control" @bind="_adminModel.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
-                            <ValidationMessage For="() => _adminModel.FirmName" class="text-danger small" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Firm Address <span class="text-muted fw-normal">(optional)</span></label>
-                            <input class="form-control" @bind="_adminModel.Address" @bind:event="oninput" disabled="@_isBusy" />
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="auth-section-title">Firm Details</div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Firm Name</label>
+                                <input class="form-control" @bind="_adminModel.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
+                                <ValidationMessage For="() => _adminModel.FirmName" class="text-danger small" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Firm Address <span class="text-muted fw-normal">(optional)</span></label>
+                                <input class="form-control" @bind="_adminModel.Address" @bind:event="oninput" disabled="@_isBusy" />
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Firm Contact Email <span class="text-muted fw-normal">(optional)</span></label>
                                 <input class="form-control" @bind="_adminModel.ContactEmail" @bind:event="oninput" disabled="@_isBusy" />
                                 <ValidationMessage For="() => _adminModel.ContactEmail" class="text-danger small" />
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="mb-3">
                                 <label class="form-label">Firm Contact Phone <span class="text-muted fw-normal">(optional)</span></label>
                                 <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
                                        @bind:get="_adminModel.ContactPhone" @bind:set="v => _adminModel.ContactPhone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
                                        disabled="@_isBusy" />
                                 <ValidationMessage For="() => _adminModel.ContactPhone" class="text-danger small" />
                             </div>
-                        </div>
 
-                        <button type="submit" class="btn btn-primary w-100" disabled="@_isBusy">
-                            @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
-                            Complete Profile
-                        </button>
-                    </EditForm>
-                }
-                else
-                {
-                    <EditForm Model="_userModel" OnValidSubmit="HandleCompleteFirmUserAsync">
-                        <DataAnnotationsValidator />
+                            <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+                                @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                                Complete Profile
+                            </button>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <EditForm Model="_userModel" OnValidSubmit="HandleCompleteFirmUserAsync">
+                            <DataAnnotationsValidator />
 
-                        <div class="mb-3">
-                            <label class="form-label">Full Name</label>
-                            <input class="form-control" @bind="_userModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
-                            <ValidationMessage For="() => _userModel.FullName" class="text-danger small" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Contact Number</label>
-                            <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
-                                   @bind:get="_userModel.Phone" @bind:set="v => _userModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
-                                   disabled="@_isBusy" required />
-                            <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">CNIC</label>
-                            <input class="form-control" placeholder="35202-1234567-1" inputmode="numeric"
-                                   @bind:get="_userModel.CNIC" @bind:set="v => _userModel.CNIC = InputSanitizers.SanitizeCnic(v)" @bind:event="oninput"
-                                   disabled="@_isBusy" required />
-                            <ValidationMessage For="() => _userModel.CNIC" class="text-danger small" />
-                        </div>
+                            <div class="mb-3">
+                                <label class="form-label">Full Name</label>
+                                <input class="form-control" @bind="_userModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+                                <ValidationMessage For="() => _userModel.FullName" class="text-danger small" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Contact Number</label>
+                                <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                       @bind:get="_userModel.Phone" @bind:set="v => _userModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                                       disabled="@_isBusy" required />
+                                <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">CNIC</label>
+                                <input class="form-control" placeholder="35202-1234567-1" inputmode="numeric"
+                                       @bind:get="_userModel.CNIC" @bind:set="v => _userModel.CNIC = InputSanitizers.SanitizeCnic(v)" @bind:event="oninput"
+                                       disabled="@_isBusy" required />
+                                <ValidationMessage For="() => _userModel.CNIC" class="text-danger small" />
+                            </div>
 
-                        <button type="submit" class="btn btn-primary w-100" disabled="@_isBusy">
-                            @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
-                            Complete Profile
-                        </button>
-                    </EditForm>
+                            <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+                                @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                                Complete Profile
+                            </button>
+                        </EditForm>
+                    }
                 }
             </div>
-        }
+        </div>
     </div>
+
+    <PublicFooter />
 </div>
 
 @code {
     private bool _checked;
     private bool _isBusy;
+    private bool _isDarkTheme;
     private string? _errorMessage;
 
     private readonly CompleteFirmAdminProfileRequest _adminModel = new();
     private readonly CompleteFirmUserProfileRequest _userModel = new();
 
     // FirmAdmin is the only role that completes the "firm admin" variant
-    // of the form (with Firm details); every other role (or no role yet,
-    // for a Firm User who hasn't joined a firm) gets the simpler form.
+    // of the form (with Firm details); every other role gets the simpler
+    // form.
     private bool IsFirmAdmin => Session.Role == "FirmAdmin";
 
     protected override async Task OnInitializedAsync()
     {
         await ProfileState.EnsureLoadedAsync();
-        if (ProfileState.Profile != null)
-        {
-            _adminModel.FullName = ProfileState.Profile.FullName;
-            _userModel.FullName = ProfileState.Profile.FullName;
-        }
+
+        // FIX: this used to pre-fill FullName from the backend's
+        // placeholder value (the email's local part, e.g.
+        // "muhammadsaad3877" for muhammadsaad3877@gmail.com). Since it
+        // already looked like a plausible name, people were submitting it
+        // unedited - their profile ended up genuinely complete, but their
+        // display name across the whole app stayed as their email prefix,
+        // which looked like a bypassed/incomplete profile even though it
+        // wasn't. Leaving it blank forces a deliberate, real name.
+
         _checked = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var theme = await JS.InvokeAsync<string>("ltsTheme.get");
+                _isDarkTheme = theme == "dark";
+                StateHasChanged();
+            }
+            catch
+            {
+                // JS interop not ready yet (prerender) - default to light theme.
+            }
+        }
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDarkTheme = !_isDarkTheme;
+        await JS.InvokeVoidAsync("ltsTheme.set", _isDarkTheme ? "dark" : "light");
     }
 
     private async Task HandleCompleteFirmAdminAsync()

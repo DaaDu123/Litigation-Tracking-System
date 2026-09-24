@@ -71,16 +71,38 @@ public class VerifyOtpHandler(AppDbContext _context, IJwtService _jwtService, IA
             IsRevoked = false
         });
 
-        // 6. Create audit log
+        // 6. Record login in LoginHistory
+        // FIX: this handler logs the user in (issues an access + refresh
+        // token pair) exactly like LoginHandler does, but never wrote a
+        // LoginHistory row for it. That meant anyone who verified via OTP
+        // had NO open session row at all - so when they eventually hit
+        // Logout, LogoutHandler's "most recent open row for this user"
+        // lookup either found nothing to close, or (worse) latched onto a
+        // stale/unrelated older row and closed that one instead, which is
+        // one of the reasons LogoutTime looked like it wasn't being saved.
+        var ipAddress = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+        var userAgent = _httpContextAccessor.HttpContext?.Request.Headers.UserAgent.ToString();
+
+        _context.LoginHistories.Add(new LTSBackend.Models.Security.LoginHistory
+        {
+            UserID = user.UserID,
+            LoginTime = DateTime.UtcNow,
+            IPAddress = ipAddress,
+            UserAgent = userAgent,
+            Status = "Success",
+            IsLoggedOut = false
+        });
+
+        // 7. Create audit log
         // FIX: every other significant auth action (Login, Logout,
         // Register, ResetPassword, ChangePassword, RefreshToken)
         // writes an audit entry — this was missing here.
         _context.AuditLogs.Add(_auditService.Create(user.UserID, "Email Verified via OTP"));
 
-        // 7. Save all changes
+        // 8. Save all changes
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 8. Set refresh token cookie
+        // 9. Set refresh token cookie
         if (_httpContextAccessor.HttpContext != null)
         {
             _jwtService.SetRefreshTokenCookie(_httpContextAccessor.HttpContext.Response, refreshToken);

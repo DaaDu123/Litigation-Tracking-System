@@ -599,6 +599,10 @@ h1:focus {
     color-scheme: light;
 }
 
+.text-muted {
+    color: var(--lts-text-muted) !important;
+}
+
 [data-theme="dark"] {
     color-scheme: dark;
     --lts-bg: #0e1526;

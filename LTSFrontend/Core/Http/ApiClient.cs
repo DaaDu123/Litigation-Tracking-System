@@ -8,7 +8,7 @@ using LTSFrontend.State;
 
 namespace LTSFrontend.Core.Http
 {
-    public class ApiClient
+    public class ApiClient : IDisposable
     {
         public HttpClient Http { get; }
 
@@ -24,6 +24,34 @@ namespace LTSFrontend.Core.Http
             _session = session;
             _tokenStorage = tokenStorage;
             _refreshGate = refreshGate;
+        }
+
+        // SECURITY FIX: this app is Blazor Server (see Program.cs -
+        // AddInteractiveServerComponents), so this HttpClient runs on the
+        // SERVER, not in the user's browser. It used to be registered via
+        // services.AddHttpClient<ApiClient>(...), which pools ONE shared
+        // HttpMessageHandler (and therefore ONE shared CookieContainer,
+        // since UseCookies=true) across every circuit/user on the server,
+        // keyed only by the typed-client name - not per user. That meant:
+        //   1. The refreshToken cookie set by one user's login could be
+        //      overwritten by another concurrent user's login (both write
+        //      to the SAME CookieContainer for the SAME domain+path+name),
+        //      a real session/account-mixing risk.
+        //   2. IHttpClientFactory recycles that shared handler by default
+        //      every ~2 minutes, silently starting a brand-new EMPTY
+        //      CookieContainer. Any user active longer than that lost
+        //      their refreshToken cookie with no visible error - which is
+        //      why Logout (and silent token refresh) started failing
+        //      ("Refresh token not found in cookie") and LoginHistory's
+        //      LogoutTime was never being saved.
+        // Fix: ApiClient is now constructed once per DI scope (= once per
+        // Blazor Server circuit = once per logged-in user - see
+        // ServiceCollectionExtensions), each with its OWN dedicated
+        // HttpClientHandler + CookieContainer that lives exactly as long
+        // as that user's circuit and is disposed with it.
+        public void Dispose()
+        {
+            Http.Dispose();
         }
 
         public Task<T?> GetAsync<T>(string url, CancellationToken ct = default)
