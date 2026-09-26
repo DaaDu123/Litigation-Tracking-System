@@ -2,8 +2,10 @@ using LTSBackend.Comman.Responses;
 using LTSBackend.Features.FirmAdminRequests.Commands.ApproveFirmAdminRequest;
 using LTSBackend.Features.FirmAdminRequests.Commands.RejectFirmAdminRequest;
 using LTSBackend.Features.FirmAdminRequests.Commands.SubmitFirmAdminRequest;
+using LTSBackend.Features.FirmAdminRequests.Commands.SubmitFirmAdminRequestFromAccount;
 using LTSBackend.Features.FirmAdminRequests.DTOs;
 using LTSBackend.Features.FirmAdminRequests.Queries.GetFirmAdminRequests;
+using LTSBackend.Features.FirmAdminRequests.Queries.GetMyFirmAdminRequest;
 using LTSBackend.Models.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +35,37 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         _logger.LogInformation("Firm Admin request submitted for email: {Email}", command.Email);
         var requestId = await _mediator.Send(command);
         return Ok(ApiResponse<int>.SuccessResponse(requestId, "Your request has been submitted. A Super Admin will review it and you'll be notified by email."));
+    }
+
+    // =====================================================
+    // SUBMIT FIRM ADMIN REQUEST FROM ACCOUNT — Authenticated
+    // "Create Firm" from an already-registered user's own dashboard
+    // sidebar. No email/password collected here - the request is linked
+    // straight to the caller's existing account, so approval later
+    // promotes that SAME account instead of creating a duplicate one.
+    // Does NOT require the user to register again with the same email.
+    // =====================================================
+    [HttpPost("from-account")]
+    [Authorize]
+    public async Task<IActionResult> SubmitFromAccount()
+    {
+        var requestId = await _mediator.Send(new SubmitFirmAdminRequestFromAccountCommand());
+        return Ok(ApiResponse<int>.SuccessResponse(requestId, "Your request has been submitted. A Super Admin will review it and you'll be notified by email."));
+    }
+
+    // =====================================================
+    // GET MY FIRM ADMIN REQUEST — Authenticated
+    // The caller's own latest "Create Firm" request (any status),
+    // submitted from their account, for the sidebar modal's
+    // pending/rejected state. Returns null (200, no data) if they've
+    // never submitted one this way.
+    // =====================================================
+    [HttpGet("mine")]
+    [Authorize]
+    public async Task<IActionResult> GetMine()
+    {
+        var result = await _mediator.Send(new GetMyFirmAdminRequestQuery());
+        return Ok(ApiResponse<FirmAdminRequestDTO?>.SuccessResponse(result, "Your latest request"));
     }
 
     // =====================================================

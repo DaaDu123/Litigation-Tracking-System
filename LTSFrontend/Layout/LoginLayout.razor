@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Nav
 
 <div class="public-shell">
     <PublicNavbar />
@@ -40,8 +42,112 @@
             <div class="auth-form-card">
                 @Body
             </div>
+
+            @* Bottom "pill" navigation - lets a visitor see and jump between
+               the 3 auth pages (Sign In / Create Account / Request Firm
+               Admin) without hunting for the small text links inside each
+               form. Purely presentational: it mirrors NavigationManager's
+               current URL and calls NavigateTo, so it never changes what
+               each page itself does. Hidden on the other pages that also
+               use this layout (Forgot/Reset Password, Verify OTP) - those
+               aren't part of this 3-way choice and showing it there would
+               just be confusing. *@
+            @if (_showPager)
+            {
+                <nav class="auth-pager" aria-label="Auth page navigation">
+                    <button type="button" class="auth-pager-arrow" @onclick="GoPrev" disabled="@(_currentIndex == 0)" aria-label="Previous page">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <div class="auth-pager-label">
+                        <span class="auth-pager-text" @key="_currentIndex">@_pages[_currentIndex].Label</span>
+                        <span class="auth-pager-count">@(_currentIndex + 1) of @_pages.Length</span>
+                    </div>
+
+                    <button type="button" class="auth-pager-arrow" @onclick="GoNext" disabled="@(_currentIndex == _pages.Length - 1)" aria-label="Next page">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </nav>
+
+                <div class="auth-pager-dots" role="tablist" aria-label="Jump to auth page">
+                    @for (int i = 0; i < _pages.Length; i++)
+                    {
+                        var index = i;
+                        <button type="button"
+                                class="auth-pager-dot @(index == _currentIndex ? "active" : "")"
+                                role="tab"
+                                aria-selected="@(index == _currentIndex ? "true" : "false")"
+                                title="@_pages[index].Label"
+                                aria-label="@_pages[index].Label"
+                                @onclick="() => GoTo(index)">
+                        </button>
+                    }
+                </div>
+                <p class="auth-pager-hint">Explore more options</p>
+            }
         </div>
     </div>
 
     <PublicFooter />
 </div>
+
+@code {
+    private sealed record AuthPage(string Path, string Label);
+
+    // Order here also defines Prev/Next order - keep in sync with the
+    // three @page routes under Features/Auth/Pages and
+    // Features/FirmAdminRequests/Pages.
+    private readonly AuthPage[] _pages =
+    [
+        new AuthPage("/login", "Sign In"),
+        new AuthPage("/register", "Create Account"),
+        new AuthPage("/request-firm-admin", "Request Firm Admin")
+    ];
+
+    private int _currentIndex;
+    private bool _showPager;
+
+    protected override void OnInitialized()
+    {
+        UpdateCurrentIndex();
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        UpdateCurrentIndex();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateCurrentIndex()
+    {
+        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+        var index = Array.FindIndex(_pages, p => string.Equals(p.Path, path, StringComparison.OrdinalIgnoreCase));
+        _showPager = index >= 0;
+        _currentIndex = index >= 0 ? index : 0;
+    }
+
+    private void GoPrev()
+    {
+        if (_currentIndex > 0)
+            Nav.NavigateTo(_pages[_currentIndex - 1].Path);
+    }
+
+    private void GoNext()
+    {
+        if (_currentIndex < _pages.Length - 1)
+            Nav.NavigateTo(_pages[_currentIndex + 1].Path);
+    }
+
+    private void GoTo(int index)
+    {
+        if (index != _currentIndex)
+            Nav.NavigateTo(_pages[index].Path);
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+}
+

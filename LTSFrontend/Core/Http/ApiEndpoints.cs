@@ -207,6 +207,10 @@
                 string.IsNullOrWhiteSpace(status) ? Root : $"{Root}?status={status}";
             public static string Approve(int id) => $"{Root}/{id}/approve";
             public static string Reject(int id) => $"{Root}/{id}/reject";
+            // Authenticated "Create Firm" flow - request from the caller's
+            // own already-registered account, no email/password needed.
+            public const string FromAccount = Root + "/from-account";
+            public const string Mine = Root + "/mine";
         }
 
         public static class ContactMessages

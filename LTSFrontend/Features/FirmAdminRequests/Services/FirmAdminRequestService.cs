@@ -31,6 +31,12 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         public Task<bool> RejectAsync(int id, string? reason) =>
             _api.PutAsync<bool>(ApiEndpoints.FirmAdminRequests.Reject(id), new { Reason = Norm(reason) });
 
+        public Task<int> SubmitFromAccountAsync() =>
+            _api.PostAsync<int>(ApiEndpoints.FirmAdminRequests.FromAccount);
+
+        public Task<FirmAdminRequestDTO?> GetMineAsync() =>
+            _api.GetAsync<FirmAdminRequestDTO?>(ApiEndpoints.FirmAdminRequests.Mine);
+
         private static string? Norm(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
     }
 }

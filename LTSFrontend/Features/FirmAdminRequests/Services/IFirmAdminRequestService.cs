@@ -13,5 +13,11 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         Task<List<FirmAdminRequestDTO>> GetAllAsync(string? status = null);
         Task<int> ApproveAsync(int id);
         Task<bool> RejectAsync(int id, string? reason);
+
+        // Authenticated "Create Firm" flow (sidebar modal) - submits from
+        // the caller's own already-registered account. No email/password
+        // required, and does NOT create a second account.
+        Task<int> SubmitFromAccountAsync();
+        Task<FirmAdminRequestDTO?> GetMineAsync();
     }
 }

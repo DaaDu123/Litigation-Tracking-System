@@ -167,11 +167,19 @@ public class AppDbContext : DbContext
             entity.Property(e => e.FirmCode).HasMaxLength(30);
             entity.Property(e => e.AdminFullName).HasMaxLength(150);
             entity.Property(e => e.AdminEmail).IsRequired().HasMaxLength(150);
-            entity.Property(e => e.AdminPasswordHash).IsRequired().HasMaxLength(255);
+            // No longer [Required] at the DB level - null for requests
+            // submitted from an existing, already-registered account (see
+            // FirmAdminRequest.UserID), which has no new password to store.
+            entity.Property(e => e.AdminPasswordHash).HasMaxLength(255);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Pending");
             entity.HasIndex(e => e.FirmCode);
             entity.HasIndex(e => e.AdminEmail);
             entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.UserID);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // USER JOIN REQUEST ENTITY CONFIGURATION

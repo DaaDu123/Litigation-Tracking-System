@@ -42,12 +42,33 @@ public class FirmAdminRequest
     [Required, MaxLength(150)]
     public string AdminEmail { get; set; } = string.Empty;
 
-    /// <summary>Hashed at submission time, so Approve just copies it onto the new User - the plaintext password is never stored.</summary>
-    [Required, MaxLength(255)]
-    public string AdminPasswordHash { get; set; } = string.Empty;
+    /// <summary>
+    /// Hashed at submission time, so Approve just copies it onto the new
+    /// User - the plaintext password is never stored. Null when
+    /// <see cref="UserID"/> is set (the "from an existing account" flow
+    /// below) - there is no new password to capture, since Approve simply
+    /// promotes the already-registered user's existing account in place
+    /// and its existing PasswordHash is left untouched.
+    /// </summary>
+    [MaxLength(255)]
+    public string? AdminPasswordHash { get; set; }
 
     [MaxLength(20)]
     public string? AdminPhone { get; set; }
+
+    /// <summary>
+    /// The already-registered, logged-in User submitting this request from
+    /// their own dashboard (new flow: "Create Firm" in the sidebar - see
+    /// SubmitFirmAdminRequestFromAccountCommand). Null for the legacy/
+    /// anonymous flow (SubmitFirmAdminRequestCommand), where AdminEmail +
+    /// AdminPasswordHash above describe an account that doesn't exist yet
+    /// and is created fresh on Approve. Mirrors UserJoinRequest.UserID one
+    /// tier up.
+    /// </summary>
+    public int? UserID { get; set; }
+
+    [ForeignKey(nameof(UserID))]
+    public User? User { get; set; }
 
     // ---- Workflow state ----
     /// <summary>Pending | Approved | Rejected</summary>

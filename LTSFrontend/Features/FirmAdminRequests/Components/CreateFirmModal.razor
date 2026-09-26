@@ -1,0 +1,173 @@
+@* "Create Firm" modal - lets an already-registered, logged-in user (no
+   firm yet) request to become a Firm Admin straight from their own
+   account. No email/password is asked for here (they already have an
+   account) and this never asks them to register again with the same
+   email - see SubmitFirmAdminRequestFromAccountCommand on the backend.
+   Usage: <CreateFirmModal @ref="_createFirmModal" />
+          _createFirmModal.Open(); *@
+@using LTSFrontend.Features.FirmAdminRequests.DTOs
+@using LTSFrontend.Features.FirmAdminRequests.Services
+@using LTSFrontend.Core.Exceptions
+@inject IFirmAdminRequestService FirmAdminRequestService
+@inject State.ToastService Toast
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal lts-modal-sm" @onclick:stopPropagation="true">
+
+        @if (_isLoadingStatus)
+        {
+            <div class="lts-modal-body text-center py-4">
+                <span class="spinner-border spinner-border-sm me-2"></span> Checking request status...
+            </div>
+        }
+        else if (_mine is { Status: "Pending" })
+        {
+            <div class="lts-modal-header">
+                <div class="lts-modal-icon lts-modal-icon-primary">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <h5 class="lts-modal-title">Request pending</h5>
+                    <p class="lts-modal-subtitle mb-0">Awaiting Super Admin review</p>
+                </div>
+            </div>
+            <div class="lts-modal-body">
+                <p class="mb-0">
+                    You already asked to create a firm workspace on @_mine.RequestedAt.ToLocalTime().ToString("d MMM yyyy").
+                    You'll get an email as soon as a Super Admin approves or declines it - no further action is needed for now.
+                </p>
+            </div>
+            <div class="lts-modal-footer">
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Close</button>
+            </div>
+        }
+        else if (_justSubmitted)
+        {
+            <div class="lts-modal-header">
+                <div class="lts-modal-icon lts-modal-icon-primary">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div>
+                    <h5 class="lts-modal-title">Request submitted</h5>
+                    <p class="lts-modal-subtitle mb-0">Awaiting Super Admin review</p>
+                </div>
+            </div>
+            <div class="lts-modal-body">
+                <p class="mb-0">
+                    Your request has been sent to a Super Admin for review. You'll receive an email once it's approved
+                    (or if it's declined). After approval, you'll be asked to set up your firm's name and details.
+                </p>
+            </div>
+            <div class="lts-modal-footer">
+                <button type="button" class="lts-btn lts-btn-primary" @onclick="Close">Got it</button>
+            </div>
+        }
+        else
+        {
+            <div class="lts-modal-header">
+                <div class="lts-modal-icon lts-modal-icon-primary">
+                    <i class="bi bi-building-add"></i>
+                </div>
+                <div>
+                    <h5 class="lts-modal-title">Create your firm</h5>
+                    <p class="lts-modal-subtitle mb-0">Request Firm Admin access</p>
+                </div>
+            </div>
+
+            <div class="lts-modal-body">
+                @if (_mine is { Status: "Rejected" })
+                {
+                    <div class="alert alert-warning py-2 mb-3">
+                        Your previous request was declined@(string.IsNullOrWhiteSpace(_mine.RejectionReason) ? "." : $": {_mine.RejectionReason}"). You can submit a new one below.
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="alert alert-danger py-2 mb-3" style="white-space: pre-line;">@_errorMessage</div>
+                }
+                <p class="mb-0">
+                    This sends a request to a Super Admin to turn your existing account into a Firm Admin and set up
+                    a new firm workspace under it. You'll keep signing in with the same email and password you use
+                    today - nothing about your account needs to be re-entered.
+                </p>
+            </div>
+
+            <div class="lts-modal-footer">
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close" disabled="@_isBusy">Cancel</button>
+                <button type="button" class="lts-btn lts-btn-primary" @onclick="SubmitAsync" disabled="@_isBusy">
+                    @if (_isBusy)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    <i class="bi bi-send"></i> Submit Request
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _isOpen;
+    private bool _isBusy;
+    private bool _isLoadingStatus;
+    private bool _justSubmitted;
+    private string? _errorMessage;
+    private FirmAdminRequestDTO? _mine;
+
+    public async Task OpenAsync()
+    {
+        _isOpen = true;
+        _justSubmitted = false;
+        _errorMessage = null;
+        _isLoadingStatus = true;
+        StateHasChanged();
+
+        try
+        {
+            _mine = await FirmAdminRequestService.GetMineAsync();
+        }
+        catch (Exception)
+        {
+            // Non-fatal - worst case they just see the submit form and
+            // find out about a pending request from the API's own
+            // validation error if they try to submit again.
+            _mine = null;
+        }
+        finally
+        {
+            _isLoadingStatus = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task SubmitAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            await FirmAdminRequestService.SubmitFromAccountAsync();
+            _justSubmitted = true;
+            Toast.Success("Request submitted", "A Super Admin will review your request shortly.");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not submit your request. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+}

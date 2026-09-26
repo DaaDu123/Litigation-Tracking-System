@@ -1,4 +1,5 @@
 @inject UserSessionState Session
+@using LTSFrontend.Features.FirmAdminRequests.Components
 
 <nav>
     <div class="nav-item">
@@ -11,7 +12,11 @@
        their join request is accepted) - Session.Role is null in this
        state. Shown instead of (never alongside) the firm-operational
        nav above, since AuthorizeView Roles="..." above already excludes
-       a null-role user from all of it. *@
+       a null-role user from all of it. Two options here: join an
+       EXISTING firm someone else already created (a NavLink page), or
+       create a brand new one of their own (a modal, submitted from
+       their own account via SubmitFirmAdminRequestFromAccountCommand -
+       never requires registering again with the same email). *@
     @if (string.IsNullOrEmpty(Session.Role))
     {
         <div class="nav-item">
@@ -19,6 +24,12 @@
                 <i class="bi bi-building-add"></i> <span class="nav-label">Join a Firm</span>
             </NavLink>
         </div>
+        <div class="nav-item">
+            <a class="nav-link" href="javascript:void(0)" @onclick="OpenCreateFirmModalAsync">
+                <i class="bi bi-plus-circle"></i> <span class="nav-label">Create Firm</span>
+            </a>
+        </div>
+        <CreateFirmModal @ref="_createFirmModal" />
     }
 
     @* Firm-operational area - every role except SuperAdmin. SuperAdmin is a
@@ -200,4 +211,14 @@
         </NavLink>
     </div>
 </nav>
+
+@code {
+    private CreateFirmModal? _createFirmModal;
+
+    private async Task OpenCreateFirmModalAsync()
+    {
+        if (_createFirmModal is not null)
+            await _createFirmModal.OpenAsync();
+    }
+}
 

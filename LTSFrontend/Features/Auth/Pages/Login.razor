@@ -56,20 +56,6 @@
     </button>
 </EditForm>
 
-<div class="auth-divider">OR</div>
-
-<a href="/register" class="btn btn-outline-light">
-    <i class="bi bi-person-plus me-2"></i>Create New Account
-</a>
-
-<div class="auth-footer mt-3">
-    Starting a new firm? <a class="auth-link" href="/request-firm-admin">Sign up as Firm Admin</a>
-</div>
-
-<div class="auth-hero-terms mt-3">
-    By continuing, you agree to our Terms of Service and Privacy Policy.
-</div>
-
 @code {
     private readonly LoginRequest _model = new();
     private bool _isBusy;
