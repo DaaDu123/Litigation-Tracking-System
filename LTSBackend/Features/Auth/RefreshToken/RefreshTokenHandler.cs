@@ -53,6 +53,44 @@ public class RefreshTokenHandler(AppDbContext _context, IJwtService _jwtService,
         // 3. Validate token state
         if (storedToken.IsRevoked)
         {
+            var recentReplacement = await _context.RefreshTokens
+                .Where(x => x.UserID == storedToken.UserID
+                            && !x.IsRevoked
+                            && x.ExpiryDate > DateTime.UtcNow
+                            && x.CreatedAt >= DateTime.UtcNow.AddSeconds(-15))
+                .OrderByDescending(x => x.CreatedAt)
+                .Include(x => x.User).ThenInclude(u => u.Role)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (recentReplacement != null)
+            {
+                _logger.LogInformation(
+                    "Token refresh: reused an already-rotated token for user {UserId} within the grace window - treating as a benign concurrent-circuit race, not theft.",
+                    storedToken.UserID);
+
+                var graceAccessToken = _jwtService.GenerateToken(recentReplacement.User);
+                var graceAccessTokenExpiry = _jwtService.GetAccessTokenExpiry();
+                var graceRefreshToken = _jwtService.GenerateRefreshToken();
+                var graceRefreshTokenExpiry = _jwtService.GetRefreshTokenExpiry();
+
+                _context.RefreshTokens.Add(new LTSBackend.Models.Security.RefreshToken
+                {
+                    UserID = storedToken.UserID,
+                    Token = _jwtService.HashRefreshToken(graceRefreshToken),
+                    ExpiryDate = graceRefreshTokenExpiry,
+                    IsRevoked = false
+                });
+                await _context.SaveChangesAsync(cancellationToken);
+
+                _jwtService.SetRefreshTokenCookie(_httpContextAccessor.HttpContext!.Response, graceRefreshToken);
+
+                return new RefreshTokenResponseDTO
+                {
+                    AccessToken = graceAccessToken,
+                    AccessTokenExpiry = graceAccessTokenExpiry
+                };
+            }
+
             var otherActiveTokens = await _context.RefreshTokens.Where(x => x.UserID == storedToken.UserID && !x.IsRevoked).ToListAsync(cancellationToken);
 
             if (otherActiveTokens.Count > 0)

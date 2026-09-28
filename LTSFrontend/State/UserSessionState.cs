@@ -15,9 +15,7 @@
         public DateTime? AccessTokenExpiry { get; private set; }
 
         public bool IsAuthenticated =>
-            !string.IsNullOrWhiteSpace(AccessToken) &&
-            AccessTokenExpiry.HasValue &&
-            AccessTokenExpiry.Value > DateTime.UtcNow;
+            UserID != 0 && !string.IsNullOrWhiteSpace(AccessToken);
 
         public event Action? OnChange;
 

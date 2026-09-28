@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using LTSFrontend.Core.Auth;
 using LTSFrontend.Core.Http;
 using LTSFrontend.Features.Auth.Services;
@@ -44,28 +44,17 @@ namespace LTSFrontend.Core.Extensions
 
             services.AddSingleton<TokenRefreshGate>();
 
-            // SECURITY FIX: previously registered via services.AddHttpClient<ApiClient>(...),
-            // which pools ONE HttpMessageHandler (and its CookieContainer,
-            // since UseCookies=true) across EVERY user's circuit on this
-            // Blazor Server instance, recycled every ~2 minutes. That let
-            // one user's refreshToken cookie be overwritten by another
-            // concurrent user's, and silently wiped everyone's cookie on
-            // each recycle - which is why Logout / silent refresh started
-            // failing ("Refresh token not found in cookie") for anyone
-            // active more than a couple of minutes, and LoginHistory's
-            // LogoutTime was never being saved. Scoped = one instance (and
-            // one private CookieContainer) per circuit = per logged-in
-            // user, disposed with that circuit. See ApiClient.Dispose().
             services.AddScoped(sp =>
             {
                 var config = sp.GetRequiredService<IConfiguration>();
                 var env = sp.GetRequiredService<IHostEnvironment>();
                 var baseUrl = config["ApiSettings:BaseUrl"] ?? "https://localhost:7167";
 
+                var cookieContainer = new CookieContainer();
                 var socketHandler = new HttpClientHandler
                 {
                     UseCookies = true,
-                    CookieContainer = new CookieContainer()
+                    CookieContainer = cookieContainer
                 };
 
                 if (env.IsDevelopment())
@@ -85,7 +74,9 @@ namespace LTSFrontend.Core.Extensions
                     httpClient,
                     sp.GetRequiredService<UserSessionState>(),
                     sp.GetRequiredService<ITokenStorageService>(),
-                    sp.GetRequiredService<TokenRefreshGate>());
+                    sp.GetRequiredService<TokenRefreshGate>(),
+                    cookieContainer,
+                    sp.GetService<ILogger<ApiClient>>());
             });
 
             // Feature services

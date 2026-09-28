@@ -1,133 +1,147 @@
-/* =========================================================
-   Auth page "pill" navigation (Sign In / Create Account /
-   Request Firm Admin). Sits just under the auth-form-card,
-   theme-aware via the same --lts-* tokens the card itself uses.
-   ========================================================= */
-
-/* .auth-hero-right (defined globally in app.css) centers a single
-   .auth-form-card with the default row flex-direction. Now that this
-   layout renders the pager stacked underneath the card too, it needs to
-   lay its children out as a column instead - purely additive, nothing
-   else about the global rule changes. */
 .auth-hero-right {
     flex-direction: column;
 }
 
-.auth-pager {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
+.auth-carousel-3d {
     width: 100%;
-    max-width: 460px;
-    margin: 0.9rem auto 0;
-    padding: 0.35rem;
-    background: var(--lts-surface, #ffffff);
-    border: 1px solid var(--lts-border-color, var(--lts-border));
-    border-radius: 999px;
-    box-shadow: var(--lts-shadow, 0 4px 14px rgba(16, 33, 77, 0.08));
-    animation: auth-pager-pop 0.45s ease-out;
-    animation-delay: 2.1s;
-    animation-fill-mode: backwards;
+    max-width: 640px;
+    overflow: hidden;
+    padding: 0.75rem 0;
 }
 
-    /* Subtle attention nudge a couple of seconds after landing on the
-       page - a gentle side-to-side sway, not a flashy shake, so it reads
-       as "there's more here" rather than an error state. Runs once. */
-    .auth-pager:hover {
-        animation: none;
-    }
+.auth-carousel-track {
+    position: relative;
+    perspective: 1500px;
+}
 
-@keyframes auth-pager-pop {
+.auth-carousel-card {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    cursor: pointer;
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+}
+
+.auth-carousel-card--active {
+    position: relative;
+    z-index: 3;
+    transform: translateX(0) translateZ(0) rotateY(0deg);
+    opacity: 1;
+    cursor: default;
+}
+
+.auth-carousel-card--prev,
+.auth-carousel-card--next {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 1;
+    opacity: 0.55;
+}
+
+.auth-carousel-card--prev {
+    transform: translateX(calc(-50% - 78%)) translateZ(-240px) rotateY(30deg);
+}
+
+.auth-carousel-card--next {
+    transform: translateX(calc(-50% + 78%)) translateZ(-240px) rotateY(-30deg);
+}
+
+.auth-carousel-card--prev:hover,
+.auth-carousel-card--next:hover {
+    opacity: 0.8;
+}
+
+.auth-carousel-card--prev .auth-form-card,
+.auth-carousel-card--next .auth-form-card {
+    filter: blur(1px);
+    pointer-events: none;
+}
+
+.auth-carousel-card--active .auth-form-card {
+    box-shadow:
+        0 0 0 1px rgba(99, 154, 255, 0.45),
+        0 0 55px rgba(43, 108, 255, 0.35),
+        0 20px 50px rgba(10, 23, 51, 0.35);
+    animation: auth-carousel-card-in 0.5s ease;
+}
+
+@keyframes auth-carousel-card-in {
     0% {
         opacity: 0;
-        transform: translateY(6px) scale(0.98);
+        transform: scale(0.96);
     }
 
     100% {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: scale(1);
     }
 }
 
-.auth-pager-arrow {
+.auth-form-card--ghost h2 {
+    font-size: 1.35rem;
+}
+
+.auth-ghost-field {
+    height: 44px;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    margin-bottom: 1rem;
+}
+
+.auth-ghost-btn {
+    height: 46px;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.16);
+    margin-top: 0.5rem;
+}
+
+.auth-carousel-controls {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.1rem;
-    height: 2.1rem;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.auth-carousel-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
     flex: 0 0 auto;
-    border: none;
+    border: 1px solid var(--lts-border-color, var(--lts-border));
     border-radius: 50%;
-    background: transparent;
+    background: var(--lts-surface, #ffffff);
     color: var(--lts-blue);
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-    .auth-pager-arrow:hover:not(:disabled) {
-        background: rgba(63, 123, 255, 0.12);
+    .auth-carousel-arrow:hover {
+        background: var(--lts-blue);
+        color: #fff;
         transform: scale(1.08);
     }
 
-    .auth-pager-arrow:disabled {
-        color: var(--lts-text-muted);
-        opacity: 0.4;
-        cursor: default;
-    }
-
-.auth-pager-label {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1.15;
-    min-width: 0;
-    padding: 0 0.25rem;
+[data-theme="dark"] .auth-carousel-arrow {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: var(--lts-text);
 }
 
-.auth-pager-text {
-    font-weight: 700;
-    font-size: 0.88rem;
-    color: var(--lts-text, #16213e);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    animation: auth-pager-text-in 0.28s ease-out;
-}
-
-@keyframes auth-pager-text-in {
-    0% {
-        opacity: 0;
-        transform: translateY(3px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.auth-pager-count {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--lts-text-muted);
-    letter-spacing: 0.02em;
-}
-
-.auth-pager-dots {
+.auth-carousel-dots {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    margin: 0.65rem auto 0;
+    gap: 0.5rem;
 }
 
-.auth-pager-dot {
-    width: 0.5rem;
-    height: 0.5rem;
+.auth-carousel-dot {
+    width: 0.55rem;
+    height: 0.55rem;
     padding: 0;
     border: none;
     border-radius: 50%;
@@ -136,42 +150,31 @@
     transition: all 0.25s ease;
 }
 
-    .auth-pager-dot:hover {
+    .auth-carousel-dot:hover {
         background: var(--lts-blue-light);
     }
 
-    .auth-pager-dot.active {
-        width: 1.35rem;
+    .auth-carousel-dot.active {
+        width: 1.4rem;
         border-radius: 999px;
         background: var(--lts-blue);
         box-shadow: 0 0 0 3px rgba(63, 123, 255, 0.22);
     }
 
-.auth-pager-hint {
-    text-align: center;
-    font-size: 0.74rem;
-    color: var(--lts-text-muted);
-    margin: 0.5rem 0 0;
-    opacity: 0;
-    animation: auth-pager-hint-in 0.4s ease-out forwards;
-    animation-delay: 2.3s;
+@media (max-width: 991px) {
+    .auth-carousel-card--prev {
+        transform: translateX(calc(-50% - 55%)) translateZ(-180px) rotateY(25deg);
+    }
+
+    .auth-carousel-card--next {
+        transform: translateX(calc(-50% + 55%)) translateZ(-180px) rotateY(-25deg);
+    }
 }
 
-@keyframes auth-pager-hint-in {
-    0% {
+@media (max-width: 575px) {
+    .auth-carousel-card--prev,
+    .auth-carousel-card--next {
         opacity: 0;
-        transform: translateY(-2px);
-    }
-
-    100% {
-        opacity: 0.85;
-        transform: translateY(0);
-    }
-}
-
-@media (max-width: 480px) {
-    .auth-pager,
-    .auth-pager-dots {
-        max-width: 100%;
+        pointer-events: none;
     }
 }

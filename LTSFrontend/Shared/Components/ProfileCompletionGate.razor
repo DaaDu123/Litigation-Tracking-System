@@ -94,18 +94,19 @@
 
                             <div class="auth-section-title">Your Details</div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Your Full Name</label>
-                                <input class="form-control" @bind="_adminModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
-                                <ValidationMessage For="() => _adminModel.FullName" class="text-danger small" />
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Contact Number</label>
-                                <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
-                                       @bind:get="_adminModel.Phone" @bind:set="v => _adminModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
-                                       disabled="@_isBusy" required />
-                                <ValidationMessage For="() => _adminModel.Phone" class="text-danger small" />
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Your Full Name</label>
+                                    <input class="form-control" @bind="_adminModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+                                    <ValidationMessage For="() => _adminModel.FullName" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Contact Number</label>
+                                    <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                           @bind:get="_adminModel.Phone" @bind:set="v => _adminModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                                           disabled="@_isBusy" required />
+                                    <ValidationMessage For="() => _adminModel.Phone" class="text-danger small" />
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">CNIC</label>
@@ -117,26 +118,30 @@
 
                             <div class="auth-section-title">Firm Details</div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Firm Name</label>
-                                <input class="form-control" @bind="_adminModel.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
-                                <ValidationMessage For="() => _adminModel.FirmName" class="text-danger small" />
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Firm Name</label>
+                                    <input class="form-control" @bind="_adminModel.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
+                                    <ValidationMessage For="() => _adminModel.FirmName" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Firm Address <span class="text-muted fw-normal">(optional)</span></label>
+                                    <input class="form-control" @bind="_adminModel.Address" @bind:event="oninput" disabled="@_isBusy" />
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Firm Address <span class="text-muted fw-normal">(optional)</span></label>
-                                <input class="form-control" @bind="_adminModel.Address" @bind:event="oninput" disabled="@_isBusy" />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Firm Contact Email <span class="text-muted fw-normal">(optional)</span></label>
-                                <input class="form-control" @bind="_adminModel.ContactEmail" @bind:event="oninput" disabled="@_isBusy" />
-                                <ValidationMessage For="() => _adminModel.ContactEmail" class="text-danger small" />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Firm Contact Phone <span class="text-muted fw-normal">(optional)</span></label>
-                                <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
-                                       @bind:get="_adminModel.ContactPhone" @bind:set="v => _adminModel.ContactPhone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
-                                       disabled="@_isBusy" />
-                                <ValidationMessage For="() => _adminModel.ContactPhone" class="text-danger small" />
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Firm Contact Email <span class="text-muted fw-normal">(optional)</span></label>
+                                    <input class="form-control" @bind="_adminModel.ContactEmail" @bind:event="oninput" disabled="@_isBusy" />
+                                    <ValidationMessage For="() => _adminModel.ContactEmail" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Firm Contact Phone <span class="text-muted fw-normal">(optional)</span></label>
+                                    <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                           @bind:get="_adminModel.ContactPhone" @bind:set="v => _adminModel.ContactPhone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                                           disabled="@_isBusy" />
+                                    <ValidationMessage For="() => _adminModel.ContactPhone" class="text-danger small" />
+                                </div>
                             </div>
 
                             <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
@@ -150,17 +155,19 @@
                         <EditForm Model="_userModel" OnValidSubmit="HandleCompleteFirmUserAsync">
                             <DataAnnotationsValidator />
 
-                            <div class="mb-3">
-                                <label class="form-label">Full Name</label>
-                                <input class="form-control" @bind="_userModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
-                                <ValidationMessage For="() => _userModel.FullName" class="text-danger small" />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Contact Number</label>
-                                <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
-                                       @bind:get="_userModel.Phone" @bind:set="v => _userModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
-                                       disabled="@_isBusy" required />
-                                <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Full Name</label>
+                                    <input class="form-control" @bind="_userModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
+                                    <ValidationMessage For="() => _userModel.FullName" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Contact Number</label>
+                                    <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                           @bind:get="_userModel.Phone" @bind:set="v => _userModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
+                                           disabled="@_isBusy" required />
+                                    <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">CNIC</label>
@@ -193,23 +200,11 @@
     private readonly CompleteFirmAdminProfileRequest _adminModel = new();
     private readonly CompleteFirmUserProfileRequest _userModel = new();
 
-    // FirmAdmin is the only role that completes the "firm admin" variant
-    // of the form (with Firm details); every other role gets the simpler
-    // form.
     private bool IsFirmAdmin => Session.Role == "FirmAdmin";
 
     protected override async Task OnInitializedAsync()
     {
         await ProfileState.EnsureLoadedAsync();
-
-        // FIX: this used to pre-fill FullName from the backend's
-        // placeholder value (the email's local part, e.g.
-        // "muhammadsaad3877" for muhammadsaad3877@gmail.com). Since it
-        // already looked like a plausible name, people were submitting it
-        // unedited - their profile ended up genuinely complete, but their
-        // display name across the whole app stayed as their email prefix,
-        // which looked like a bypassed/incomplete profile even though it
-        // wasn't. Leaving it blank forces a deliberate, real name.
 
         _checked = true;
     }

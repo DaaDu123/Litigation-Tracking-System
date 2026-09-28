@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -14,41 +15,42 @@ namespace LTSFrontend.Core.Http
 
         private readonly UserSessionState _session;
         private readonly ITokenStorageService _tokenStorage;
+        private readonly CookieContainer _cookieContainer;
+        private readonly ILogger<ApiClient>? _logger;
 
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
         private readonly TokenRefreshGate _refreshGate;
 
-        public ApiClient(HttpClient httpClient, UserSessionState session, ITokenStorageService tokenStorage, TokenRefreshGate refreshGate)
+        public ApiClient(HttpClient httpClient, UserSessionState session, ITokenStorageService tokenStorage, TokenRefreshGate refreshGate, CookieContainer cookieContainer, ILogger<ApiClient>? logger = null)
         {
             Http = httpClient;
             _session = session;
             _tokenStorage = tokenStorage;
             _refreshGate = refreshGate;
+            _cookieContainer = cookieContainer;
+            _logger = logger;
         }
 
-        // SECURITY FIX: this app is Blazor Server (see Program.cs -
-        // AddInteractiveServerComponents), so this HttpClient runs on the
-        // SERVER, not in the user's browser. It used to be registered via
-        // services.AddHttpClient<ApiClient>(...), which pools ONE shared
-        // HttpMessageHandler (and therefore ONE shared CookieContainer,
-        // since UseCookies=true) across every circuit/user on the server,
-        // keyed only by the typed-client name - not per user. That meant:
-        //   1. The refreshToken cookie set by one user's login could be
-        //      overwritten by another concurrent user's login (both write
-        //      to the SAME CookieContainer for the SAME domain+path+name),
-        //      a real session/account-mixing risk.
-        //   2. IHttpClientFactory recycles that shared handler by default
-        //      every ~2 minutes, silently starting a brand-new EMPTY
-        //      CookieContainer. Any user active longer than that lost
-        //      their refreshToken cookie with no visible error - which is
-        //      why Logout (and silent token refresh) started failing
-        //      ("Refresh token not found in cookie") and LoginHistory's
-        //      LogoutTime was never being saved.
-        // Fix: ApiClient is now constructed once per DI scope (= once per
-        // Blazor Server circuit = once per logged-in user - see
-        // ServiceCollectionExtensions), each with its OWN dedicated
-        // HttpClientHandler + CookieContainer that lives exactly as long
-        // as that user's circuit and is disposed with it.
+        public string? GetCurrentRefreshToken()
+        {
+            if (Http.BaseAddress == null)
+            {
+                return null;
+            }
+
+            return _cookieContainer.GetCookies(Http.BaseAddress)["refreshToken"]?.Value;
+        }
+
+        public void SeedRefreshTokenCookie(string? refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken) || Http.BaseAddress == null)
+            {
+                return;
+            }
+
+             _cookieContainer.Add(Http.BaseAddress, new Cookie("refreshToken", refreshToken));
+        }
+
         public void Dispose()
         {
             Http.Dispose();
@@ -124,9 +126,14 @@ namespace LTSFrontend.Core.Http
             if (!_session.IsAuthenticated)
             {
                 var stored = await _tokenStorage.GetSessionAsync();
-                if (stored != null && stored.AccessTokenExpiry > DateTime.UtcNow)
+                if (stored != null)
                 {
-                    _session.Set(stored.UserID, stored.FullName, stored.Email, stored.Role,stored.AccessToken, stored.AccessTokenExpiry);
+                    _session.Set(stored.UserID, stored.FullName, stored.Email, stored.Role, stored.AccessToken, stored.AccessTokenExpiry);
+                    // The access token itself may well already be expired
+                    // (it only lasts 7 minutes) - that's fine, seed the
+                    // refresh-token cookie too so the check below refreshes
+                    // it before this request goes out.
+                    SeedRefreshTokenCookie(stored.RefreshToken);
                 }
             }
 
@@ -178,11 +185,13 @@ namespace LTSFrontend.Core.Http
                 // EnsureAuthorizationHeaderAsync. The refresh-token cookie
                 // (HttpOnly, sent automatically) is all this endpoint
                 // needs; it's [AllowAnonymous] on the backend.
+                _logger?.LogInformation("[ApiClient] Silent refresh attempt. Cookie jar has refreshToken={HasRt}", !string.IsNullOrWhiteSpace(GetCurrentRefreshToken()));
                 var request = new HttpRequestMessage(HttpMethod.Post, ApiEndpoints.Auth.RefreshToken);
                 var response = await Http.SendAsync(request);
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    _logger?.LogWarning("[ApiClient] Silent refresh REJECTED by backend: HTTP {Status}. Body: {Body}", (int)response.StatusCode, await response.Content.ReadAsStringAsync());
                     return false;
                 }
 
@@ -196,16 +205,20 @@ namespace LTSFrontend.Core.Http
 
                 _session.UpdateAccessToken(parsed.Data.AccessToken, parsed.Data.AccessTokenExpiry);
 
-                // Persist the refreshed token too, so a brand new circuit
-                // (new tab, F5) started right after this also picks up the
-                // live token instead of the now-stale one that was
-                // originally saved at login.
-                await _tokenStorage.SaveSessionAsync(new StoredSession(_session.UserID, _session.FullName, _session.Email, _session.Role,_session.AccessToken!, _session.AccessTokenExpiry!.Value));
+                // Persist the refreshed access token AND the rotated
+                // refresh token (LTSBackend rotates it on every refresh -
+                // see RefreshTokenHandler), so a brand new circuit (new
+                // tab, F5) started right after this also picks up live
+                // tokens instead of the now-stale/now-revoked ones that
+                // were originally saved at login.
+                await _tokenStorage.SaveSessionAsync(new StoredSession(_session.UserID, _session.FullName, _session.Email, _session.Role, _session.AccessToken!, _session.AccessTokenExpiry!.Value, GetCurrentRefreshToken()));
+                _logger?.LogInformation("[ApiClient] Silent refresh SUCCEEDED; new access token expires {Expiry:o}", _session.AccessTokenExpiry);
 
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.LogWarning(ex, "[ApiClient] Silent refresh threw an exception.");
                 // Network hiccup, refresh token genuinely expired/revoked,
                 // etc. - fall through and let the original request go out
                 // with whatever token (possibly none) we already have; the
