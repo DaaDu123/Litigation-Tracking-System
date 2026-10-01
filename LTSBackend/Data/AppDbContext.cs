@@ -559,24 +559,13 @@ public class AppDbContext : DbContext
             entity.HasQueryFilter(e => BypassTenantFilter || (e.User != null && e.User.FirmID == RequestFirmId));
         });
 
-        // Seed data - MINIMAL bootstrap set only.
-        // Firms, Departments, Courts, CaseCategories, CaseStatus, CaseStages,
-        // and DocumentTypes are intentionally NOT seeded. Nothing in the
-        // codebase references their IDs by hardcoded number (verified), so
-        // the app works fine without them - Firms are created organically via
-        // the Request-Firm-Admin-Access approval flow, and the master data
-        // tables can be populated later by a SuperAdmin from inside the app.
-        //
-        // Roles + Permissions + RolePermissions + NotificationTypes stay
-        // seeded because they ARE relied on by hardcoded IDs elsewhere in the
-        // code (CreateUserCommandHandler, SubmitFirmAdminRequestCommandHandler,
-        // SubmitUserJoinRequestCommandHandler, AssignCaseHandler, ReminderService,
-        // FirmAdminRequest approval) - removing them would crash those flows.
         SeedRoles(modelBuilder);
         SeedPermissions(modelBuilder);
         SeedRolePermissions(modelBuilder);
         SeedUsers(modelBuilder);
         SeedNotificationTypes(modelBuilder);
+        SeedCaseStatuses(modelBuilder);
+        SeedCaseStages(modelBuilder);
     }
 
     // NOTE: Seed data (HasData) must be deterministic. Using DateTime.UtcNow here
@@ -886,6 +875,39 @@ public class AppDbContext : DbContext
                 IsInApp = true,
                 IsActive = true
             }
+        );
+    }
+
+    // CASE STATUSES - minimal default lifecycle, global (FirmID = null) so
+    // every firm sees them without any setup. "New" is REQUIRED - see the
+    // comment above the Seed*() calls in OnModelCreating: CreateCaseHandler
+    // hardcodes looking this one up by exact StatusName on every case
+    // creation. The rest (InProgress/OnHold/Disposed/Closed) are a
+    // reasonable generic starting point that firms can extend or ignore
+    // via Master Data > Case Statuses.
+    private static void SeedCaseStatuses(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CaseStatus>().HasData(
+            new CaseStatus { StatusID = 1, FirmID = null, StatusName = "New", SequenceNo = 1, ColorCode = "#6366F1", IsClosed = false, IsActive = true },
+            new CaseStatus { StatusID = 2, FirmID = null, StatusName = "In Progress", SequenceNo = 2, ColorCode = "#F59E0B", IsClosed = false, IsActive = true },
+            new CaseStatus { StatusID = 3, FirmID = null, StatusName = "On Hold", SequenceNo = 3, ColorCode = "#94A3B8", IsClosed = false, IsActive = true },
+            new CaseStatus { StatusID = 4, FirmID = null, StatusName = "Disposed", SequenceNo = 4, ColorCode = "#10B981", IsClosed = true, IsActive = true },
+            new CaseStatus { StatusID = 5, FirmID = null, StatusName = "Closed", SequenceNo = 5, ColorCode = "#EF4444", IsClosed = true, IsActive = true }
+        );
+    }
+
+    // CASE STAGES - minimal default litigation stages, global (FirmID =
+    // null). "Filing" is REQUIRED for the same reason "New" is above -
+    // CreateCaseHandler hardcodes it as every new case's initial stage.
+    private static void SeedCaseStages(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CaseStage>().HasData(
+            new CaseStage { StageID = 1, FirmID = null, StageName = "Filing", Description = "Case has been filed and is awaiting registration/numbering", IsActive = true },
+            new CaseStage { StageID = 2, FirmID = null, StageName = "Hearing", Description = "Case is being heard; hearings are scheduled or in progress", IsActive = true },
+            new CaseStage { StageID = 3, FirmID = null, StageName = "Arguments", Description = "Arguments are being presented before the court", IsActive = true },
+            new CaseStage { StageID = 4, FirmID = null, StageName = "Judgment", Description = "Court has reserved or announced judgment", IsActive = true },
+            new CaseStage { StageID = 5, FirmID = null, StageName = "Appeal", Description = "Case is under appeal before a higher court", IsActive = true },
+            new CaseStage { StageID = 6, FirmID = null, StageName = "Execution", Description = "Judgment/order is being executed or enforced", IsActive = true }
         );
     }
 }
