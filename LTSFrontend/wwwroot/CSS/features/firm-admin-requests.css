@@ -1,0 +1,217 @@
+/* ==========================================================================
+   Feature: Firm Admin requests ("Create Your Own Firm")
+   Styles for the status banner, the Home call-to-action card and the
+   sidebar entry. Used by Features/FirmAdminRequests/Components/*.
+   ========================================================================== */
+
+/* ---------- Status banner (shared by the Home card and the modal) ---------- */
+.lts-request-banner {
+  --banner-accent: var(--lts-info);
+  --banner-bg: var(--lts-info-bg);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--banner-accent) 28%, transparent);
+  border-left: 4px solid var(--banner-accent);
+  border-radius: var(--lts-radius-sm);
+  background: var(--banner-bg);
+  color: var(--lts-text);
+  min-width: 0;
+}
+
+.lts-request-banner-icon {
+  flex: 0 0 auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.05rem;
+  color: var(--banner-accent);
+  background: color-mix(in srgb, var(--banner-accent) 16%, transparent);
+}
+
+.lts-request-banner-body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.lts-request-banner-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 0.15rem;
+}
+
+.lts-request-banner-text {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--lts-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.lts-request-banner-meta {
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--lts-text-muted);
+}
+
+.lts-request-banner.is-pending {
+  --banner-accent: var(--lts-warning);
+  --banner-bg: var(--lts-warning-bg);
+}
+
+.lts-request-banner.is-approved {
+  --banner-accent: var(--lts-success);
+  --banner-bg: var(--lts-success-bg);
+}
+
+.lts-request-banner.is-rejected {
+  --banner-accent: var(--lts-danger);
+  --banner-bg: var(--lts-danger-bg);
+}
+
+.lts-request-banner.is-blocked {
+  --banner-accent: var(--lts-text-muted);
+  --banner-bg: var(--lts-surface-2);
+}
+
+/* ---------- Home call-to-action card ---------- */
+.lts-create-firm-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1.5rem 2rem;
+  align-items: center;
+  padding: clamp(1.1rem, 0.7rem + 1.6vw, 2rem);
+  border: 1px solid var(--lts-border-color);
+  border-radius: var(--lts-radius-lg);
+  background:
+    radial-gradient(
+      700px 240px at 100% 0%,
+      color-mix(in srgb, var(--lts-blue) 10%, transparent),
+      transparent 70%
+    ),
+    var(--lts-surface);
+  box-shadow: var(--lts-shadow-sm);
+}
+
+.lts-create-firm-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lts-blue);
+  margin-bottom: 0.5rem;
+}
+
+.lts-create-firm-title {
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.7rem);
+  font-weight: 700;
+  color: var(--lts-text);
+  margin: 0 0 0.4rem;
+}
+
+.lts-create-firm-desc {
+  margin: 0;
+  color: var(--lts-text-muted);
+  font-size: 0.93rem;
+  max-width: 38rem;
+}
+
+.lts-create-firm-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.lts-create-firm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.lts-create-firm-actions .lts-btn {
+  flex: 1 1 11rem;
+}
+
+.lts-create-firm-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--lts-text-muted);
+  font-size: 0.88rem;
+}
+
+/* ---------- Sidebar entry ---------- */
+.lts-nav-status {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.lts-nav-status.is-pending {
+  background: rgba(217, 119, 6, 0.28);
+  color: #ffd699;
+}
+
+.lts-nav-status.is-approved {
+  background: rgba(22, 163, 74, 0.3);
+  color: #9be8b8;
+}
+
+.lts-sidebar .nav-link.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sidebar-collapsed .lts-sidebar .lts-nav-status {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .sidebar-collapsed .lts-sidebar .lts-nav-status {
+    display: inline-block;
+  }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 991.98px) {
+  .lts-create-firm-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.1rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .lts-create-firm-actions .lts-btn {
+    flex: 1 1 100%;
+  }
+
+  .lts-request-banner {
+    padding: 0.75rem 0.8rem;
+    gap: 0.65rem;
+  }
+
+  .lts-request-banner-icon {
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.95rem;
+  }
+}

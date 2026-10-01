@@ -1,0 +1,86 @@
+:root {
+  --lts-navy: #10214d;
+  --lts-navy-dark: #0a1733;
+  --lts-blue: #1b4fd6;
+  --lts-blue-light: #3f7bff;
+  --lts-bg: #f4f6fb;
+  --lts-border: #e3e7f0;
+  --lts-text-muted: #6b7280;
+}
+
+:root {
+  --lts-radius-sm: 0.4rem;
+  --lts-radius: 0.65rem;
+  --lts-radius-lg: 0.9rem;
+  --lts-shadow-sm: 0 1px 2px rgba(16, 33, 77, 0.06);
+  --lts-shadow: 0 4px 14px rgba(16, 33, 77, 0.08);
+  --lts-shadow-lg: 0 12px 32px rgba(16, 33, 77, 0.14);
+  --lts-success: #16a34a;
+  --lts-success-bg: #e9f9ef;
+  --lts-danger: #dc2626;
+  --lts-danger-bg: #fdecec;
+  --lts-warning: #d97706;
+  --lts-warning-bg: #fef6e7;
+  --lts-info: #0284c7;
+  --lts-info-bg: #e8f6fd;
+
+  --lts-surface: #ffffff;
+  --lts-surface-2: #f8f9fc;
+  --lts-text: #16213e;
+  --lts-text-muted: #6b7280;
+  --lts-border-color: var(--lts-border);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --lts-bg: #0e1526;
+  --lts-surface: #141c30;
+  --lts-surface-2: #101828;
+  --lts-border-color: #263050;
+  --lts-text: #e7ebf7;
+  --lts-text-muted: #98a2c3;
+  --lts-success-bg: rgba(22, 163, 74, 0.14);
+  --lts-danger-bg: rgba(220, 38, 38, 0.14);
+  --lts-warning-bg: rgba(217, 119, 6, 0.14);
+  --lts-info-bg: rgba(2, 132, 199, 0.16);
+  --lts-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --lts-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --lts-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+:root {
+  /* Reuses the app's own blue accent (already used across the dashboard)
+       instead of introducing a separate yellow/gold accent. */
+  --lts-gold: var(--lts-blue);
+  --lts-gold-dark: #163fac;
+  --lts-gold-light: var(--lts-blue-light);
+}
+
+[data-theme="dark"] {
+  --lts-gold-dark: var(--lts-blue-light);
+}
+
+/* ==========================================================================
+   Responsive scale (documentation + layout tokens)
+   Breakpoints follow Bootstrap 5 so utility classes (d-md-none, col-lg-6 ...)
+   and our own media queries always agree:
+     XS  < 576px          phones
+     SM  >= 576px         large phones / small tablets
+     MD  >= 768px         tablets
+     LG  >= 992px         laptops
+     XL  >= 1200px        desktops
+     XXL >= 1400px        large desktops
+   CSS custom properties cannot be used inside @media conditions, so the
+   numbers are repeated literally in each file's "Responsive" section.
+   ========================================================================== */
+:root {
+  --lts-sidebar-w: 250px;
+  --lts-sidebar-w-collapsed: 76px;
+  --lts-sidebar-w-drawer: min(290px, 86vw);
+  --lts-topbar-h: 3.6rem;
+  --lts-content-max: 1680px;
+  --lts-gutter: clamp(0.75rem, 0.4rem + 1.6vw, 2rem);
+  --lts-page-pad-x: clamp(1.1rem, 0.6rem + 2.5vw, 3rem);
+}

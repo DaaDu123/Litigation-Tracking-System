@@ -1,0 +1,78 @@
+@using LTSFrontend.Features.FirmAdminRequests.DTOs
+
+<div class="lts-request-banner @StateClass" role="status">
+    <span class="lts-request-banner-icon"><i class="bi @Icon"></i></span>
+    <div class="lts-request-banner-body">
+        <div class="lts-request-banner-title">
+            @Eligibility.StatusTitle
+            @if (BadgeText is not null)
+            {
+                <span class="lts-badge @BadgeClass">@BadgeText</span>
+            }
+        </div>
+        <p class="lts-request-banner-text">@Eligibility.StatusMessage</p>
+
+        @if (!string.IsNullOrWhiteSpace(Eligibility.HelpText))
+        {
+            <div class="lts-request-banner-meta">@Eligibility.HelpText</div>
+        }
+
+        @if (Eligibility.Phase == FirmRequestPhase.Rejected && !string.IsNullOrWhiteSpace(Eligibility.LatestRequest?.RejectionReason))
+        {
+            <div class="lts-request-banner-meta">Reason given: @Eligibility.LatestRequest!.RejectionReason</div>
+        }
+
+        @if (Eligibility.LatestRequest is { } request && Eligibility.Phase != FirmRequestPhase.NoRequest)
+        {
+            <div class="lts-request-banner-meta">
+                Requested on @request.RequestedAt.ToLocalTime().ToString("d MMM yyyy")
+                @if (request.ReviewedAt.HasValue)
+                {
+                    <text> &middot; Reviewed on @request.ReviewedAt.Value.ToLocalTime().ToString("d MMM yyyy")</text>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public FirmRequestEligibility Eligibility { get; set; } = default!;
+
+    private string StateClass => Eligibility.IsBlockedBySuperAdminRequest
+        ? "is-blocked"
+        : Eligibility.Phase switch
+        {
+            FirmRequestPhase.Pending => "is-pending",
+            FirmRequestPhase.Approved => "is-approved",
+            FirmRequestPhase.Rejected => "is-rejected",
+            _ => string.Empty
+        };
+
+    private string Icon => Eligibility.IsBlockedBySuperAdminRequest
+        ? "bi-slash-circle"
+        : Eligibility.Phase switch
+        {
+            FirmRequestPhase.Pending => "bi-hourglass-split",
+            FirmRequestPhase.Approved => "bi-check-circle",
+            FirmRequestPhase.Rejected => "bi-x-circle",
+            _ => "bi-building-add"
+        };
+
+    private string? BadgeText => Eligibility.IsBlockedBySuperAdminRequest
+        ? null
+        : Eligibility.Phase switch
+        {
+            FirmRequestPhase.Pending => "Pending",
+            FirmRequestPhase.Approved => "Approved",
+            FirmRequestPhase.Rejected => "Rejected",
+            _ => null
+        };
+
+    private string BadgeClass => Eligibility.Phase switch
+    {
+        FirmRequestPhase.Pending => "lts-badge-warning",
+        FirmRequestPhase.Approved => "lts-badge-success",
+        FirmRequestPhase.Rejected => "lts-badge-danger",
+        _ => "lts-badge-muted"
+    };
+}

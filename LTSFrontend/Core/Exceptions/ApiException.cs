@@ -8,7 +8,7 @@
     public class ApiException : Exception
     {
         public int? StatusCode { get; }
-        public List<string> Errors { get; }
+        public List<string > Errors { get; }
 
         public ApiException(string message, int? statusCode = null, List<string>? errors = null) : base(message)
         {

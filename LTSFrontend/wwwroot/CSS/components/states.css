@@ -1,0 +1,54 @@
+/* ---------- Empty / error states ---------- */
+
+.lts-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  color: var(--lts-text-muted);
+}
+
+.lts-state-icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  background: var(--lts-surface-2);
+  color: var(--lts-text-muted);
+}
+
+.lts-state.is-error .lts-state-icon {
+  background: var(--lts-danger-bg);
+  color: var(--lts-danger);
+}
+
+.lts-state-title {
+  font-weight: 700;
+  color: var(--lts-text);
+  margin-bottom: 0.25rem;
+  font-size: 1.02rem;
+}
+
+.lts-state-desc {
+  max-width: 380px;
+  font-size: 0.87rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 575.98px) {
+  .lts-state {
+    padding: 2.25rem 1rem;
+  }
+
+  .lts-state-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    font-size: 1.4rem;
+  }
+}

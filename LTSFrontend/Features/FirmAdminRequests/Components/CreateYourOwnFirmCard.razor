@@ -1,0 +1,66 @@
+@using LTSFrontend.Features.FirmAdminRequests.DTOs
+@using LTSFrontend.Features.FirmAdminRequests.Services
+@implements IDisposable
+@inject FirmAdminRequestStatusState Status
+
+<section class="lts-create-firm-card" aria-labelledby="create-firm-heading">
+    <div>
+        <span class="lts-create-firm-eyebrow"><i class="bi bi-building-add"></i> Start your own workspace</span>
+        <h2 class="lts-create-firm-title" id="create-firm-heading">Create Your Own Firm</h2>
+        <p class="lts-create-firm-desc">
+            Run your own litigation workspace: request Firm Admin access and, once a Super Admin approves it,
+            add your team, cases and hearings. Prefer to work inside an existing firm? Send a join request instead.
+        </p>
+    </div>
+
+    <div class="lts-create-firm-side">
+        @if (Status.Current is null)
+        {
+            <div class="lts-create-firm-loading">
+                <span class="lts-spinner lts-spinner-sm"></span> Checking your request status...
+            </div>
+        }
+        else
+        {
+            @if (Status.Current.Phase != FirmRequestPhase.NoRequest || Status.Current.IsBlockedBySuperAdminRequest)
+            {
+                <FirmAdminRequestStatusBanner Eligibility="Status.Current!" />
+            }
+
+            <div class="lts-create-firm-actions">
+                <button type="button" class="lts-btn lts-btn-primary"
+                        @onclick="OpenModalAsync"
+                        disabled="@(!Status.Current.CanSubmit)"
+                        title="@(Status.Current.CanSubmit ? null : Status.Current.StatusMessage)">
+                    <i class="bi bi-building-add"></i> Create Your Own Firm
+                </button>
+                <a class="lts-btn lts-btn-outline" href="/join-firm">
+                    <i class="bi bi-building"></i> Join a Firm
+                </a>
+            </div>
+        }
+    </div>
+</section>
+
+<CreateFirmModal @ref="_modal" />
+
+@code {
+    private CreateFirmModal? _modal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Status.OnChange += HandleStatusChanged;
+        // Always fetch fresh: a Super Admin may have approved/rejected since the last visit.
+        await Status.RefreshAsync();
+    }
+
+    private void HandleStatusChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task OpenModalAsync()
+    {
+        if (_modal is not null)
+            await _modal.OpenAsync();
+    }
+
+    public void Dispose() => Status.OnChange -= HandleStatusChanged;
+}

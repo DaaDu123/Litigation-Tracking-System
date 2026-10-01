@@ -1,0 +1,279 @@
+/* ---------- Modal (custom, used for ConfirmDialog + form modals) ---------- */
+
+.lts-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.lts-modal-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lts-modal-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.lts-modal-wrap.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lts-modal-wrap.show .lts-modal {
+  transform: translateY(0);
+}
+
+.lts-modal {
+  background: var(--lts-surface);
+  border-radius: var(--lts-radius-lg);
+  box-shadow: var(--lts-shadow-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(12px);
+  transition: transform 0.2s ease;
+}
+
+.lts-modal-sm {
+  max-width: 420px;
+}
+
+.lts-modal-lg {
+  max-width: 760px;
+}
+
+.lts-permission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0.15rem;
+}
+
+.lts-permission-group {
+  border: 1px solid var(--lts-border-color);
+  border-radius: var(--lts-radius-sm);
+  padding: 0.6rem 0.75rem;
+  background: var(--lts-surface-2);
+}
+
+.lts-permission-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--lts-text);
+  margin-bottom: 0.4rem;
+}
+
+.lts-permission-group-header button {
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+.lts-permission-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lts-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--lts-text);
+  cursor: pointer;
+}
+
+.lts-checkbox-item input[type="checkbox"] {
+  accent-color: var(--lts-blue);
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.lts-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1.35rem 1.5rem 1rem;
+}
+
+.lts-modal-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex: 0 0 auto;
+}
+
+.lts-modal-icon-danger {
+  background: var(--lts-danger-bg);
+  color: var(--lts-danger);
+}
+
+.lts-modal-icon-warning {
+  background: var(--lts-warning-bg);
+  color: var(--lts-warning);
+}
+
+.lts-modal-icon-primary {
+  background: rgba(27, 79, 214, 0.12);
+  color: var(--lts-blue);
+}
+
+.lts-modal-title {
+  font-weight: 700;
+  color: var(--lts-text);
+  margin: 0 0 0.15rem;
+  font-size: 1.1rem;
+}
+
+.lts-modal-subtitle {
+  color: var(--lts-text-muted);
+  font-size: 0.87rem;
+}
+
+.lts-modal-body {
+  padding: 0 1.5rem 1.25rem;
+}
+
+.lts-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 1rem 1.5rem 1.35rem;
+  border-top: 1px solid var(--lts-border-color);
+  margin-top: 0.25rem;
+}
+
+.lts-modal-sm .lts-modal-footer {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+@media (max-width: 767.98px) {
+  .lts-modal-header > div:not(.lts-modal-icon) {
+    flex: 1;
+    min-width: 0;
+  }
+  .lts-modal-title,
+  .lts-modal-subtitle {
+    overflow-wrap: break-word;
+  }
+}
+
+/* ==========================================================================
+   Responsive — modals
+   MD+ : centred dialog
+   XS  : full-width bottom sheet, buttons stack, body scrolls
+   ========================================================================== */
+.lts-modal-wrap {
+  padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem
+    max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+.lts-modal {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overscroll-behavior: contain;
+}
+
+.lts-modal-title,
+.lts-modal-subtitle {
+  overflow-wrap: anywhere;
+}
+
+.lts-modal-header > div:not(.lts-modal-icon) {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 767.98px) {
+  .lts-modal,
+  .lts-modal-lg {
+    max-width: 100%;
+  }
+
+  .lts-modal-header {
+    padding: 1.1rem 1.15rem 0.85rem;
+  }
+
+  .lts-modal-body {
+    padding: 0 1.15rem 1.1rem;
+  }
+
+  .lts-modal-footer {
+    padding: 0.9rem 1.15rem 1.1rem;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .lts-modal-wrap {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .lts-modal {
+    max-width: 100%;
+    max-height: 92dvh;
+    border-radius: var(--lts-radius-lg) var(--lts-radius-lg) 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .lts-modal-icon {
+    width: 2.3rem;
+    height: 2.3rem;
+    font-size: 1rem;
+  }
+
+  .lts-modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .lts-modal-footer .lts-btn {
+    width: 100%;
+  }
+
+  .lts-modal-sm .lts-modal-footer {
+    padding-top: 0.5rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .lts-modal-lg {
+    max-width: 880px;
+  }
+}
+
+/* The modal can be hosted inside a visibility:hidden ancestor (the closed
+   mobile nav drawer hosts the Create-Firm modal). Make an open modal visible
+   regardless. */
+.lts-modal-backdrop.show,
+.lts-modal-wrap.show {
+  visibility: visible;
+}

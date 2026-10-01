@@ -32,7 +32,7 @@ else
     <div class="lts-app-shell @(_sidebarCollapsed ? "sidebar-collapsed" : "") @(_mobileNavOpen ? "mobile-nav-open" : "")">
         <div class="lts-sidebar-backdrop" @onclick="CloseMobileNav"></div>
 
-        <div class="lts-sidebar">
+        <div class="lts-sidebar" @onclick="CloseMobileNav">
             <div class="brand">
                 <img src="images/justice-scale-logo.png" alt="Litigation Tracking System" class="brand-logo" />
             </div>

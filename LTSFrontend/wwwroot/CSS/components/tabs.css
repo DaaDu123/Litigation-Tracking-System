@@ -1,0 +1,58 @@
+.lts-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--lts-border-color, var(--lts-border));
+  flex-wrap: wrap;
+}
+
+.lts-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--lts-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.lts-tab:hover {
+  color: var(--lts-primary, #1b4fd6);
+}
+
+.lts-tab.active {
+  color: var(--lts-primary, #1b4fd6);
+  border-bottom-color: var(--lts-primary, #1b4fd6);
+}
+
+/* ==========================================================================
+   Responsive — tabs: become a swipeable single row on narrow screens
+   ========================================================================== */
+.lts-tab {
+  white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+  .lts-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-inline: -0.15rem;
+  }
+
+  .lts-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lts-tab {
+    flex: 0 0 auto;
+    padding: 0.7rem 0.85rem;
+  }
+}

@@ -1,0 +1,171 @@
+.lts-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.1rem;
+}
+
+.lts-toolbar-left,
+.lts-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.lts-view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--lts-border-color);
+    border-radius: var(--lts-radius-sm);
+    overflow: hidden;
+}
+
+    .lts-view-toggle button {
+        border: none;
+        background: var(--lts-surface);
+        color: var(--lts-text-muted);
+        padding: 0.5rem 0.65rem;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+        .lts-view-toggle button.active {
+            background: var(--lts-blue);
+            color: #fff;
+        }
+
+/* ---------- Search box ---------- */
+
+.lts-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 240px;
+}
+
+    .lts-search-box i.bi-search {
+        position: absolute;
+        left: 0.75rem;
+        color: var(--lts-text-muted);
+        font-size: 0.85rem;
+        pointer-events: none;
+    }
+
+.lts-search-input {
+    width: 100%;
+    padding: 0.5rem 2.1rem 0.5rem 2.1rem;
+    border-radius: var(--lts-radius-sm);
+    border: 1px solid var(--lts-border-color);
+    background: var(--lts-surface);
+    color: var(--lts-text);
+    font-size: 0.87rem;
+}
+
+    .lts-search-input:focus {
+        outline: none;
+        border-color: var(--lts-blue-light);
+        box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.18);
+    }
+
+.lts-search-clear {
+    position: absolute;
+    right: 0.6rem;
+    border: none;
+    background: none;
+    color: var(--lts-text-muted);
+    cursor: pointer;
+    display: inline-flex;
+}
+
+@media (max-width: 767.98px) {
+    .lts-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lts-toolbar-left,
+    .lts-toolbar-right {
+        justify-content: space-between;
+    }
+
+    .lts-search-box {
+        min-width: 0;
+        flex: 1;
+    }
+}
+
+/* ==========================================================================
+   Responsive — toolbars, filters, search
+   ========================================================================== */
+.lts-toolbar-left,
+.lts-toolbar-right {
+    min-width: 0;
+}
+
+.lts-search-box {
+    min-width: min(100%, 15rem);
+}
+
+@media (max-width: 991.98px) {
+    .lts-toolbar-left {
+        flex: 1 1 100%;
+    }
+
+    .lts-toolbar-right {
+        flex: 1 1 100%;
+        justify-content: flex-end;
+    }
+
+    .lts-toolbar-left .lts-search-box {
+        flex: 1 1 100%;
+    }
+
+    .lts-toolbar-left .lts-select {
+        flex: 1 1 10rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .lts-toolbar {
+        gap: 0.6rem;
+    }
+
+    /* toolbar is a column here: use content height, never a percentage basis */
+    .lts-toolbar-left,
+    .lts-toolbar-right {
+        flex: 0 0 auto;
+    }
+
+    .lts-toolbar-left,
+    .lts-toolbar-right {
+        justify-content: stretch;
+        gap: 0.5rem;
+    }
+
+        .lts-toolbar-right .lts-select {
+            flex: 1 1 auto;
+        }
+
+    .lts-view-toggle button,
+    .lts-toolbar .lts-btn-sm {
+        min-height: 2.25rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .lts-toolbar-left .lts-select {
+        flex: 1 1 100%;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .lts-toolbar-right {
+        justify-content: space-between;
+    }
+
+        .lts-toolbar-right .lts-select {
+            min-width: 0 !important;
+        }
+}

@@ -1,0 +1,238 @@
+.lts-select {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border-radius: var(--lts-radius-sm);
+  border: 1px solid var(--lts-border-color);
+  background: var(--lts-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%236b7280' d='M6 8 0 0h12z'/%3E%3C/svg%3E")
+    no-repeat right 0.75rem center;
+  appearance: none;
+  font-size: 0.86rem;
+  color: var(--lts-text);
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.lts-color-input {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0.15rem;
+  border-radius: var(--lts-radius-sm);
+  border: 1px solid var(--lts-border-color);
+  background: var(--lts-surface);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.lts-color-chip {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex: 0 0 auto;
+}
+
+.lts-select:focus {
+  outline: none;
+  border-color: var(--lts-blue-light);
+  box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.18);
+}
+
+/* ---------- Form elements (used inside form modals) ---------- */
+
+.lts-form-group {
+  margin-bottom: 1rem;
+}
+
+.lts-form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--lts-text);
+  margin-bottom: 0.35rem;
+}
+
+.lts-form-label .required,
+.form-label .required {
+  color: var(--lts-danger);
+}
+
+.lts-form-control {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--lts-radius-sm);
+  border: 1px solid var(--lts-border-color);
+  background: var(--lts-surface);
+  color: var(--lts-text);
+  font-size: 0.9rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.lts-form-control:focus {
+  outline: none;
+  border-color: var(--lts-blue-light);
+  box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.18);
+}
+
+.lts-form-control.is-invalid {
+  border-color: var(--lts-danger);
+}
+
+.lts-form-control.is-invalid:focus {
+  box-shadow: 0 0 0 0.15rem rgba(220, 38, 38, 0.16);
+}
+
+textarea.lts-form-control {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.lts-form-hint {
+  font-size: 0.76rem;
+  color: var(--lts-text-muted);
+  margin-top: 0.3rem;
+}
+
+.lts-form-error {
+  font-size: 0.78rem;
+  color: var(--lts-danger);
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.lts-char-count {
+  font-size: 0.74rem;
+  color: var(--lts-text-muted);
+  text-align: right;
+  margin-top: 0.2rem;
+}
+
+.lts-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.9rem;
+  background: var(--lts-surface-2);
+  border-radius: var(--lts-radius-sm);
+}
+
+.lts-switch {
+  position: relative;
+  display: inline-block;
+  width: 2.6rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+}
+
+.lts-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.lts-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cbd2e1;
+  transition: 0.2s;
+  border-radius: 999px;
+}
+
+.lts-switch-slider::before {
+  content: "";
+  position: absolute;
+  height: 1.15rem;
+  width: 1.15rem;
+  left: 0.18rem;
+  bottom: 0.18rem;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.lts-switch input:checked + .lts-switch-slider {
+  background-color: var(--lts-success);
+}
+
+.lts-switch input:checked + .lts-switch-slider::before {
+  transform: translateX(1.1rem);
+}
+
+.lts-switch input:focus-visible + .lts-switch-slider {
+  box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.35);
+}
+
+/* ---------- Focus-visible accessibility ---------- */
+
+.lts-btn:focus-visible,
+.lts-icon-btn:focus-visible,
+.lts-page-btn:focus-visible,
+.lts-view-toggle button:focus-visible {
+  outline: 2px solid var(--lts-blue-light);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Responsive — forms
+   ========================================================================== */
+.lts-form-control,
+.lts-select,
+.form-control,
+.form-select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Form grids: Bootstrap .row/.col-md-* already stack below 768px; make sure
+   inline "max-width: 33%" style fields and gutters behave on phones. */
+@media (max-width: 767.98px) {
+  .lts-form-group[style*="max-width"] {
+    max-width: 100% !important;
+  }
+
+  .lts-form-control,
+  .form-control,
+  .form-select,
+  .lts-select {
+    font-size: 1rem; /* prevents iOS zoom-on-focus */
+    min-height: 2.6rem;
+  }
+
+  .lts-switch-row {
+    gap: 0.75rem;
+  }
+
+  .lts-permission-grid {
+    max-height: 50vh;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .lts-form-group {
+    margin-bottom: 0.85rem;
+  }
+
+  .lts-form-label {
+    flex-wrap: wrap;
+  }
+
+  /* form action rows (Save / Cancel) become full-width stacked buttons */
+  form > .lts-modal-footer,
+  .lts-card > form .lts-modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  form > .lts-modal-footer .lts-btn,
+  .lts-card > form .lts-modal-footer .lts-btn {
+    width: 100%;
+  }
+}

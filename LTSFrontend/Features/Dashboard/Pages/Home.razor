@@ -1,5 +1,6 @@
 @page "/"
 @attribute [Authorize]
+@using LTSFrontend.Features.FirmAdminRequests.Components
 @inject UserSessionState Session
 @inject NavigationManager Nav
 
@@ -7,13 +8,16 @@
 
 @if (_role is null)
 {
-    <div class="lts-card">
-        <h4>Welcome, @Session.FullName!</h4>
-        <p class="text-muted mb-0">
-            You're not a member of a firm yet.
-            <a href="/join-firm">Browse Firm Admins and send a request to join</a> to get started.
-        </p>
+    <div class="lts-page-header">
+        <div>
+            <h1 class="lts-page-title">Welcome, @Session.FullName!</h1>
+            <p class="lts-page-subtitle">
+                You're not a member of a firm yet.
+                <a href="/join-firm">Browse Firm Admins and send a request to join</a>, or create your own firm below.
+            </p>
+        </div>
     </div>
+<CreateYourOwnFirmCard />
 }
 
 @code {

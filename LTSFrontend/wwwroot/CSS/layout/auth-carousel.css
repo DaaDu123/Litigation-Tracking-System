@@ -1,0 +1,222 @@
+.auth-hero-right {
+  flex-direction: column;
+}
+
+.auth-carousel-3d {
+  width: 100%;
+  max-width: 640px;
+  overflow: hidden;
+  padding: 0.75rem 0;
+}
+
+.auth-carousel-track {
+  position: relative;
+  perspective: 1500px;
+}
+
+.auth-carousel-card {
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  cursor: pointer;
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s ease;
+}
+
+.auth-carousel-card--active {
+  position: relative;
+  z-index: 3;
+  transform: translateX(0) translateZ(0) rotateY(0deg);
+  opacity: 1;
+  cursor: default;
+}
+
+.auth-carousel-card--prev,
+.auth-carousel-card--next {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  opacity: 0.55;
+}
+
+.auth-carousel-card--prev {
+  transform: translateX(calc(-50% - 78%)) translateZ(-240px) rotateY(30deg);
+}
+
+.auth-carousel-card--next {
+  transform: translateX(calc(-50% + 78%)) translateZ(-240px) rotateY(-30deg);
+}
+
+.auth-carousel-card--prev:hover,
+.auth-carousel-card--next:hover {
+  opacity: 0.8;
+}
+
+.auth-carousel-card--prev .auth-form-card,
+.auth-carousel-card--next .auth-form-card {
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.auth-carousel-card--active .auth-form-card {
+  box-shadow:
+    0 0 0 1px rgba(99, 154, 255, 0.45),
+    0 0 55px rgba(43, 108, 255, 0.35),
+    0 20px 50px rgba(10, 23, 51, 0.35);
+  animation: auth-carousel-card-in 0.5s ease;
+}
+
+@keyframes auth-carousel-card-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.auth-form-card--ghost h2 {
+  font-size: 1.35rem;
+}
+
+.auth-ghost-field {
+  height: 44px;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  margin-bottom: 1rem;
+}
+
+.auth-ghost-btn {
+  height: 46px;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.16);
+  margin-top: 0.5rem;
+}
+
+.auth-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.auth-carousel-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--lts-border-color, var(--lts-border));
+  border-radius: 50%;
+  background: var(--lts-surface, #ffffff);
+  color: var(--lts-blue);
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.auth-carousel-arrow:hover {
+  background: var(--lts-blue);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+[data-theme="dark"] .auth-carousel-arrow {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--lts-text);
+}
+
+.auth-carousel-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-carousel-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--lts-border-color, var(--lts-border));
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.auth-carousel-dot:hover {
+  background: var(--lts-blue-light);
+}
+
+.auth-carousel-dot.active {
+  width: 1.4rem;
+  border-radius: 999px;
+  background: var(--lts-blue);
+  box-shadow: 0 0 0 3px rgba(63, 123, 255, 0.22);
+}
+
+@media (max-width: 991px) {
+  .auth-carousel-card--prev {
+    transform: translateX(calc(-50% - 55%)) translateZ(-180px) rotateY(25deg);
+  }
+
+  .auth-carousel-card--next {
+    transform: translateX(calc(-50% + 55%)) translateZ(-180px) rotateY(-25deg);
+  }
+}
+
+@media (max-width: 575px) {
+  .auth-carousel-card--prev,
+  .auth-carousel-card--next {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ==========================================================================
+   Responsive — auth carousel
+   ========================================================================== */
+.auth-carousel-3d {
+  max-width: min(640px, 100%);
+}
+
+@media (max-width: 767.98px) {
+  .auth-carousel-card--prev {
+    transform: translateX(calc(-50% - 40%)) translateZ(-160px) rotateY(22deg);
+  }
+
+  .auth-carousel-card--next {
+    transform: translateX(calc(-50% + 40%)) translateZ(-160px) rotateY(-22deg);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .auth-carousel-controls {
+    margin-top: 1rem;
+    gap: 0.9rem;
+  }
+
+  .auth-carousel-arrow {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-carousel-card,
+  .auth-carousel-card--active .auth-form-card {
+    transition: none;
+    animation: none;
+  }
+}

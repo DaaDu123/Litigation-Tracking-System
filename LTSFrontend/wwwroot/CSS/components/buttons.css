@@ -1,0 +1,118 @@
+/* ---------- Buttons ---------- */
+
+.lts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.05rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--lts-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.lts-btn:active {
+  transform: translateY(1px);
+}
+
+.lts-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lts-btn-primary {
+  background: var(--lts-blue);
+  border-color: var(--lts-blue);
+  color: #fff;
+}
+
+.lts-btn-primary:hover:not(:disabled) {
+  background: #163fac;
+  border-color: #163fac;
+  box-shadow: 0 4px 12px rgba(27, 79, 214, 0.28);
+}
+
+.lts-btn-danger {
+  background: var(--lts-danger);
+  border-color: var(--lts-danger);
+  color: #fff;
+}
+
+.lts-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.28);
+}
+
+.lts-btn-warning {
+  background: var(--lts-warning);
+  border-color: var(--lts-warning);
+  color: #fff;
+}
+
+.lts-btn-outline {
+  background: transparent;
+  border-color: var(--lts-border-color);
+  color: var(--lts-text);
+}
+
+.lts-btn-outline:hover:not(:disabled) {
+  border-color: var(--lts-blue);
+  color: var(--lts-blue);
+  background: rgba(27, 79, 214, 0.06);
+}
+
+.lts-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--lts-text-muted);
+}
+
+.lts-btn-ghost:hover:not(:disabled) {
+  background: var(--lts-surface-2);
+  color: var(--lts-text);
+}
+
+.lts-btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.lts-btn-icon-only {
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  border-radius: var(--lts-radius-sm);
+}
+
+/* Touch-friendly hit areas on coarse pointers (phones / tablets) */
+@media (pointer: coarse) {
+  .lts-btn {
+    min-height: 2.5rem;
+  }
+
+  .lts-btn-sm {
+    min-height: 2.25rem;
+  }
+
+  .lts-btn-icon-only {
+    min-width: 2.4rem;
+    min-height: 2.4rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .lts-btn {
+    white-space: normal; /* long labels wrap instead of overflowing */
+  }
+}

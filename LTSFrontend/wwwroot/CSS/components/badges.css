@@ -1,0 +1,64 @@
+.lts-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--lts-info-bg);
+  color: var(--lts-info);
+}
+
+/* ---------- Badges ---------- */
+
+.lts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.lts-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lts-badge-success {
+  background: var(--lts-success-bg);
+  color: var(--lts-success);
+}
+
+.lts-badge-muted {
+  background: var(--lts-surface-2);
+  color: var(--lts-text-muted);
+}
+
+.lts-badge-danger {
+  background: var(--lts-danger-bg);
+  color: var(--lts-danger);
+}
+
+.lts-badge-warning {
+  background: var(--lts-warning-bg);
+  color: var(--lts-warning);
+}
+
+.lts-badge-info {
+  background: var(--lts-info-bg);
+  color: var(--lts-info);
+}
+
+.lts-badge-primary {
+  background: var(--lts-primary-bg, var(--lts-info-bg));
+  color: var(--lts-primary, var(--lts-info));
+}
+
+.lts-badge {
+  max-width: 100%;
+}

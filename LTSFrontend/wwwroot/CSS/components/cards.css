@@ -1,0 +1,226 @@
+.lts-card {
+  background: #fff;
+  border: 1px solid var(--lts-border);
+  border-radius: 0.65rem;
+  padding: 1.25rem;
+}
+
+/* ---------- Cards / surfaces ---------- */
+
+.lts-card {
+  background: var(--lts-surface);
+  border: 1px solid var(--lts-border-color);
+  border-radius: var(--lts-radius);
+  padding: 1.25rem;
+  box-shadow: var(--lts-shadow-sm);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.lts-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.lts-stat-card {
+  background: var(--lts-surface);
+  border: 1px solid var(--lts-border-color);
+  border-radius: var(--lts-radius);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: var(--lts-shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.lts-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent, var(--lts-blue));
+}
+
+.lts-stat-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--lts-radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: color-mix(
+    in srgb,
+    var(--accent, var(--lts-blue)) 14%,
+    transparent
+  );
+  color: var(--accent, var(--lts-blue));
+  flex: 0 0 auto;
+}
+
+.lts-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--lts-text);
+  line-height: 1.1;
+}
+
+.lts-stat-label {
+  font-size: 0.8rem;
+  color: var(--lts-text-muted);
+  font-weight: 500;
+}
+
+.lts-stat-sublabel {
+  font-size: 0.72rem;
+  color: var(--lts-text-muted);
+  opacity: 0.8;
+  margin-top: 0.1rem;
+}
+
+.lts-stat-card-link {
+  position: absolute;
+  inset: 0;
+}
+
+/* ---------- Grid / card view ---------- */
+
+.lts-grid-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1rem;
+}
+
+.lts-entity-card {
+  background: var(--lts-surface);
+  border: 1px solid var(--lts-border-color);
+  border-radius: var(--lts-radius);
+  padding: 1.1rem;
+  box-shadow: var(--lts-shadow-sm);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.lts-entity-card:hover {
+  box-shadow: var(--lts-shadow);
+  transform: translateY(-2px);
+}
+
+.lts-entity-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lts-entity-card-title {
+  font-weight: 700;
+  color: var(--lts-text);
+  font-size: 0.98rem;
+  margin: 0;
+}
+
+.lts-entity-card-meta {
+  font-size: 0.82rem;
+  color: var(--lts-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lts-entity-card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--lts-border-color);
+}
+
+@media (max-width: 767.98px) {
+  .lts-entity-card-title {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ==========================================================================
+   Responsive — cards, KPI tiles, entity cards
+   ========================================================================== */
+.lts-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr));
+}
+
+.lts-grid-view {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+}
+
+.lts-stat-card > div:not(.lts-stat-icon),
+.lts-stat-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lts-entity-card-header > *:first-child {
+  min-width: 0;
+}
+
+.lts-card .flex-grow-1 {
+  min-width: 0;
+}
+
+@media (min-width: 1400px) {
+  .lts-stat-grid {
+    gap: 1.25rem;
+  }
+
+  .lts-card {
+    padding: 1.5rem;
+  }
+
+  .lts-card.p-0 {
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .lts-card {
+    padding: 1rem;
+  }
+
+  .lts-card.p-0 {
+    padding: 0 !important;
+  }
+
+  .lts-stat-card {
+    padding: 0.9rem 1rem;
+  }
+
+  .lts-stat-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    font-size: 1.05rem;
+  }
+
+  .lts-stat-value {
+    font-size: 1.3rem;
+  }
+}
+
+/* Phones: two compact tiles per row when they carry short numbers */
+@media (max-width: 575.98px) {
+  .lts-card .d-flex.justify-content-between,
+  .lts-card .d-flex.align-items-center.justify-content-between {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}

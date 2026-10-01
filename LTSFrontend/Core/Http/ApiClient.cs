@@ -56,12 +56,12 @@ namespace LTSFrontend.Core.Http
             Http.Dispose();
         }
 
-        public Task<T?> GetAsync<T>(string url, CancellationToken ct = default)
+        public async Task<T?> GetAsync<T>(string url, CancellationToken ct = default)
         {
-            return SendAsync<T>(new HttpRequestMessage(HttpMethod.Get, url), ct);
+            return await SendAsync<T>(new HttpRequestMessage(HttpMethod.Get, url), ct);
         }
 
-        public Task<T?> PostAsync<T>(string url, object? body = null, CancellationToken ct = default)
+        public async Task<T?> PostAsync<T>(string url, object? body = null, CancellationToken ct = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             if (body != null)
@@ -69,10 +69,10 @@ namespace LTSFrontend.Core.Http
                 request.Content = JsonContent.Create(body, options: JsonOptions);
             }
 
-            return SendAsync<T>(request, ct);
+            return await SendAsync<T>(request, ct);
         }
 
-        public Task<T?> PutAsync<T>(string url, object? body = null, CancellationToken ct = default)
+        public async Task<T?> PutAsync<T>(string url, object? body = null, CancellationToken ct = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Put, url);
             if (body != null)
@@ -80,34 +80,26 @@ namespace LTSFrontend.Core.Http
                 request.Content = JsonContent.Create(body, options: JsonOptions);
             }
 
-            return SendAsync<T>(request, ct);
+            return await SendAsync<T>(request, ct);
         }
 
-        public Task<T?> PostFormAsync<T>(string url, MultipartFormDataContent form, CancellationToken ct = default)
+        public async Task<T?> PostFormAsync<T>(string url, MultipartFormDataContent form, CancellationToken ct = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = form };
-            return SendAsync<T>(request, ct);
+            return await SendAsync<T>(request, ct);
         }
 
-        public Task<T?> PutFormAsync<T>(string url, MultipartFormDataContent form, CancellationToken ct = default)
+        public async Task<T?> PutFormAsync<T>(string url, MultipartFormDataContent form, CancellationToken ct = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Put, url) { Content = form };
-            return SendAsync<T>(request, ct);
+            return await SendAsync<T>(request, ct);
         }
 
-        public Task<T?> DeleteAsync<T>(string url, CancellationToken ct = default)
+        public async Task<T?> DeleteAsync<T>(string url, CancellationToken ct = default)
         {
-            return SendAsync<T>(new HttpRequestMessage(HttpMethod.Delete, url), ct);
+            return await SendAsync<T>(new HttpRequestMessage(HttpMethod.Delete, url), ct);
         }
 
-        // For endpoints that return raw bytes (file downloads) rather than
-        // the ApiResponse<T> JSON envelope. Still runs the request through
-        // EnsureAuthorizationHeaderAsync (attaches the Bearer token and
-        // performs the same silent token refresh as every other call) -
-        // calling Http.GetAsync directly, as DocumentService.DownloadAsync
-        // used to, skips that step entirely and sends the request with NO
-        // Authorization header, which is why downloads were failing for
-        // every user regardless of their actual document permissions.
         public async Task<HttpResponseMessage> GetRawAsync(string url, CancellationToken ct = default)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -117,37 +109,16 @@ namespace LTSFrontend.Core.Http
 
         private async Task EnsureAuthorizationHeaderAsync(HttpRequestMessage request)
         {
-            // If this circuit's session hasn't been populated yet (e.g. a
-            // fresh browser tab / hard refresh, before CustomAuthStateProvider
-            // got a chance to run), fall back to browser storage. By the
-            // time an actual HTTP call is being made, the circuit is
-            // guaranteed to be connected and JS interop guaranteed
-            // available, so this is a safe, reliable last chance.
             if (!_session.IsAuthenticated)
             {
                 var stored = await _tokenStorage.GetSessionAsync();
                 if (stored != null)
                 {
                     _session.Set(stored.UserID, stored.FullName, stored.Email, stored.Role, stored.AccessToken, stored.AccessTokenExpiry);
-                    // The access token itself may well already be expired
-                    // (it only lasts 7 minutes) - that's fine, seed the
-                    // refresh-token cookie too so the check below refreshes
-                    // it before this request goes out.
                     SeedRefreshTokenCookie(stored.RefreshToken);
                 }
             }
 
-            // SILENT TOKEN REFRESH: the access token is short-lived (7 min
-            // by default - see JwtSettings.ExpiryMinutes on the backend).
-            // Without this, once it expires every single request would
-            // start failing with 401 until the user manually logs out and
-            // back in, even though a perfectly valid refresh-token cookie
-            // exists. Refresh proactively - a little before actual expiry -
-            // using that HttpOnly cookie, so requests always go out with a
-            // live token instead of reactively retrying after a 401 (which
-            // would mean cloning/resending the original request, including
-            // any multipart file-upload content that can only be read
-            // once - proactive refresh avoids that whole class of bugs).
             bool hasKnownIdentity = _session.UserID != 0;
             bool tokenMissingOrExpiring = string.IsNullOrWhiteSpace(_session.AccessToken) || !_session.AccessTokenExpiry.HasValue || _session.AccessTokenExpiry.Value <= DateTime.UtcNow.AddSeconds(30);
 
@@ -167,25 +138,12 @@ namespace LTSFrontend.Core.Http
             await _refreshGate.Lock.WaitAsync();
             try
             {
-                // Someone else may have already refreshed while we were
-                // waiting for the lock - re-check before making another
-                // network call. This is now effective: _refreshGate is a
-                // singleton, so "someone else" can be a completely
-                // different ApiClient instance (different feature service)
-                // and this check will still see the update, because
-                // UserSessionState is also shared (Scoped, and Blazor WASM
-                // has one root scope per app / browser tab).
                 if (!string.IsNullOrWhiteSpace(_session.AccessToken) && _session.AccessTokenExpiry.HasValue && _session.AccessTokenExpiry.Value > DateTime.UtcNow.AddSeconds(30))
                 {
                     return true;
                 }
 
-                // Talk to the raw HttpClient directly here, NOT this
-                // class's own SendAsync<T> - that would recurse back into
-                // EnsureAuthorizationHeaderAsync. The refresh-token cookie
-                // (HttpOnly, sent automatically) is all this endpoint
-                // needs; it's [AllowAnonymous] on the backend.
-                _logger?.LogInformation("[ApiClient] Silent refresh attempt. Cookie jar has refreshToken={HasRt}", !string.IsNullOrWhiteSpace(GetCurrentRefreshToken()));
+                 _logger?.LogInformation("[ApiClient] Silent refresh attempt. Cookie jar has refreshToken={HasRt}", !string.IsNullOrWhiteSpace(GetCurrentRefreshToken()));
                 var request = new HttpRequestMessage(HttpMethod.Post, ApiEndpoints.Auth.RefreshToken);
                 var response = await Http.SendAsync(request);
 
@@ -205,12 +163,6 @@ namespace LTSFrontend.Core.Http
 
                 _session.UpdateAccessToken(parsed.Data.AccessToken, parsed.Data.AccessTokenExpiry);
 
-                // Persist the refreshed access token AND the rotated
-                // refresh token (LTSBackend rotates it on every refresh -
-                // see RefreshTokenHandler), so a brand new circuit (new
-                // tab, F5) started right after this also picks up live
-                // tokens instead of the now-stale/now-revoked ones that
-                // were originally saved at login.
                 await _tokenStorage.SaveSessionAsync(new StoredSession(_session.UserID, _session.FullName, _session.Email, _session.Role, _session.AccessToken!, _session.AccessTokenExpiry!.Value, GetCurrentRefreshToken()));
                 _logger?.LogInformation("[ApiClient] Silent refresh SUCCEEDED; new access token expires {Expiry:o}", _session.AccessTokenExpiry);
 
@@ -219,10 +171,6 @@ namespace LTSFrontend.Core.Http
             catch (Exception ex)
             {
                 _logger?.LogWarning(ex, "[ApiClient] Silent refresh threw an exception.");
-                // Network hiccup, refresh token genuinely expired/revoked,
-                // etc. - fall through and let the original request go out
-                // with whatever token (possibly none) we already have; the
-                // resulting 401, if any, surfaces normally to the caller.
                 return false;
             }
             finally
@@ -246,22 +194,6 @@ namespace LTSFrontend.Core.Http
 
             var raw = await response.Content.ReadAsStringAsync(ct);
 
-            // ROOT-CAUSE FIX: error responses were being deserialized into
-            // ApiResponse<T> - the SAME T the caller expects back on
-            // success (e.g. `int` for CreateFirmAsync). LTSBackend's error
-            // envelope never sets Data, so it comes back as JSON null/
-            // absent; System.Text.Json refuses to bind that into a
-            // non-nullable value-type T (int/long/bool), throws
-            // JsonException, which the old code silently swallowed - along
-            // with the perfectly good Message/Errors sitting right next to
-            // that Data field in the same payload. That's why validation
-            // errors (e.g. "Firm code can only contain letters, numbers,
-            // and hyphens.") were showing up on screen as a generic
-            // "Request failed with status 400" instead of the real reason.
-            // Fix: parse error bodies with a small envelope that has no
-            // Data property at all, so it can never fail to bind regardless
-            // of what T the caller asked for. Only ever deserialize into
-            // ApiResponse<T> once we know the call actually succeeded.
             if (!response.IsSuccessStatusCode)
             {
                 string message = $"Request failed with status {(int)response.StatusCode} ({response.StatusCode}).";

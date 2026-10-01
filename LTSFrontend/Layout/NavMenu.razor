@@ -1,5 +1,9 @@
 @inject UserSessionState Session
+@inject FirmAdminRequestStatusState FirmRequestStatus
+@implements IDisposable
 @using LTSFrontend.Features.FirmAdminRequests.Components
+@using LTSFrontend.Features.FirmAdminRequests.DTOs
+@using LTSFrontend.Features.FirmAdminRequests.Services
 
 <nav>
     <div class="nav-item">
@@ -8,15 +12,6 @@
         </NavLink>
     </div>
 
-    @* Not yet a member of any firm (new self-registered Firm User, before
-       their join request is accepted) - Session.Role is null in this
-       state. Shown instead of (never alongside) the firm-operational
-       nav above, since AuthorizeView Roles="..." above already excludes
-       a null-role user from all of it. Two options here: join an
-       EXISTING firm someone else already created (a NavLink page), or
-       create a brand new one of their own (a modal, submitted from
-       their own account via SubmitFirmAdminRequestFromAccountCommand -
-       never requires registering again with the same email). *@
     @if (string.IsNullOrEmpty(Session.Role))
     {
         <div class="nav-item">
@@ -25,17 +20,20 @@
             </NavLink>
         </div>
         <div class="nav-item">
-            <a class="nav-link" href="javascript:void(0)" @onclick="OpenCreateFirmModalAsync">
-                <i class="bi bi-plus-circle"></i> <span class="nav-label">Create Firm</span>
+            <a class="nav-link @(CreateFirmUnavailable ? "is-disabled" : "")" href="javascript:void(0)"
+               aria-disabled="@(CreateFirmUnavailable ? "true" : null)"
+               title="@CreateFirmTooltip"
+               @onclick="OpenCreateFirmModalAsync">
+                <i class="bi bi-plus-circle"></i> <span class="nav-label">Create Your Own Firm</span>
+                @if (CreateFirmBadge is not null)
+                {
+                    <span class="lts-nav-status @CreateFirmBadge.Value.Css">@CreateFirmBadge.Value.Text</span>
+                }
             </a>
         </div>
         <CreateFirmModal @ref="_createFirmModal" />
     }
 
-    @* Firm-operational area - every role except SuperAdmin. SuperAdmin is a
-       platform-level role (Firms + system Audit Logs only) and must not see
-       case/hearing/deadline/user/master-data screens - see RoleNames.cs and
-       DocumentPermissionService for the backend side of this same policy. *@
     <AuthorizeView Roles="FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal">
         <Authorized>
             <div class="nav-item">
@@ -61,11 +59,6 @@
         </Authorized>
     </AuthorizeView>
 
-    @* Firm staff directory - FirmAdmin AND Partner can VIEW (matches
-       RoleNames.PartnerAndAbove on UsersController's GetAll/GetById -
-       Partner needs this e.g. to pick a lawyer when assigning a case).
-       Create/Update/Delete are still FirmAdmin-only underneath - see
-       UserList.razor's CanCreateUsers/CanManageUsers flags. *@
     <AuthorizeView Roles="FirmAdmin,Partner">
         <Authorized>
             <div class="nav-item">
@@ -76,14 +69,6 @@
         </Authorized>
     </AuthorizeView>
 
-    @* Join Requests - FirmAdmin ONLY. Pending self-service requests from
-       people who want to join THIS firm as Partner/Associate/Moharrir/
-       Intern (see Features/UserJoinRequests). Distinct from the FirmAdmin's
-       own direct "Create User" flow above, which still adds users
-       immediately with no approval step. Partner has ZERO access here too
-       - view, approve, AND reject are all FirmAdmin-only, matching
-       UserJoinRequestsController's [Authorize(Roles =
-       RoleNames.FirmAdminOnly)] on GetAll/Approve/Reject. *@
     <AuthorizeView Roles="FirmAdmin">
         <Authorized>
             <div class="nav-item">
@@ -99,11 +84,6 @@
         </Authorized>
     </AuthorizeView>
 
-    @* Login History - FirmAdmin sees only their own firm (enforced by the
-       AppDbContext global query filter on LoginHistory); SuperAdmin sees
-       every firm's (same handler, unrestricted for SuperAdmin - see
-       GetAllLoginHistoryHandler). Everyone still gets "My Login History"
-       further down for their own account regardless of role. *@
     <AuthorizeView Roles="FirmAdmin,SuperAdmin">
         <Authorized>
             <div class="nav-item">
@@ -114,11 +94,6 @@
         </Authorized>
     </AuthorizeView>
 
-    @* SuperAdmin area - platform-level only: firm workspace provisioning and
-       system-wide audit logs. Roles & Permissions stay here too
-       (RolesController/PermissionsController are deliberately SuperAdmin-only
-       - Role and RolePermission are GLOBAL, non-tenant-scoped tables, so
-       this is a pre-existing architectural constraint, not scope creep). *@
     <AuthorizeView Roles="SuperAdmin">
         <Authorized>
             <div class="nav-item">
@@ -154,10 +129,6 @@
         </Authorized>
     </AuthorizeView>
 
-    @* Master Data configuration - FirmAdmin AND Partner (per policy,
-       Partner has FirmAdmin-equivalent access everywhere in the firm
-       except creating a new user). Matches [Authorize(Roles =
-       "FirmAdmin,Partner")] now on every page under Features/Masters. *@
     <AuthorizeView Roles="FirmAdmin,Partner">
         <Authorized>
             <div class="nav-section-title">Configuration</div>
@@ -214,6 +185,31 @@
 
 @code {
     private CreateFirmModal? _createFirmModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        FirmRequestStatus.OnChange += HandleFirmRequestStatusChanged;
+
+        // Only role-less users ever see the entry, so only they need the status.
+        if (string.IsNullOrEmpty(Session.Role))
+            await FirmRequestStatus.EnsureLoadedAsync();
+    }
+
+    private void HandleFirmRequestStatusChanged() => InvokeAsync(StateHasChanged);
+
+    private bool CreateFirmUnavailable => FirmRequestStatus.Current is { CanSubmit: false };
+
+    private string? CreateFirmTooltip => FirmRequestStatus.Current is { CanSubmit: false } c ? c.StatusMessage : null;
+
+    private (string Text, string Css)? CreateFirmBadge => FirmRequestStatus.Current?.Phase switch
+    {
+        FirmRequestPhase.Pending => ("Pending", "is-pending"),
+        FirmRequestPhase.Approved => ("Approved", "is-approved"),
+        FirmRequestPhase.Rejected => ("Rejected", ""),
+        _ => null
+    };
+
+    public void Dispose() => FirmRequestStatus.OnChange -= HandleFirmRequestStatusChanged;
 
     private async Task OpenCreateFirmModalAsync()
     {

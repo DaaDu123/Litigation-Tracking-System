@@ -213,6 +213,15 @@
             public const string Mine = Root + "/mine";
         }
 
+        // Read-only for now: lets the Firm Admin request UI honour the
+        // "one admin request path at a time" rule once the backend exposes
+        // the caller's own Super Admin request status (see Features/SuperAdminRequests).
+        public static class SuperAdminRequests
+        {
+            private const string Root = Base + "/superadminrequests";
+            public const string Mine = Root + "/mine";
+        }
+
         public static class ContactMessages
         {
             private const string Root = Base + "/contactmessages";

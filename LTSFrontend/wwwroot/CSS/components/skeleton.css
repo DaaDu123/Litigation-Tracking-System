@@ -1,0 +1,46 @@
+/* ---------- Skeleton loaders ---------- */
+
+.lts-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--lts-surface-2);
+  border-radius: var(--lts-radius-sm);
+}
+
+.lts-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  animation: lts-shimmer 1.4s infinite;
+}
+
+[data-theme="dark"] .lts-skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+}
+
+@keyframes lts-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.lts-skeleton-text {
+  height: 0.85rem;
+  margin: 0.2rem 0;
+}
+
+.lts-skeleton-row td {
+  padding: 0.95rem 1.1rem;
+}

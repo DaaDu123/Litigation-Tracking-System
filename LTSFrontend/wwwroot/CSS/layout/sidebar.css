@@ -1,0 +1,461 @@
+.lts-app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--lts-bg);
+}
+
+.lts-sidebar {
+  flex: 0 0 250px;
+  background: linear-gradient(
+    180deg,
+    var(--lts-navy) 0%,
+    var(--lts-navy-dark) 100%
+  );
+  color: #cfd8f0;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+.lts-sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1.15rem 1.25rem;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 0 0 auto;
+}
+
+.lts-sidebar .brand .brand-logo {
+  width: 2.3rem;
+  height: 2.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  object-fit: contain;
+  box-shadow: 0 4px 10px rgba(27, 79, 214, 0.45);
+  flex: 0 0 auto;
+}
+
+.lts-sidebar .brand-text {
+  font-size: 1.35rem;
+}
+
+.lts-sidebar nav {
+  padding: 0.85rem 0.65rem;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.lts-sidebar nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lts-sidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.lts-sidebar nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.lts-sidebar .nav-item {
+  position: relative;
+  margin-bottom: 0.15rem;
+}
+
+.lts-sidebar .nav-link {
+  position: relative;
+  color: #b9c4e6;
+  padding: 0.55rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: var(--lts-radius-sm);
+  font-size: 0.89rem;
+  font-weight: 500;
+  line-height: 1;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+/* Icon and label sit on the same row, centered on the same line -
+           without an explicit line-height/vertical-align the icon glyph and
+           the text baseline can drift out of alignment (icon sitting lower,
+           label sitting higher). */
+
+.lts-sidebar .nav-link i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  line-height: 1;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 0.98rem;
+  flex: 0 0 auto;
+  color: #8b98c4;
+  transition: color 0.15s ease;
+}
+
+.lts-sidebar .nav-link .nav-label {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.lts-sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  transform: translateX(1px);
+}
+
+.lts-sidebar .nav-link:hover i {
+  color: #fff;
+}
+
+.lts-sidebar .nav-link.active {
+  background: linear-gradient(
+    90deg,
+    rgba(63, 123, 255, 0.22) 0%,
+    rgba(63, 123, 255, 0.08) 100%
+  );
+  color: #fff;
+  font-weight: 600;
+}
+
+.lts-sidebar .nav-link.active::before {
+  content: "";
+  position: absolute;
+  left: -0.65rem;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--lts-blue-light);
+  box-shadow: 0 0 8px rgba(63, 123, 255, 0.7);
+}
+
+.lts-sidebar .nav-link.active i {
+  color: var(--lts-blue-light);
+}
+
+.lts-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lts-content-body {
+  padding: 1.5rem;
+}
+
+/* ---------- App shell refinements ---------- */
+
+.lts-app-shell {
+  transition: background 0.2s ease;
+}
+
+.lts-sidebar {
+  width: 250px;
+  min-width: 250px;
+  flex-basis: 250px;
+  transition:
+    width 0.2s ease,
+    min-width 0.2s ease,
+    flex-basis 0.2s ease,
+    transform 0.25s ease;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 40;
+}
+
+.lts-sidebar .brand-text {
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-collapsed .lts-sidebar {
+  width: 76px;
+  min-width: 76px;
+  flex-basis: 76px;
+}
+
+.sidebar-collapsed .lts-sidebar .brand-text,
+.sidebar-collapsed .lts-sidebar .nav-label,
+.sidebar-collapsed .lts-sidebar .nav-section-title {
+  display: none;
+}
+
+.sidebar-collapsed .lts-sidebar .nav-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.lts-sidebar-backdrop {
+  display: none;
+}
+
+/* ---------- Sidebar show/hide handle ---------- */
+
+.lts-sidebar-handle {
+  position: sticky;
+  top: 1.15rem;
+  align-self: flex-start;
+  z-index: 41;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-left: -0.8rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--lts-border);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--lts-navy, #1b3a8a);
+  box-shadow: var(--lts-shadow-sm, 0 1px 2px rgba(16, 33, 77, 0.06));
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    left 0.25s ease,
+    transform 0.15s ease;
+}
+
+.lts-sidebar-handle:hover {
+  transform: scale(1.08);
+}
+
+.sidebar-hidden .lts-sidebar {
+  width: 0;
+  min-width: 0;
+  flex-basis: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.sidebar-hidden .lts-sidebar-handle {
+  margin-left: 0.6rem;
+}
+
+[data-theme="dark"] .lts-content-body {
+  background: transparent;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 991.98px) {
+  .lts-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    box-shadow: var(--lts-shadow-lg);
+  }
+  .lts-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 15, 30, 0.45);
+    z-index: 39;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .mobile-nav-open .lts-sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .lts-content-body {
+    padding: 1rem;
+  }
+}
+
+/* ---------- Sidebar nav grouping ---------- */
+
+.nav-section-title {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(207, 216, 240, 0.45);
+  font-weight: 700;
+  margin: 1.1rem 0.85rem 0.4rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.nav-item-sub .nav-link {
+  padding-left: 2.55rem !important;
+  font-size: 0.83rem;
+}
+
+.nav-item-sub .nav-link i {
+  font-size: 0.82rem;
+}
+
+.sidebar-collapsed .nav-section-title {
+  display: none;
+}
+
+.sidebar-collapsed .nav-item-sub .nav-link {
+  padding-left: 0.85rem !important;
+}
+
+/* ==========================================================================
+   Responsive — app shell & sidebar
+   XL/XXL  : persistent sidebar, roomy gutters, content capped on ultra-wide
+   LG      : persistent sidebar (slightly narrower), collapsible to icons
+   MD/SM/XS: off-canvas drawer opened from the topbar hamburger
+   ========================================================================== */
+.lts-main-content {
+  min-width: 0; /* lets wide tables scroll inside their wrapper instead of stretching the page */
+}
+
+.lts-sidebar {
+  width: var(--lts-sidebar-w);
+  min-width: var(--lts-sidebar-w);
+  flex-basis: var(--lts-sidebar-w);
+  height: 100vh;
+  height: 100dvh;
+}
+
+.sidebar-collapsed .lts-sidebar {
+  width: var(--lts-sidebar-w-collapsed);
+  min-width: var(--lts-sidebar-w-collapsed);
+  flex-basis: var(--lts-sidebar-w-collapsed);
+}
+
+.lts-content-body {
+  width: 100%;
+  max-width: var(--lts-content-max);
+  margin-inline: auto;
+  padding: var(--lts-gutter);
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .lts-sidebar {
+    --lts-sidebar-w: 232px;
+  }
+
+  .lts-sidebar .nav-link {
+    font-size: 0.86rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .lts-content-body {
+    padding: 1.75rem 2rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .lts-content-body {
+    padding: 2rem 2.5rem;
+  }
+}
+
+/* ---- Tablet and below: navigation becomes an off-canvas drawer ---- */
+@media (max-width: 991.98px) {
+  /* NOTE: the drawer slides with `left`, not `transform`. A transformed
+     ancestor becomes the containing block for position:fixed descendants,
+     and NavMenu hosts the "Create Your Own Firm" modal (position:fixed) -
+     with a transform it would be trapped inside the drawer box. */
+  .lts-sidebar,
+  .sidebar-collapsed .lts-sidebar,
+  .sidebar-hidden .lts-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--lts-sidebar-w-drawer) - 1.5rem);
+    width: var(--lts-sidebar-w-drawer);
+    min-width: 0;
+    flex-basis: auto;
+    overflow: visible;
+    transform: none;
+    visibility: hidden;
+    transition:
+      left 0.25s ease,
+      visibility 0s linear 0.25s;
+  }
+
+  .mobile-nav-open .lts-sidebar {
+    left: 0;
+    transform: none;
+    visibility: visible;
+    transition:
+      left 0.25s ease,
+      visibility 0s;
+  }
+
+  /* A collapsed (icon-only) desktop state must never leak into the drawer. */
+  .sidebar-collapsed .lts-sidebar .brand-text {
+    display: inline;
+  }
+
+  .sidebar-collapsed .lts-sidebar .nav-label {
+    display: inline-flex;
+  }
+
+  .sidebar-collapsed .lts-sidebar .nav-section-title {
+    display: block;
+  }
+
+  .sidebar-collapsed .lts-sidebar .nav-link {
+    justify-content: flex-start;
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .sidebar-collapsed .nav-item-sub .nav-link {
+    padding-left: 2.55rem !important;
+  }
+
+  .lts-sidebar nav {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Bigger touch targets in the drawer */
+  .lts-sidebar .nav-link {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .lts-content-body {
+    padding: 1rem 0.9rem 1.5rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .lts-content-body {
+    padding: 0.85rem 0.7rem 1.25rem;
+  }
+
+  .lts-sidebar,
+  .sidebar-collapsed .lts-sidebar,
+  .sidebar-hidden .lts-sidebar {
+    width: min(300px, 90vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lts-sidebar,
+  .lts-sidebar-backdrop {
+    transition: none !important;
+  }
+}

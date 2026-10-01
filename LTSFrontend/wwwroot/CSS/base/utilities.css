@@ -1,0 +1,38 @@
+/* Responsive helper utilities (supplement Bootstrap's d-* / col-* classes). */
+
+.lts-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.lts-truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lts-wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+.lts-stack-xs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .lts-hide-xs {
+    display: none !important;
+  }
+
+  .lts-stack-xs > * {
+    flex: 1 1 100%;
+  }
+
+  .lts-full-xs {
+    width: 100% !important;
+  }
+}

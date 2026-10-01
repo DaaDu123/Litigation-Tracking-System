@@ -1,0 +1,117 @@
+/* ---------- Breadcrumb / page header ---------- */
+
+.lts-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--lts-text-muted);
+    margin-bottom: 0.35rem;
+}
+
+    .lts-breadcrumb a {
+        color: var(--lts-text-muted);
+        text-decoration: none;
+    }
+
+        .lts-breadcrumb a:hover {
+            color: var(--lts-blue);
+        }
+
+    .lts-breadcrumb .current {
+        color: var(--lts-text);
+        font-weight: 600;
+    }
+
+.lts-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.lts-page-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--lts-text);
+    margin: 0;
+}
+
+.lts-page-subtitle {
+    color: var(--lts-text-muted);
+    font-size: 0.9rem;
+    margin: 0.2rem 0 0;
+}
+
+.lts-page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+@media (max-width: 767.98px) {
+    .lts-page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lts-page-header-actions {
+        justify-content: flex-end;
+    }
+}
+
+/* ==========================================================================
+   Responsive — breadcrumb & page header
+   ========================================================================== */
+.lts-breadcrumb {
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+}
+
+.lts-page-header > div:first-child {
+    min-width: 0;
+    flex: 1 1 18rem; /* row layout only (>= 768px) */
+}
+
+.lts-page-title {
+    font-size: clamp(1.15rem, 1rem + 0.8vw, 1.55rem);
+    line-height: 1.25;
+}
+
+.lts-page-header-actions {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 767.98px) {
+    /* The header is a COLUMN here: a flex-basis would become a HEIGHT and leave
+     a big empty gap under the title, so reset it to content height. */
+    .lts-page-header > div:first-child {
+        flex: 0 0 auto;
+    }
+
+    .lts-page-header {
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .lts-page-header-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+        .lts-page-header-actions .lts-btn {
+            flex: 1 1 auto;
+        }
+}
+
+@media (max-width: 575.98px) {
+    .lts-page-header-actions .lts-btn {
+        flex: 1 1 100%;
+    }
+
+    .lts-page-subtitle {
+        font-size: 0.85rem;
+    }
+}

@@ -1,0 +1,309 @@
+/* ---------- Table ---------- */
+
+.lts-table-wrap {
+  background: var(--lts-surface);
+  border: 1px solid var(--lts-border-color);
+  border-radius: var(--lts-radius);
+  box-shadow: var(--lts-shadow-sm);
+
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lts-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+}
+
+.lts-table thead th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--lts-text-muted);
+  font-weight: 700;
+  padding: 0.85rem 1.1rem;
+  background: var(--lts-surface-2);
+  border-bottom: 1px solid var(--lts-border-color);
+  white-space: nowrap;
+}
+
+.lts-table thead th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lts-table thead th.sortable:hover {
+  color: var(--lts-text);
+}
+
+.lts-table thead th.sortable .bi {
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.lts-table thead th.sortable.active .bi {
+  opacity: 1;
+  color: var(--lts-blue);
+}
+
+.lts-table tbody td {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--lts-border-color);
+  color: var(--lts-text);
+  vertical-align: middle;
+}
+
+.lts-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.lts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lts-table tbody tr:hover {
+  background: var(--lts-surface-2);
+}
+
+@media (max-width: 640px) {
+  .lts-table:not(.lts-matrix-table) thead {
+    display: none;
+  }
+  .lts-table:not(.lts-matrix-table),
+  .lts-table:not(.lts-matrix-table) tbody,
+  .lts-table:not(.lts-matrix-table) tr,
+  .lts-table:not(.lts-matrix-table) td {
+    display: block;
+    width: 100%;
+  }
+  .lts-table:not(.lts-matrix-table) tbody tr {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--lts-border-color);
+  }
+  .lts-table:not(.lts-matrix-table) tbody tr:last-child {
+    border-bottom: none;
+  }
+  .lts-table:not(.lts-matrix-table) tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    text-align: right;
+    padding: 0.4rem 0;
+    border-bottom: none;
+  }
+  .lts-table:not(.lts-matrix-table) tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--lts-text-muted);
+    text-align: left;
+  }
+  .lts-table:not(.lts-matrix-table) tbody td .lts-row-actions {
+    justify-content: flex-end;
+    flex: 1;
+  }
+}
+
+.lts-cell-primary {
+  font-weight: 600;
+  color: var(--lts-text);
+}
+
+.lts-cell-muted {
+  color: var(--lts-text-muted);
+}
+
+/* ---------- Row action dropdown ---------- */
+
+.lts-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+/* ---------- Permission Matrix ---------- */
+
+.lts-matrix-table {
+  min-width: 640px;
+}
+
+.lts-matrix-table th.text-center,
+.lts-matrix-table td.text-center {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.lts-matrix-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--lts-surface);
+  box-shadow: 1px 0 0 var(--lts-border-color);
+}
+
+thead .lts-matrix-sticky-col {
+  z-index: 2;
+  background: var(--lts-surface-2);
+}
+
+/* ==========================================================================
+   Responsive — data tables
+   XL/LG : full table
+   MD    : full table, tighter cells, scrolls inside its wrapper if needed
+   SM/XS : each row becomes a stacked "label : value" card (see block above;
+           labels are injected by wwwroot/js/responsiveTable.js)
+   ========================================================================== */
+.lts-table-wrap,
+.table-responsive {
+  max-width: 100%;
+}
+
+.lts-table thead th,
+.lts-table tbody td {
+  overflow-wrap: anywhere;
+}
+
+.lts-table thead th {
+  overflow-wrap: normal;
+}
+
+.lts-table tbody tr[style*="cursor:pointer"]:active {
+  background: var(--lts-surface-2);
+}
+
+@media (max-width: 991.98px) {
+  .lts-table {
+    font-size: 0.85rem;
+  }
+
+  .lts-table thead th,
+  .lts-table tbody td {
+    padding: 0.7rem 0.8rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .lts-table {
+    font-size: 0.92rem;
+  }
+
+  .lts-table thead th,
+  .lts-table tbody td {
+    padding: 0.95rem 1.25rem;
+  }
+}
+
+/* The stacked-card layout applies at <=640px above; extend it to the whole
+   "phone / small tablet" band so 641-767px devices don't get a cramped,
+   horizontally scrolling table either. */
+@media (min-width: 641px) and (max-width: 767.98px) {
+  .lts-table:not(.lts-matrix-table) thead {
+    display: none;
+  }
+
+  .lts-table:not(.lts-matrix-table),
+  .lts-table:not(.lts-matrix-table) tbody,
+  .lts-table:not(.lts-matrix-table) tr,
+  .lts-table:not(.lts-matrix-table) td {
+    display: block;
+    width: 100%;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody tr {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--lts-border-color);
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    text-align: right;
+    padding: 0.4rem 0;
+    border-bottom: none;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--lts-text-muted);
+    text-align: left;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td .lts-row-actions {
+    justify-content: flex-end;
+    flex: 1;
+  }
+}
+
+@media (max-width: 767.98px) {
+  /* Cells hold badges / multi-line blocks on the right-hand side */
+  .lts-table:not(.lts-matrix-table) tbody td > * {
+    max-width: 100%;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td:empty,
+  .lts-table:not(.lts-matrix-table) tbody td[data-label=""]:empty {
+    display: none;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td.text-end {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td.text-end::before {
+    display: none;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td:has(.lts-skeleton) {
+    display: block;
+  }
+
+  .lts-table:not(.lts-matrix-table) tbody td:has(.lts-skeleton)::before {
+    display: none;
+  }
+
+  .lts-table-wrap {
+    border-radius: var(--lts-radius-sm);
+  }
+
+  /* Tables inside edge-to-edge cards shouldn't add a second border */
+  .lts-card.p-0 > .table-responsive,
+  .lts-card.p-0 > .lts-table-wrap {
+    border: 0;
+    box-shadow: none;
+  }
+}
+
+/* Permission matrix keeps its grid: make the scroll affordance obvious */
+.lts-matrix-table {
+  min-width: 600px;
+}
+
+@media (max-width: 575.98px) {
+  .lts-matrix-sticky-col {
+    max-width: 9rem;
+    min-width: 7rem;
+    white-space: normal;
+  }
+}
