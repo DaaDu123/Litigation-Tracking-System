@@ -8,7 +8,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         public const string ApprovedMessage = "Your request has been approved.";
         public const string RejectedMessage = "Your previous request was rejected. You can submit a new request.";
 
-        public static FirmRequestEligibility Evaluate(FirmAdminRequestDTO? latestFirmRequest, string? superAdminRequestStatus)
+        public static FirmRequestEligibility Evaluate(FirmAdminRequestDTO? latestFirmRequest, string? superAdminRequestStatus, string? joinRequestStatus = null)
         {
             var phase = ToPhase(latestFirmRequest?.Status);
 
@@ -28,6 +28,15 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
                     "Request approved",
                     ApprovedMessage,
                     "Sign out and sign back in to load your Firm Admin access, then finish setting up your firm.",
+                    latestFirmRequest);
+            }
+
+            if (string.Equals(joinRequestStatus, AdminRequestStatuses.Pending, StringComparison.OrdinalIgnoreCase))
+            {
+                return new FirmRequestEligibility(phase, false, true,
+                    "Firm request unavailable",
+                    "You have already sent an access request to a Firm Admin, so you can't request the Super Admin.",
+                    "Only one access request can be active at a time. Cancel your pending join request first if you want to create your own firm.",
                     latestFirmRequest);
             }
 

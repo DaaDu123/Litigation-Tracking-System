@@ -3,7 +3,10 @@
 @using LTSFrontend.State
 @using LTSFrontend.Features.UserJoinRequests.DTOs
 @using LTSFrontend.Features.UserJoinRequests.Services
+@using LTSFrontend.Features.FirmAdminRequests.DTOs
+@using LTSFrontend.Features.FirmAdminRequests.Services
 @inject IUserJoinRequestService JoinRequestService
+@inject IFirmAdminRequestService FirmAdminRequestService
 @inject UserSessionState Session
 @inject ToastService Toast
 
@@ -23,6 +26,15 @@
 else if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
     <div class="alert alert-danger py-2">@_errorMessage</div>
+}
+else if (_superAdminRequest != null && AdminRequestStatuses.OccupiesAdminPath(_superAdminRequest.Status))
+{
+    <div class="lts-card">
+        <h5 class="mb-2"><i class="bi bi-slash-circle text-warning me-2"></i>Request Already Submitted</h5>
+        <p class="mb-1"><strong>Sent to:</strong> Super Admin (Create Your Own Firm)</p>
+        <p class="mb-3"><strong>Requested At:</strong> @_superAdminRequest.RequestedAt.ToLocalTime().ToString("dd MMMM yyyy, h:mm tt")</p>
+        <p class="text-muted mb-0">You can only have one access request at a time, so you cannot request a Firm Admin while this one is @_superAdminRequest.Status.ToLowerInvariant().</p>
+    </div>
 }
 else if (_myRequest is { Status: "Pending" })
 {
@@ -102,6 +114,7 @@ else
 @code {
     private List<JoinableFirmDTO> _firms = new();
     private UserJoinRequestDTO? _myRequest;
+    private FirmAdminRequestDTO? _superAdminRequest;
     private bool _isLoading = true;
     private bool _isBusy;
     private string? _errorMessage;
@@ -116,7 +129,9 @@ else
         {
             _myRequest = await JoinRequestService.GetMineAsync();
 
-            if (_myRequest is not { Status: "Pending" })
+            _superAdminRequest = await FirmAdminRequestService.GetMineAsync();
+
+            if (_myRequest is not { Status: "Pending" } && !AdminRequestStatuses.OccupiesAdminPath(_superAdminRequest?.Status))
             {
                 _firms = await JoinRequestService.GetJoinableFirmsAsync();
             }

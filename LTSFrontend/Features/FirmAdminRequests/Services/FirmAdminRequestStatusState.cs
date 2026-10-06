@@ -1,5 +1,6 @@
 using LTSFrontend.Features.FirmAdminRequests.DTOs;
 using LTSFrontend.Features.SuperAdminRequests.Services;
+using LTSFrontend.Features.UserJoinRequests.Services;
 
 namespace LTSFrontend.Features.FirmAdminRequests.Services
 {
@@ -7,12 +8,14 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
     {
         private readonly IFirmAdminRequestService _firmRequests;
         private readonly ISuperAdminRequestService _superAdminRequests;
+        private readonly IUserJoinRequestService _joinRequests;
         private Task? _inFlight;
 
-        public FirmAdminRequestStatusState(IFirmAdminRequestService firmRequests, ISuperAdminRequestService superAdminRequests)
+        public FirmAdminRequestStatusState(IFirmAdminRequestService firmRequests, ISuperAdminRequestService superAdminRequests, IUserJoinRequestService joinRequests)
         {
             _firmRequests = firmRequests;
             _superAdminRequests = superAdminRequests;
+            _joinRequests = joinRequests;
         }
 
         public FirmRequestEligibility? Current { get; private set; }
@@ -49,6 +52,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
 
             FirmAdminRequestDTO? mine = null;
             string? superAdminStatus = null;
+            string? joinStatus = null;
 
             try
             {
@@ -68,7 +72,16 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
                 // Non-fatal: the backend enforces the mutual restriction on submit anyway.
             }
 
-            Current = FirmAdminRequestRules.Evaluate(mine, superAdminStatus);
+            try
+            {
+                joinStatus = (await _joinRequests.GetMineAsync())?.Status;
+            }
+            catch (Exception)
+            {
+                // Non-fatal: the backend enforces the one-target rule on submit anyway.
+            }
+
+            Current = FirmAdminRequestRules.Evaluate(mine, superAdminStatus, joinStatus);
             IsLoading = false;
             OnChange?.Invoke();
         }

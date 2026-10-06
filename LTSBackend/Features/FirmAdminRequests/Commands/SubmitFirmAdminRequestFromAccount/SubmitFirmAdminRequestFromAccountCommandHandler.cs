@@ -52,11 +52,11 @@ public class SubmitFirmAdminRequestFromAccountCommandHandler(AppDbContext _conte
         if (alreadyPending)
             throw new ValidationException(["You already have a pending Firm Admin request."]);
 
-        bool joinPending = await _context.UserJoinRequests.AsNoTracking()
+        bool joinPending = await _context.UserJoinRequests.AsNoTracking().IgnoreQueryFilters()
             .AnyAsync(x => x.UserID == userId && x.Status == "Pending", cancellationToken);
 
         if (joinPending)
-            throw new ValidationException(["You already have a pending request to join a firm. Cancel it before requesting to create your own."]);
+            throw new ValidationException(["You have already sent an access request to a Firm Admin. You can only have one access request at a time, so you cannot request the Super Admin. Cancel your existing request first."]);
 
         var firmAdminRequest = new FirmAdminRequest
         {

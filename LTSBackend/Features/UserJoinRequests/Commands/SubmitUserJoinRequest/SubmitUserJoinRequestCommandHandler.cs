@@ -51,10 +51,17 @@ public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, ICurrent
         if (firm.IsBlocked)
             throw new ValidationException(["This firm is not currently accepting requests."]);
 
-        bool alreadyPending = await _context.UserJoinRequests.AsNoTracking().AnyAsync(x => x.UserID == userId && x.Status == "Pending", cancellationToken);
+        bool alreadyPending = await _context.UserJoinRequests.AsNoTracking().IgnoreQueryFilters()
+            .AnyAsync(x => x.UserID == userId && x.Status == "Pending", cancellationToken);
 
         if (alreadyPending)
             throw new ValidationException(["You already have a pending request. Cancel it before requesting another firm."]);
+
+        bool superAdminRequestPending = await _context.FirmAdminRequests.AsNoTracking()
+            .AnyAsync(x => (x.UserID == userId || x.AdminEmail == user.Email) && x.Status == "Pending", cancellationToken);
+
+        if (superAdminRequestPending)
+            throw new ValidationException(["You have already sent an access request to the Super Admin. You can only have one access request at a time, so you cannot request a Firm Admin."]);
 
         // A live Blocked record (no later Unblocked event) for this
         // specific user+firm pair means "cannot re-request this firm".
