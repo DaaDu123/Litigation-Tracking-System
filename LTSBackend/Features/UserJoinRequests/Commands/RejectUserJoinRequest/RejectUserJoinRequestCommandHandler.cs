@@ -1,5 +1,6 @@
 using LTSBackend.Comman.Exceptions;
 using LTSBackend.Data;
+using LTSBackend.Services.AccessRequests;
 using LTSBackend.Services.Audit;
 using LTSBackend.Services.Email;
 using MediatR;
@@ -32,6 +33,8 @@ public class RejectUserJoinRequestCommandHandler(AppDbContext _context, IEmailSe
         joinRequest.ReviewedBy = request.ActingUserID;
         joinRequest.ReviewedAt = DateTime.UtcNow;
         joinRequest.RejectionReason = request.Reason;
+
+        await AccessRequestSlot.ReleaseAsync(_context, joinRequest.UserID, LTSBackend.Models.Security.UserAccessRequestSlot.TargetFirmAdmin, cancellationToken);
 
         var auditLog = _auditService.Create(request.ActingUserID, $"Rejected join request #{joinRequest.RequestID} for {joinRequest.Email} (firm {joinRequest.FirmID})");
         _context.AuditLogs.Add(auditLog);

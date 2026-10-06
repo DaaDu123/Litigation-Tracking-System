@@ -71,7 +71,7 @@ public class FirmAdminRequest
     public User? User { get; set; }
 
     // ---- Workflow state ----
-    /// <summary>Pending | Approved | Rejected</summary>
+    /// <summary>Pending | Approved | Rejected | Cancelled (withdrawn by the requester)</summary>
     [Required, MaxLength(20)]
     public string Status { get; set; } = "Pending";
 

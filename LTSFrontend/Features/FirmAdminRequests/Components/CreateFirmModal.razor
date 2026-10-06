@@ -50,10 +50,24 @@
                 </div>
             </div>
             <div class="lts-modal-body">
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="alert alert-danger py-2 mb-3" style="white-space: pre-line;">@_errorMessage</div>
+                }
                 <FirmAdminRequestStatusBanner Eligibility="Status.Current!" />
             </div>
             <div class="lts-modal-footer">
-                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close">Close</button>
+                <button type="button" class="lts-btn lts-btn-ghost" @onclick="Close" disabled="@_isBusy">Close</button>
+                @if (Status.Current.Phase == FirmRequestPhase.Pending && Status.Current.LatestRequest is not null)
+                {
+                    <button type="button" class="lts-btn lts-btn-danger" @onclick="CancelRequestAsync" disabled="@_isBusy">
+                        @if (_isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Cancel Request
+                    </button>
+                }
             </div>
         }
         else
@@ -158,6 +172,36 @@
         catch (Exception)
         {
             _errorMessage = "Could not submit your request. Please try again.";
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+        await Status.RefreshAsync();
+    }
+
+    // Withdraws the user's OWN pending request to the Super Admin, which frees
+    // their single access-request slot (they may then request a Firm Admin instead).
+    private async Task CancelRequestAsync()
+    {
+        var pending = Status.Current?.LatestRequest;
+        if (pending is null)
+            return;
+
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            await FirmAdminRequestService.CancelAsync(pending.RequestID);
+            Toast.Success("Request cancelled", "You can now request a Firm Admin or send a new request.");
+        }
+        catch (ApiException ex)
+        {
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _errorMessage = "Could not cancel your request. Please try again.";
         }
         finally
         {

@@ -6,6 +6,7 @@ using LTSBackend.Services.Audit;
 using LTSBackend.Services.Email;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using LTSBackend.Services.AccessRequests;
 
 namespace LTSBackend.Features.UserJoinRequests.Commands.ApproveUserJoinRequest;
 
@@ -110,6 +111,8 @@ public class ApproveUserJoinRequestCommandHandler(AppDbContext _context, IEmailS
             joinRequest.ReviewedBy = request.ActingUserID;
             joinRequest.ReviewedAt = DateTime.UtcNow;
             joinRequest.CreatedUserID = userId;
+
+            await AccessRequestSlot.ReleaseAsync(_context, joinRequest.UserID, UserAccessRequestSlot.TargetFirmAdmin, cancellationToken);
 
             var auditLog = _auditService.Create(request.ActingUserID, $"Approved join request #{joinRequest.RequestID} - {userEmail} joined firm {joinRequest.FirmID} as {UserRole.InternParalegal}");
             _context.AuditLogs.Add(auditLog);

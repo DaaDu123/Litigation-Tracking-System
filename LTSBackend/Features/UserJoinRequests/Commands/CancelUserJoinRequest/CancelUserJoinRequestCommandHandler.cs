@@ -1,5 +1,7 @@
 using LTSBackend.Comman.Exceptions;
 using LTSBackend.Data;
+using LTSBackend.Models.Security;
+using LTSBackend.Services.AccessRequests;
 using LTSBackend.Services.CurrentUser;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +34,8 @@ public class CancelUserJoinRequestCommandHandler(AppDbContext _context, ICurrent
         joinRequest.Status = "Cancelled";
         joinRequest.ReviewedBy = _currentUser.UserID;
         joinRequest.ReviewedAt = DateTime.UtcNow;
+
+        await AccessRequestSlot.ReleaseAsync(_context, joinRequest.UserID, UserAccessRequestSlot.TargetFirmAdmin, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 

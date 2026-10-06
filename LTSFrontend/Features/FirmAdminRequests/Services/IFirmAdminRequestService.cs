@@ -19,5 +19,8 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         // required, and does NOT create a second account.
         Task<int> SubmitFromAccountAsync();
         Task<FirmAdminRequestDTO?> GetMineAsync();
+
+        /// <summary>Requester cancels their OWN pending "Create Firm" request (frees their single access-request slot).</summary>
+        Task<bool> CancelAsync(int requestId);
     }
 }

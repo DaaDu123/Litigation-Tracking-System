@@ -71,6 +71,7 @@ public class AppDbContext : DbContext
     public DbSet<Firm> Firms { get; set; } = null!;
     public DbSet<FirmAdminRequest> FirmAdminRequests { get; set; } = null!;
     public DbSet<UserJoinRequest> UserJoinRequests { get; set; } = null!;
+    public DbSet<UserAccessRequestSlot> UserAccessRequestSlots { get; set; } = null!;
     public DbSet<FirmMembershipEvent> FirmMembershipEvents { get; set; } = null!;
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<Permission> Permissions { get; set; } = null!;
@@ -207,6 +208,15 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.Status);
             entity.HasQueryFilter(e => BypassTenantFilter || e.FirmID == RequestFirmId);
+        });
+
+        modelBuilder.Entity<UserAccessRequestSlot>(entity =>
+        {
+            entity.HasKey(e => e.UserID);
+            entity.Property(e => e.UserID).ValueGeneratedNever();
+            entity.Property(e => e.TargetType).IsRequired().HasMaxLength(20);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserID).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(t => t.HasCheckConstraint("CK_UserAccessRequestSlots_TargetType", "[TargetType] IN ('FirmAdmin','SuperAdmin')"));
         });
 
         // FIRM MEMBERSHIP EVENT ENTITY CONFIGURATION (block/unblock/remove

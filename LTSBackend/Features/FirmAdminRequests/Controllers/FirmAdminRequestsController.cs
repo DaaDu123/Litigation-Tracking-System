@@ -1,5 +1,6 @@
 using LTSBackend.Comman.Responses;
 using LTSBackend.Features.FirmAdminRequests.Commands.ApproveFirmAdminRequest;
+using LTSBackend.Features.FirmAdminRequests.Commands.CancelFirmAdminRequestFromAccount;
 using LTSBackend.Features.FirmAdminRequests.Commands.RejectFirmAdminRequest;
 using LTSBackend.Features.FirmAdminRequests.Commands.SubmitFirmAdminRequest;
 using LTSBackend.Features.FirmAdminRequests.Commands.SubmitFirmAdminRequestFromAccount;
@@ -66,6 +67,20 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
     {
         var result = await _mediator.Send(new GetMyFirmAdminRequestQuery());
         return Ok(ApiResponse<FirmAdminRequestDTO?>.SuccessResponse(result, "Your latest request"));
+    }
+
+    // =====================================================
+    // CANCEL MY FIRM ADMIN REQUEST — Authenticated
+    // Lets the requester withdraw their OWN still-pending "Create Firm"
+    // request (the one sent to the Super Admin), freeing their single
+    // access-request slot so they can request a Firm Admin instead.
+    // =====================================================
+    [HttpPut("{id}/cancel")]
+    [Authorize]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        var result = await _mediator.Send(new CancelFirmAdminRequestFromAccountCommand(id));
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "Request cancelled. You can now request a Firm Admin or send a new request."));
     }
 
     // =====================================================

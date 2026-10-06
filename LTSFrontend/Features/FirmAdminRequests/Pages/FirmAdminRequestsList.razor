@@ -101,6 +101,10 @@
                                 {
                                     <span class="lts-badge lts-badge-success">Approved</span>
                                 }
+                                else if (r.Status == "Cancelled")
+                                {
+                                    <span class="lts-badge lts-badge-muted" title="Withdrawn by the requester">Cancelled</span>
+                                }
                                 else
                                 {
                                     <span class="lts-badge lts-badge-danger" title="@r.RejectionReason">Rejected</span>

@@ -2,6 +2,7 @@ using LTSBackend.Comman.Enum;
 using LTSBackend.Comman.Exceptions;
 using LTSBackend.Data;
 using LTSBackend.Models.Security;
+using LTSBackend.Services.AccessRequests;
 using LTSBackend.Services.CurrentUser;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,23 +12,6 @@ namespace LTSBackend.Features.UserJoinRequests.Commands.SubmitUserJoinRequest;
 public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, ICurrentUserService _currentUser,
     ILogger<SubmitUserJoinRequestCommandHandler> _logger) : IRequestHandler<SubmitUserJoinRequestCommand, int>
 {
-    // =====================================================
-    // HANDLE — an already-registered, profile-completed Firm User sends
-    // ONE request to join a firm, from their own dashboard.
-    //
-    // Enforces, at the backend (never trusting the frontend to have
-    // already checked these):
-    //   - the caller must be a real, authenticated user (not SuperAdmin -
-    //     they don't join firms);
-    //   - the target firm must exist and not be blocked/deleted;
-    //   - the caller must not already belong to a firm (one firm per
-    //     user - "cannot join multiple firms");
-    //   - the caller must not already have another Pending request
-    //     outstanding ("one active request at a time");
-    //   - the caller must not currently be Blocked from that specific
-    //     firm (checked via FirmMembershipEvents history, since a block
-    //     record survives even if the user was later fully Removed).
-    // =====================================================
     public async Task<int> Handle(SubmitUserJoinRequestCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)
@@ -86,7 +70,20 @@ public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, ICurrent
         };
 
         _context.UserJoinRequests.Add(joinRequest);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        // DB-level guarantee (UserAccessRequestSlots PK): the slot and the request
+        // commit in ONE SaveChanges, so even two simultaneous submissions (to
+        // different Firm Admins, or Firm Admin + Super Admin) can never both succeed.
+        await AccessRequestSlot.AcquireAsync(_context, userId, UserAccessRequestSlot.TargetFirmAdmin, cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (AccessRequestSlot.IsSlotConflict(ex))
+        {
+            throw new ValidationException([AccessRequestSlot.ConflictMessage]);
+        }
 
         _logger.LogInformation("User {UserId} submitted a join request {RequestId} for firm {FirmId}", userId, joinRequest.RequestID, request.FirmID);
 

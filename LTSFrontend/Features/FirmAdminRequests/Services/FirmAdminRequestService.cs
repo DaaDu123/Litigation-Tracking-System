@@ -37,6 +37,9 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         public Task<FirmAdminRequestDTO?> GetMineAsync() =>
             _api.GetAsync<FirmAdminRequestDTO?>(ApiEndpoints.FirmAdminRequests.Mine);
 
+        public Task<bool> CancelAsync(int requestId) =>
+            _api.PutAsync<bool>(ApiEndpoints.FirmAdminRequests.Cancel(requestId));
+
         private static string? Norm(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
     }
 }

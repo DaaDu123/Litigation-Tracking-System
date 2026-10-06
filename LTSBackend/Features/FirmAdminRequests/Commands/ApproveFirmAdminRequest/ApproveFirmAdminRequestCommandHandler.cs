@@ -2,6 +2,7 @@ using LTSBackend.Comman.Enum;
 using LTSBackend.Comman.Exceptions;
 using LTSBackend.Data;
 using LTSBackend.Models.Security;
+using LTSBackend.Services.AccessRequests;
 using LTSBackend.Services.Audit;
 using LTSBackend.Services.Email;
 using MediatR;
@@ -135,6 +136,8 @@ public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailS
             firmAdminRequest.ReviewedBy = request.ActingUserID;
             firmAdminRequest.ReviewedAt = DateTime.UtcNow;
             firmAdminRequest.CreatedFirmID = firm.FirmID;
+
+            await AccessRequestSlot.ReleaseAsync(_context, firmAdminRequest.UserID, LTSBackend.Models.Security.UserAccessRequestSlot.TargetSuperAdmin, cancellationToken);
 
             var auditLog = _auditService.Create(request.ActingUserID,$"Approved Firm Admin request #{firmAdminRequest.RequestID} - created firm '{firm.FirmName}' ({firm.FirmCode}) with admin {admin.Email}");
             _context.AuditLogs.Add(auditLog);

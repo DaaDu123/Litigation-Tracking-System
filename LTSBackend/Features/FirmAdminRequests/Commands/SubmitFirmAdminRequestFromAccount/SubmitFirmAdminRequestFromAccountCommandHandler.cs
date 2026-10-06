@@ -3,6 +3,7 @@ using LTSBackend.Comman.Exceptions;
 using LTSBackend.Data;
 using LTSBackend.Models.Cases;
 using LTSBackend.Models.Security;
+using LTSBackend.Services.AccessRequests;
 using LTSBackend.Services.CurrentUser;
 using LTSBackend.Services.Email;
 using MediatR;
@@ -16,20 +17,6 @@ public class SubmitFirmAdminRequestFromAccountCommandHandler(AppDbContext _conte
     // NotificationTypeID = 6 ("FirmAdminRequest") - seeded in AppDbContext.SeedNotificationTypes. Same one used by the anonymous flow.
     private const int FirmAdminRequestNotificationTypeId = 6;
 
-    // =====================================================
-    // HANDLE — an already-registered, logged-in user (no firm, no role
-    // yet - a plain post-registration account) asks to become a Firm
-    // Admin from their own dashboard ("Create Firm"). Unlike the
-    // anonymous SubmitFirmAdminRequestCommand, this does NOT create a
-    // second account or require the email/password again - it links the
-    // request straight to the caller's existing UserID, and
-    // ApproveFirmAdminRequestCommandHandler promotes that SAME account in
-    // place once a SuperAdmin approves. Enforces:
-    //   - caller must be logged in and not SuperAdmin (platform role, no firm);
-    //   - caller must not already belong to a firm (one firm per user);
-    //   - caller must not already have a Pending Firm Admin request or
-    //     Firm User join request outstanding.
-    // =====================================================
     public async Task<int> Handle(SubmitFirmAdminRequestFromAccountCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)
@@ -69,7 +56,18 @@ public class SubmitFirmAdminRequestFromAccountCommandHandler(AppDbContext _conte
         };
 
         _context.FirmAdminRequests.Add(firmAdminRequest);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        // DB-level guarantee (UserAccessRequestSlots PK) - see SubmitUserJoinRequestCommandHandler.
+        await AccessRequestSlot.AcquireAsync(_context, userId, UserAccessRequestSlot.TargetSuperAdmin, cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (AccessRequestSlot.IsSlotConflict(ex))
+        {
+            throw new ValidationException([AccessRequestSlot.ConflictMessage]);
+        }
 
         _logger.LogInformation("Firm Admin request {RequestId} submitted from account by user {UserId} ({Email})", firmAdminRequest.RequestID, userId, user.Email);
 
