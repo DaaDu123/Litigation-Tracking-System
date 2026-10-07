@@ -1,0 +1,126 @@
+/* The toggle is a <button>, so neutralise native button chrome. */
+.lts-sidebar .nav-group-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.lts-sidebar .nav-group-toggle:focus-visible,
+.lts-sidebar .nav-group .nav-link:focus-visible {
+  outline: 2px solid var(--lts-blue-light);
+  outline-offset: -2px;
+}
+
+.lts-sidebar .nav-group-toggle .nav-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Chevron rotates when the group is open. */
+.lts-sidebar .nav-group-toggle .nav-group-chevron {
+  margin-left: auto;
+  width: auto;
+  height: auto;
+  font-size: 0.72rem;
+  color: #8b98c4;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.lts-sidebar .nav-group.is-open > .nav-item > .nav-group-toggle .nav-group-chevron {
+  transform: rotate(180deg);
+}
+
+.lts-sidebar .nav-group-toggle:hover .nav-group-chevron {
+  color: #fff;
+}
+
+/* A child route is active: soft highlight on the header (the child itself gets the full .active style). */
+.lts-sidebar .nav-group.has-current > .nav-item > .nav-group-toggle {
+  color: #fff;
+  font-weight: 600;
+}
+
+.lts-sidebar .nav-group.has-current > .nav-item > .nav-group-toggle > i:first-child {
+  color: var(--lts-blue-light);
+}
+
+/* ---------- Children panel (animated open/close without JS) ---------- */
+.lts-sidebar .nav-group-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden; /* closed children must not be focusable */
+  transition:
+    grid-template-rows 0.22s ease,
+    visibility 0s linear 0.22s;
+}
+
+.lts-sidebar .nav-group.is-open > .nav-group-children {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.22s ease,
+    visibility 0s;
+}
+
+/* overflow:hidden is needed for the animation; the negative margin / matching padding keeps
+   the active-item bar (drawn 0.65rem left of each link) from being clipped. */
+.lts-sidebar .nav-group-children-inner {
+  min-height: 0;
+  overflow: hidden;
+  margin: 0 -0.65rem;
+  padding: 0 0.65rem;
+}
+
+/* Thin guide line connecting the children to their header. */
+.lts-sidebar .nav-group-children-inner {
+  position: relative;
+}
+
+.lts-sidebar .nav-group-children-inner::before {
+  content: "";
+  position: absolute;
+  left: 1.5rem;
+  top: 0.1rem;
+  bottom: 0.1rem;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+/* Long labels wrap instead of being cut off. */
+.lts-sidebar .nav-group .nav-item-sub .nav-link {
+  line-height: 1.25;
+}
+
+.lts-sidebar .nav-group .nav-item-sub .nav-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Desktop icon-rail (sidebar collapsed): show the child icons, hide chevron ---------- */
+@media (min-width: 992px) {
+  .sidebar-collapsed .lts-sidebar .nav-group-children {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: none;
+  }
+
+  .sidebar-collapsed .lts-sidebar .nav-group-chevron,
+  .sidebar-collapsed .lts-sidebar .nav-group-children-inner::before {
+    display: none;
+  }
+
+  .sidebar-collapsed .lts-sidebar .nav-group-toggle {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lts-sidebar .nav-group-children,
+  .lts-sidebar .nav-group-toggle .nav-group-chevron {
+    transition: none !important;
+  }
+}

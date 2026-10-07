@@ -1,5 +1,6 @@
 @inject UserSessionState Session
 @inject FirmAdminRequestStatusState FirmRequestStatus
+@inject NavigationManager Nav
 @implements IDisposable
 @using LTSFrontend.Features.FirmAdminRequests.Components
 @using LTSFrontend.Features.FirmAdminRequests.DTOs
@@ -36,16 +37,22 @@
 
     <AuthorizeView Roles="FirmAdmin,Partner,AssociateLawyer,Moharrir,InternParalegal">
         <Authorized>
-            <div class="nav-item">
-                <NavLink class="nav-link" href="cases">
-                    <i class="bi bi-briefcase"></i> <span class="nav-label">Cases</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="cases/my-assigned">
-                    <i class="bi bi-person-check"></i> <span class="nav-label">My Assigned Cases</span>
-                </NavLink>
-            </div>
+            <NavGroup Icon="bi-briefcase" Label="Cases" IsCurrent="IsCasesRoute" @bind-Expanded="_casesOpen">
+                <AuthorizeView Roles="FirmAdmin,Partner">
+                    <Authorized Context="allCases">
+                        <div class="nav-item nav-item-sub">
+                            <NavLink class="@("nav-link" + (IsAllCasesRoute ? " active" : ""))" href="cases" Match="NavLinkMatch.All">
+                                <i class="bi bi-collection"></i> <span class="nav-label">All Cases</span>
+                            </NavLink>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="cases/my-assigned">
+                        <i class="bi bi-person-check"></i> <span class="nav-label">My Assigned Cases</span>
+                    </NavLink>
+                </div>
+            </NavGroup>
             <div class="nav-item">
                 <NavLink class="nav-link" href="hearings">
                     <i class="bi bi-calendar-event"></i> <span class="nav-label">Hearings</span>
@@ -133,41 +140,38 @@
         <Authorized>
             <div class="nav-section-title">Configuration</div>
 
-            <div class="nav-item">
-                <NavLink class="nav-link" href="masters" Match="NavLinkMatch.All">
-                    <i class="bi bi-diagram-3"></i> <span class="nav-label">Master Data</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="masters/courts">
-                    <i class="bi bi-bank"></i> <span class="nav-label">Courts</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="masters/case-categories">
-                    <i class="bi bi-diagram-2"></i> <span class="nav-label">Case Categories</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="masters/case-stages">
-                    <i class="bi bi-signpost-split"></i> <span class="nav-label">Case Stages</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="masters/case-statuses">
-                    <i class="bi bi-flag"></i> <span class="nav-label">Case Statuses</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="masters/departments">
-                    <i class="bi bi-diagram-3"></i> <span class="nav-label">Departments</span>
-                </NavLink>
-            </div>
-            <div class="nav-item nav-item-sub">
-                <NavLink class="nav-link" href="masters/document-types">
-                    <i class="bi bi-file-earmark-text"></i> <span class="nav-label">Document Types</span>
-                </NavLink>
-            </div>
+            <NavGroup Icon="bi-diagram-3" Label="Master Data" IsCurrent="IsMasterDataRoute" @bind-Expanded="_masterDataOpen">
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="masters/courts">
+                        <i class="bi bi-bank"></i> <span class="nav-label">Courts</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="masters/case-categories">
+                        <i class="bi bi-diagram-2"></i> <span class="nav-label">Case Categories</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="masters/case-statuses">
+                        <i class="bi bi-flag"></i> <span class="nav-label">Case Statuses</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="masters/case-stages">
+                        <i class="bi bi-signpost-split"></i> <span class="nav-label">Case Stages</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="masters/departments">
+                        <i class="bi bi-diagram-3"></i> <span class="nav-label">Departments</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item nav-item-sub">
+                    <NavLink class="nav-link" href="masters/document-types">
+                        <i class="bi bi-file-earmark-text"></i> <span class="nav-label">Document Types</span>
+                    </NavLink>
+                </div>
+            </NavGroup>
         </Authorized>
     </AuthorizeView>
 
@@ -186,8 +190,36 @@
 @code {
     private CreateFirmModal? _createFirmModal;
 
+    private bool _casesOpen;
+    private bool _masterDataOpen;
+
+    private string CurrentPath => "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/').ToLowerInvariant();
+
+    private bool IsMasterDataRoute => CurrentPath == "/masters" || CurrentPath.StartsWith("/masters/");
+
+    private bool IsMyAssignedRoute => CurrentPath == "/cases/my-assigned" || CurrentPath.StartsWith("/cases/my-assigned/");
+
+    private bool IsCasesRoute => CurrentPath == "/cases" || CurrentPath.StartsWith("/cases/");
+
+    // "All Cases" owns the list plus case details/create/edit/documents, i.e. every Cases route except My Assigned.
+    private bool IsAllCasesRoute => IsCasesRoute && !IsMyAssignedRoute;
+
+    private void SyncGroupsWithRoute()
+    {
+        if (IsCasesRoute) _casesOpen = true;
+        if (IsMasterDataRoute) _masterDataOpen = true;
+    }
+
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        SyncGroupsWithRoute();
+        InvokeAsync(StateHasChanged);
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        SyncGroupsWithRoute();
+        Nav.LocationChanged += HandleLocationChanged;
         FirmRequestStatus.OnChange += HandleFirmRequestStatusChanged;
 
         // Only role-less users ever see the entry, so only they need the status.
@@ -209,7 +241,11 @@
         _ => null
     };
 
-    public void Dispose() => FirmRequestStatus.OnChange -= HandleFirmRequestStatusChanged;
+    public void Dispose()
+    {
+        FirmRequestStatus.OnChange -= HandleFirmRequestStatusChanged;
+        Nav.LocationChanged -= HandleLocationChanged;
+    }
 
     private async Task OpenCreateFirmModalAsync()
     {

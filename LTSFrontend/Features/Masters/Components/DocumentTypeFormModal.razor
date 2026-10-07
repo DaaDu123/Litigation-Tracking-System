@@ -51,16 +51,19 @@
                     </div>
                 </div>
 
-                <div class="lts-switch-row">
-                    <div>
-                        <div class="fw-semibold" style="font-size:0.88rem;color:var(--lts-text);">Active</div>
-                        <div class="lts-form-hint" style="margin-top:0;">Inactive types are hidden from document upload dropdowns.</div>
+                @if (ShowActiveSwitch || _form.IsEditMode)
+                {
+                    <div class="lts-switch-row">
+                        <div>
+                            <div class="fw-semibold" style="font-size:0.88rem;color:var(--lts-text);">Active</div>
+                            <div class="lts-form-hint" style="margin-top:0;">Inactive types are hidden from document upload dropdowns.</div>
+                        </div>
+                        <label class="lts-switch">
+                            <InputCheckbox @bind-Value="_form.IsActive" disabled="@_isSaving" />
+                            <span class="lts-switch-slider"></span>
+                        </label>
                     </div>
-                    <label class="lts-switch">
-                        <InputCheckbox @bind-Value="_form.IsActive" disabled="@_isSaving" />
-                        <span class="lts-switch-slider"></span>
-                    </label>
-                </div>
+                }
 
                 <div class="lts-modal-footer" style="padding: 1rem 0 0; margin-top: 0.5rem;">
                     <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">
@@ -86,6 +89,12 @@
 
 @code {
     [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+
+    /// <summary>Raised after a NEW type is created, with its DocumentTypeID (lets callers e.g. the Upload Document page auto-select it).</summary>
+    [Parameter] public EventCallback<int> OnCreated { get; set; }
+
+    /// <summary>Hide the Active switch when creating (new types are always created Active). The Master Data page leaves it on.</summary>
+    [Parameter] public bool ShowActiveSwitch { get; set; } = true;
 
     private bool _isOpen;
     private bool _isSaving;
@@ -122,13 +131,17 @@
         try
         {
             var wasEdit = _form.IsEditMode;
+            int? createdId = null;
             if (wasEdit)
                 await DocumentTypeService.UpdateAsync(_form);
             else
-                await DocumentTypeService.CreateAsync(_form);
+                createdId = await DocumentTypeService.CreateAsync(_form);
 
             _isOpen = false;
             await OnSaved.InvokeAsync(wasEdit);
+
+            if (createdId.HasValue)
+                await OnCreated.InvokeAsync(createdId.Value);
         }
         catch (ApiException ex)
         {

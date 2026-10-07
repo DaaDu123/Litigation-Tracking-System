@@ -3,12 +3,14 @@
 @using LTSFrontend.Features.Documents.Components
 @using LTSFrontend.Features.Documents.DTOs
 @using LTSFrontend.Features.Documents.Services
+@using LTSFrontend.Features.Masters.Components
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject IDocumentService DocumentService
 @inject IDocumentTypeService DocumentTypeService
 @inject ToastService Toast
 @inject NavigationManager Nav
+@inject UserSessionState Session
 
 <PageTitle>Upload Document - LTS</PageTitle>
 
@@ -43,22 +45,60 @@
     </div>
 
     <div class="lts-form-group">
-        <label class="lts-form-label">Document Type <span class="required">*</span></label>
+        <label class="lts-form-label" for="documentType">Document Type <span class="required">*</span></label>
         @if (_isLoadingTypes)
         {
-            <div class="d-flex align-items-center gap-2"><span class="lts-spinner lts-spinner-sm"></span></div>
+            <div class="d-flex align-items-center gap-2 text-muted" style="font-size:0.85rem;">
+                <span class="lts-spinner lts-spinner-sm"></span> Loading document types...
+            </div>
         }
         else
         {
-            <select class="lts-form-control" @bind="_documentTypeId" disabled="@_isSaving">
-                <option value="">Select document type...</option>
-                @foreach (var t in _documentTypes)
-                {
-                    <option value="@t.DocumentTypeID">@t.TypeName</option>
-                }
-            </select>
+            <div class="lts-select-with-action">
+                <select id="documentType" class="lts-form-control @(_showValidation && (_documentTypeId is null or 0) ? "is-invalid" : "")"
+                        @bind="_documentTypeId" @bind:event="onchange" disabled="@(_isSaving || _documentTypes.Count == 0)">
+                    <option value="">@(_documentTypes.Count == 0 ? "No document types available" : "Select document type...")</option>
+                    @foreach (var t in _documentTypes)
+                    {
+                        <option value="@t.DocumentTypeID">@t.TypeName</option>
+                    }
+                </select>
+
+                @* Creating master data is FirmAdmin/Partner only (DocumentTypesController) - same gate as the Master Data page. *@
+                <PermissionGate Roles="FirmAdmin,Partner">
+                    <button type="button" class="lts-btn lts-btn-outline" @onclick="OpenAddType" disabled="@_isSaving"
+                            title="Add a new document type">
+                        <i class="bi bi-plus-lg"></i> <span>Add New</span>
+                    </button>
+                </PermissionGate>
+            </div>
+
+            @if (_loadFailed)
+            {
+                <div class="lts-field-note">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Document types could not be loaded.
+                        <button type="button" class="btn btn-link p-0 align-baseline" style="font-size:inherit;" @onclick="LoadTypesAsync">Try again</button></span>
+                </div>
+            }
+            else if (_documentTypes.Count == 0)
+            {
+                <div class="lts-field-note">
+                    <i class="bi bi-info-circle"></i>
+                    <span>
+                        @if (CanManageTypes)
+                        {
+                            <text>No document types exist yet. Use <strong>Add New</strong> to create the first one.</text>
+                        }
+                        else
+                        {
+                            <text>No document types exist yet. Ask your Firm Admin or Partner to add one under Master Data &rarr; Document Types.</text>
+                        }
+                    </span>
+                </div>
+            }
         }
-        @if (_showValidation && (_documentTypeId is null or 0))
+        @if (_showValidation && (_documentTypeId is null or 0) && !_isLoadingTypes)
         {
             <div class="lts-form-error">Please select a document type.</div>
         }
@@ -78,7 +118,7 @@
         <textarea class="lts-form-control" rows="2" @bind="_remarks" disabled="@_isSaving"></textarea>
     </div>
 
-    <div class="d-flex justify-content-end gap-2 mt-3">
+    <div class="d-flex justify-content-end flex-wrap gap-2 mt-3">
         <button class="lts-btn lts-btn-ghost" @onclick="Cancel" disabled="@_isSaving">Cancel</button>
         <button class="lts-btn lts-btn-primary" @onclick="HandleUploadAsync" disabled="@_isSaving">
             @if (_isSaving)
@@ -95,8 +135,14 @@
     </div>
 </div>
 
+<DocumentTypeFormModal @ref="_typeModal" ShowActiveSwitch="false" OnCreated="HandleTypeCreatedAsync" />
+
 @code {
     [Parameter] public long CaseId { get; set; }
+
+    private DocumentTypeFormModal _typeModal = default!;
+    private bool _loadFailed;
+    private bool CanManageTypes => Session.Role is "FirmAdmin" or "Partner";
 
     private IBrowserFile? _selectedFile;
     private int? _documentTypeId;
@@ -111,8 +157,28 @@
 
     private void Cancel() => Nav.NavigateTo($"/cases/{CaseId}");
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadTypesAsync();
+
+    private void OpenAddType() => _typeModal.OpenForCreate();
+
+    // The modal already saved the type through the existing Master Data API; reload the
+    // list (no page refresh) and select the new entry so the user can carry on uploading.
+    private async Task HandleTypeCreatedAsync(int newTypeId)
     {
+        await LoadTypesAsync();
+
+        if (_documentTypes.Any(t => t.DocumentTypeID == newTypeId))
+            _documentTypeId = newTypeId;
+
+        Toast.Success("Document type added", "The new document type has been selected.");
+        StateHasChanged();
+    }
+
+    private async Task LoadTypesAsync()
+    {
+        _isLoadingTypes = true;
+        _loadFailed = false;
+        _apiError = null;
         try
         {
             // Uses the lightweight dropdown-only endpoint (not GetAllAsync,
@@ -123,7 +189,8 @@
         }
         catch (Exception)
         {
-            _apiError = "Couldn't load document types. Please refresh and try again.";
+            _loadFailed = true;
+            _documentTypes = new();
         }
         finally
         {

@@ -1,0 +1,39 @@
+.lts-select-with-action {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lts-select-with-action > .lts-form-control {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.lts-select-with-action > .lts-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Muted helper line under a field (empty state / permission hint). */
+.lts-field-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--lts-text-muted);
+}
+
+.lts-field-note i {
+  margin-top: 0.1rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 575.98px) {
+  .lts-select-with-action > .lts-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
