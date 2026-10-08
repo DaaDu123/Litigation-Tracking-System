@@ -45,6 +45,10 @@ namespace LTSFrontend.Core.Extensions
 
             services.AddSingleton<TokenRefreshGate>();
 
+            // Real browser IP of each circuit, forwarded to the API (X-Forwarded-For) for per-user rate limiting.
+            services.AddHttpContextAccessor();
+            services.AddScoped<ClientIpAccessor>();
+
             services.AddScoped(sp =>
             {
                 var config = sp.GetRequiredService<IConfiguration>();
@@ -70,6 +74,11 @@ namespace LTSFrontend.Core.Extensions
                     BaseAddress = new Uri(baseUrl),
                     Timeout = TimeSpan.FromSeconds(100)
                 };
+
+                // Tell the API who the request is really for (it trusts this only from its configured proxies).
+                var clientIp = sp.GetRequiredService<ClientIpAccessor>().IpAddress;
+                if (!string.IsNullOrWhiteSpace(clientIp))
+                    httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-Forwarded-For", clientIp);
 
                 return new ApiClient(
                     httpClient,

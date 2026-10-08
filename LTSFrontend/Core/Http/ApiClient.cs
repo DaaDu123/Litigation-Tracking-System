@@ -104,7 +104,30 @@ namespace LTSFrontend.Core.Http
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             await EnsureAuthorizationHeaderAsync(request);
-            return await Http.SendAsync(request, ct);
+            var sentToken = request.Headers.Authorization?.Parameter;
+            var response = await Http.SendAsync(request, ct);
+
+            // Same one-time "refresh and retry" as SendAsync, for file downloads.
+            if (response.StatusCode == HttpStatusCode.Unauthorized && _session.UserID != 0
+                && await TryRefreshAccessTokenAsync(sentToken) == RefreshResult.Refreshed)
+            {
+                response.Dispose();
+                var retry = new HttpRequestMessage(HttpMethod.Get, url);
+                retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
+                response = await Http.SendAsync(retry, ct);
+            }
+
+            return response;
+        }
+
+        private enum RefreshResult
+        {
+            /// <summary>A usable access token is now in the session.</summary>
+            Refreshed,
+            /// <summary>The backend definitively refused the refresh token (expired / revoked / missing) - the session is over.</summary>
+            Rejected,
+            /// <summary>Temporary problem (rate limited, backend down, network) - the session may still be fine, try again later.</summary>
+            Failed
         }
 
         private async Task EnsureAuthorizationHeaderAsync(HttpRequestMessage request)
@@ -133,14 +156,27 @@ namespace LTSFrontend.Core.Http
             }
         }
 
-        private async Task<bool> TryRefreshAccessTokenAsync()
+        /// <param name="rejectedToken">
+        /// Set when the backend answered 401 to a request sent with this access token. In that case the
+        /// "token still looks valid" shortcut must NOT be trusted (the clock/expiry we hold can be stale),
+        /// unless another request already swapped in a newer token while we waited for the lock.
+        /// </param>
+        private async Task<RefreshResult> TryRefreshAccessTokenAsync(string? rejectedToken = null)
         {
             await _refreshGate.Lock.WaitAsync();
             try
             {
-                if (!string.IsNullOrWhiteSpace(_session.AccessToken) && _session.AccessTokenExpiry.HasValue && _session.AccessTokenExpiry.Value > DateTime.UtcNow.AddSeconds(30))
+                bool looksValid = !string.IsNullOrWhiteSpace(_session.AccessToken) && _session.AccessTokenExpiry.HasValue && _session.AccessTokenExpiry.Value > DateTime.UtcNow.AddSeconds(30);
+
+                if (rejectedToken == null && looksValid)
                 {
-                    return true;
+                    return RefreshResult.Refreshed;
+                }
+
+                // Another request already refreshed while we waited - just use its new token.
+                if (rejectedToken != null && !string.IsNullOrWhiteSpace(_session.AccessToken) && _session.AccessToken != rejectedToken)
+                {
+                    return RefreshResult.Refreshed;
                 }
 
                  _logger?.LogInformation("[ApiClient] Silent refresh attempt. Cookie jar has refreshToken={HasRt}", !string.IsNullOrWhiteSpace(GetCurrentRefreshToken()));
@@ -150,7 +186,12 @@ namespace LTSFrontend.Core.Http
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger?.LogWarning("[ApiClient] Silent refresh REJECTED by backend: HTTP {Status}. Body: {Body}", (int)response.StatusCode, await response.Content.ReadAsStringAsync());
-                    return false;
+
+                    // 400/401/403 = the refresh token itself is bad (expired/revoked/missing): the session is over.
+                    // Anything else (429 rate limit, 5xx, ...) is temporary and must NOT end the session.
+                    return response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
+                        ? RefreshResult.Rejected
+                        : RefreshResult.Failed;
                 }
 
                 var raw = await response.Content.ReadAsStringAsync();
@@ -158,7 +199,7 @@ namespace LTSFrontend.Core.Http
 
                 if (parsed?.Success != true || parsed.Data == null)
                 {
-                    return false;
+                    return RefreshResult.Failed;
                 }
 
                 _session.UpdateAccessToken(parsed.Data.AccessToken, parsed.Data.AccessTokenExpiry);
@@ -166,12 +207,12 @@ namespace LTSFrontend.Core.Http
                 await _tokenStorage.SaveSessionAsync(new StoredSession(_session.UserID, _session.FullName, _session.Email, _session.Role, _session.AccessToken!, _session.AccessTokenExpiry!.Value, GetCurrentRefreshToken()));
                 _logger?.LogInformation("[ApiClient] Silent refresh SUCCEEDED; new access token expires {Expiry:o}", _session.AccessTokenExpiry);
 
-                return true;
+                return RefreshResult.Refreshed;
             }
             catch (Exception ex)
             {
                 _logger?.LogWarning(ex, "[ApiClient] Silent refresh threw an exception.");
-                return false;
+                return RefreshResult.Failed;
             }
             finally
             {
@@ -179,13 +220,67 @@ namespace LTSFrontend.Core.Http
             }
         }
 
+        private async Task EndExpiredSessionAsync()
+        {
+            _logger?.LogWarning("[ApiClient] Refresh token rejected - clearing the local session.");
+            _session.Clear();
+            await _tokenStorage.ClearSessionAsync();
+        }
+
+        /// <summary>
+        /// Builds a fresh, re-sendable copy of a request (null when its body cannot be replayed, e.g. a
+        /// multipart file upload - those simply surface the 401 as before). Bodies are buffered to bytes first.
+        /// </summary>
+        private static async Task<HttpRequestMessage?> TryCreateRetryCopyAsync(HttpRequestMessage original)
+        {
+            var copy = new HttpRequestMessage(original.Method, original.RequestUri);
+
+            if (original.Content == null)
+                return copy;
+
+            if (original.Content is MultipartContent)
+                return null;
+
+            var bytes = await original.Content.ReadAsByteArrayAsync();
+            var content = new ByteArrayContent(bytes);
+            content.Headers.ContentType = original.Content.Headers.ContentType;
+            copy.Content = content;
+            return copy;
+        }
+
         private async Task<T?> SendAsync<T>(HttpRequestMessage request, CancellationToken ct)
         {
             await EnsureAuthorizationHeaderAsync(request);
+            var sentToken = request.Headers.Authorization?.Parameter;
+
+            // An HttpRequestMessage can only be sent once, so keep a copy to replay after a token refresh.
+            var retryCopy = await TryCreateRetryCopyAsync(request);
+
             HttpResponseMessage response;
             try
             {
                 response = await Http.SendAsync(request, ct);
+
+                // The access token we held was rejected (expired, or our cached expiry was stale). Instead of
+                // failing the user's action, refresh once and replay the request with the new token.
+                if (response.StatusCode == HttpStatusCode.Unauthorized && _session.UserID != 0)
+                {
+                    var refresh = await TryRefreshAccessTokenAsync(sentToken);
+
+                    if (refresh == RefreshResult.Refreshed && retryCopy != null)
+                    {
+                        response.Dispose();
+                        retryCopy.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _session.AccessToken);
+                        response = await Http.SendAsync(retryCopy, ct);
+                    }
+                    else if (refresh == RefreshResult.Rejected)
+                    {
+                        // Refresh token is dead too: end the session cleanly so the app sends the user to login
+                        // instead of leaving every screen failing with "401 Unauthorized".
+                        await EndExpiredSessionAsync();
+                        throw new ApiException("Your session has expired. Please sign in again.", (int)HttpStatusCode.Unauthorized);
+                    }
+                }
             }
             catch (HttpRequestException ex)
             {

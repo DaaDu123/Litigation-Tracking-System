@@ -90,8 +90,21 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
     // Computes the absolute UTC expiry timestamp for a newly issued refresh token.
     public DateTime GetRefreshTokenExpiry()
     {
-        int refreshTokenDays = _configuration.GetValue<int>("JwtSettings:RefreshTokenDays", 7);
-        return DateTime.UtcNow.AddDays(refreshTokenDays);
+        return DateTime.UtcNow.Add(GetRefreshTokenLifetime());
+    }
+
+    // Refresh-token lifetime. JwtSettings:RefreshTokenMinutes (when > 0) wins;
+    // otherwise falls back to JwtSettings:RefreshTokenDays (default 7 days).
+    // Single source for BOTH the DB expiry above and the cookie expiry below,
+    // so they can never disagree.
+    private TimeSpan GetRefreshTokenLifetime()
+    {
+        int minutes = _configuration.GetValue<int>("JwtSettings:RefreshTokenMinutes", 0);
+        if (minutes > 0)
+            return TimeSpan.FromMinutes(minutes);
+
+        int days = _configuration.GetValue<int>("JwtSettings:RefreshTokenDays", 7);
+        return TimeSpan.FromDays(days);
     }
 
     public string HashRefreshToken(string rawToken)
@@ -117,7 +130,7 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
         }
 
         bool useSecureCookies = _configuration.GetValue<bool>("JwtSettings:UseSecureCookies", true);
-        int refreshTokenDays = _configuration.GetValue<int>("JwtSettings:RefreshTokenDays", 7);
+        var refreshLifetime = GetRefreshTokenLifetime();
 
         response.Cookies.Append("refreshToken",refreshToken,new CookieOptions
             {
@@ -125,10 +138,10 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
                 Secure = useSecureCookies,
                 SameSite = SameSiteMode.Strict,
                 IsEssential = true,
-                Expires = DateTime.UtcNow.AddDays(refreshTokenDays)
+                Expires = DateTime.UtcNow.Add(refreshLifetime)
             });
 
-        _logger.LogDebug("Refresh token cookie set with {Days} days expiry", refreshTokenDays);
+        _logger.LogDebug("Refresh token cookie set with {Minutes} minutes expiry", refreshLifetime.TotalMinutes);
     }
 
     // Removes the refresh-token cookie from the response (used on logout).

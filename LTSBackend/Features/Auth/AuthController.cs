@@ -121,12 +121,15 @@ public class AuthController : ControllerBase
     // Exchanges a still-valid refresh token (sent as an HttpOnly cookie,
     // not in the body) for a new short-lived access token, so the user
     // stays logged in without re-entering credentials.
-    // SECURITY: rate limited ("auth-critical", see Program.cs) — caps how
-    // fast a stolen/guessed refresh token cookie can be replayed.
+    // SECURITY: rate limited ("auth-refresh", see WebHostExtensions) — still
+    // caps replay of a stolen cookie, but with its own generous bucket: the
+    // frontend calls this silently on behalf of EVERY logged-in user from one
+    // server IP, so sharing the strict login bucket made refreshes (and then
+    // logins) fail with 429/401.
     // =====================================================
     [HttpPost("refresh-token")]
     [AllowAnonymous]
-    [EnableRateLimiting("auth-critical")]
+    [EnableRateLimiting("auth-refresh")]
     public async Task<IActionResult> RefreshToken()
     {
         _logger.LogInformation("Token refresh request");
