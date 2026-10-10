@@ -19,7 +19,8 @@ namespace LTSFrontend.Features.Cases.Services
             int? statusID = null,
             string? priority = null,
             int pageNumber = 1,
-            int pageSize = 10)
+            int pageSize = 10,
+            bool archivedOnly = false)
         {
             var query = new List<string>
             {
@@ -36,6 +37,9 @@ namespace LTSFrontend.Features.Cases.Services
             if (!string.IsNullOrWhiteSpace(priority))
                 query.Add($"priority={Uri.EscapeDataString(priority)}");
 
+            if (archivedOnly)
+                query.Add("archivedOnly=true");
+
             var url = ApiEndpoints.Cases.Base_ + "?" + string.Join("&", query);
             var result = await _api.GetAsync<PagedResult<CaseDTO>>(url);
             return result ?? new PagedResult<CaseDTO> { PageNumber = pageNumber, PageSize = pageSize };
@@ -44,16 +48,14 @@ namespace LTSFrontend.Features.Cases.Services
         public Task<CaseDTO?> GetByIdAsync(long id) =>
             _api.GetAsync<CaseDTO>(ApiEndpoints.Cases.ById(id));
 
-        public Task<long> CreateAsync(CreateCaseDTO form) =>
-            _api.PostAsync<long>(ApiEndpoints.Cases.Base_, new
+        public async Task<CreateCaseResultDTO> CreateAsync(CreateCaseDTO form) =>
+            await _api.PostAsync<CreateCaseResultDTO>(ApiEndpoints.Cases.Base_, new
             {
                 CaseNumber = form.CaseNumber.Trim(),
                 CaseTitle = form.CaseTitle.Trim(),
                 CaseDescription = string.IsNullOrWhiteSpace(form.CaseDescription) ? null : form.CaseDescription.Trim(),
                 form.CourtID,
-                CourtName = string.IsNullOrWhiteSpace(form.CourtName) ? null : form.CourtName.Trim(),
                 form.CategoryID,
-                CategoryName = string.IsNullOrWhiteSpace(form.CategoryName) ? null : form.CategoryName.Trim(),
                 form.Priority,
                 SubjectMatter = form.SubjectMatter.Trim(),
                 FilingDate = form.FilingDate!.Value,
@@ -63,20 +65,31 @@ namespace LTSFrontend.Features.Cases.Services
                 form.ClaimedAmount,
                 form.PotentialLiability,
                 FinancialImplication = string.IsNullOrWhiteSpace(form.FinancialImplication) ? null : form.FinancialImplication.Trim(),
-                form.ResponsibleDepartmentID,
-                DepartmentName = string.IsNullOrWhiteSpace(form.DepartmentName) ? null : form.DepartmentName.Trim(),
+                ResponsibleDepartmentID = form.ResponsibleDepartmentID > 0 ? form.ResponsibleDepartmentID : (int?)null,
                 form.CurrentLegalOfficerID
-            });
+            }) ?? throw new Core.Exceptions.ApiException("The case was created but the server response could not be read. Please refresh the case list.");
 
         public Task<bool> UpdateAsync(UpdateCaseDTO form)
         {
             return _api.PutAsync<bool>(ApiEndpoints.Cases.ById(form.CaseID), form);
         }
 
-        public Task<bool> DeleteAsync(long id)
+        public async Task<bool> ArchiveAsync(long id, string? reason = null)
         {
-            return _api.DeleteAsync<bool>(ApiEndpoints.Cases.ById(id));
+            var url = ApiEndpoints.Cases.ById(id);
+            if (!string.IsNullOrWhiteSpace(reason))
+                url += "?reason=" + Uri.EscapeDataString(reason.Trim());
+            return await _api.DeleteAsync<bool>(url);
         }
+
+        public async Task<bool> RestoreAsync(long id) =>
+            await _api.PostAsync<bool>(ApiEndpoints.Cases.Restore(id));
+
+        public async Task<bool> PermanentDeleteAsync(long id, string confirmCaseNumber, string reason) =>
+            await _api.PostAsync<bool>(ApiEndpoints.Cases.PermanentDelete(id), new { ConfirmCaseNumber = confirmCaseNumber, Reason = reason });
+
+        public async Task<bool> GenerateWorkflowAsync(long id) =>
+            await _api.PostAsync<bool>(ApiEndpoints.Cases.GenerateWorkflow(id));
 
         public Task<bool> UpdateStatusAsync(long id, int newStatusID, string? remarks)
         {
@@ -91,6 +104,9 @@ namespace LTSFrontend.Features.Cases.Services
                 StageID = newStageID
             });
         }
+
+        public Task<CaseWorkflowDTO?> GetWorkflowAsync(long id) =>
+            _api.GetAsync<CaseWorkflowDTO>(ApiEndpoints.Cases.Workflow(id));
 
         public async Task<List<CaseStatusHistoryDTO>> GetStatusHistoryAsync(long id)
         {

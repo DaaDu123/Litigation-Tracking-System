@@ -1,5 +1,9 @@
-﻿using MediatR;
+using MediatR;
 
 namespace LTSBackend.Features.Cases.Commands.DeleteCase;
 
-public record DeleteCaseCommand(long CaseID) : IRequest<bool>;
+/// <summary>
+/// PERMANENT deletion (hard delete) of an already-archived case. Requires the
+/// exact case number as confirmation plus a written reason; FirmAdmin only.
+/// </summary>
+public record DeleteCaseCommand(long CaseID, string ConfirmCaseNumber, string Reason) : IRequest<bool>;

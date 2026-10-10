@@ -95,13 +95,24 @@
         _isOpen = true;
         StateHasChanged();
 
-        if (_stages.Count == 0)
         {
             _isLoadingStages = true;
+            _stages = new();
             StateHasChanged();
             try
             {
-                _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+                // A case moves only through ITS OWN workflow stages (generated from its category template).
+                // Cases without a generated workflow (created before templates existed) fall back to all stages.
+                var workflow = await CaseService.GetWorkflowAsync(caseId);
+                if (workflow != null && workflow.Stages.Count > 0)
+                {
+                    _stages = workflow.Stages.OrderBy(s => s.SequenceNo)
+                        .Select(s => new CaseStageDTO { StageID = s.StageID, StageName = s.StageName, IsActive = true }).ToList();
+                }
+                else
+                {
+                    _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+                }
             }
             catch (Exception)
             {

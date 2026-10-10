@@ -1,0 +1,443 @@
+@* Create / Edit modal for a Case Workflow Template (one per Case Category).
+   Opened imperatively from CaseWorkflowTemplates.razor via @ref:
+   _formModal.OpenAsync(category, existingTemplateOrNull). Only REFERENCES the
+   reusable masters (department, status, stages, document types) - it never
+   creates them. *@
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseWorkflowTemplateService TemplateService
+@inject IMasterDataService MasterDataService
+@inject IDocumentTypeService DocumentTypeService
+@inject IDepartmentService DepartmentService
+@inject ICaseStatusService CaseStatusService
+@inject ICaseStageService CaseStageService
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotSaving"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" style="max-width:720px;" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-primary"><i class="bi bi-list-check"></i></div>
+            <div>
+                <h5 class="lts-modal-title">Workflow Template - @_form.CategoryName</h5>
+                <p class="lts-modal-subtitle mb-0">Every new case of this category is generated from this configuration.</p>
+            </div>
+        </div>
+
+        <div class="lts-modal-body" style="max-height:70vh;overflow-y:auto;">
+            @if (!string.IsNullOrWhiteSpace(_apiError))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span style="white-space: pre-line;">@_apiError</span>
+                </div>
+            }
+
+            @if (_isLoading)
+            {
+                <div class="d-flex align-items-center gap-2" style="padding:1rem 0;">
+                    <span class="lts-spinner lts-spinner-sm"></span><span>Loading master data...</span>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Default Department</label>
+                            <div class="d-flex flex-wrap gap-2 align-items-stretch">
+                                <div class="flex-grow-1" style="min-width:200px;">
+                                    <InputText @bind-Value="_departmentEntry" class="lts-form-control" list="workflow-departments"
+                                               placeholder="Search or type a department..." disabled="@(_isSaving || _isCreatingMaster)" />
+                                    <datalist id="workflow-departments">
+                                        @foreach (var d in _departments.OrderBy(x => x.DepartmentName)) { <option value="@d.DepartmentName"></option> }
+                                    </datalist>
+                                </div>
+                                <button type="button" class="lts-btn lts-btn-outline" @onclick="UseOrCreateDepartmentAsync"
+                                        disabled="@(_isSaving || _isCreatingMaster || string.IsNullOrWhiteSpace(_departmentEntry))">Use / Add</button>
+                                <button type="button" class="lts-btn lts-btn-ghost" @onclick="ClearDepartment" disabled="@_isSaving">None</button>
+                            </div>
+                            <div class="lts-form-hint">Type to find an existing department or enter a new name. The name is reused if it already exists. None lets each case creator choose a department.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Initial Status <span class="required">*</span></label>
+                            <div class="d-flex flex-wrap gap-2 align-items-stretch">
+                                <div class="flex-grow-1" style="min-width:200px;">
+                                    <InputText @bind-Value="_statusEntry" class="lts-form-control" list="workflow-statuses"
+                                               placeholder="Search or type an initial status..." disabled="@(_isSaving || _isCreatingMaster)" />
+                                    <datalist id="workflow-statuses">
+                                        @foreach (var st in _statuses.OrderBy(x => x.SequenceNo)) { <option value="@st.StatusName"></option> }
+                                    </datalist>
+                                </div>
+                                <button type="button" class="lts-btn lts-btn-outline" @onclick="UseOrCreateStatusAsync"
+                                        disabled="@(_isSaving || _isCreatingMaster || string.IsNullOrWhiteSpace(_statusEntry))">Use / Add</button>
+                            </div>
+                            @if (_showErrors && _form.InitialStatusID <= 0)
+                            {
+                                <div class="lts-form-error">Initial Status is required</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Workflow Stages (in order) <span class="required">*</span></label>
+                    @if (_form.StageIDs.Count == 0)
+                    {
+                        <div class="lts-form-hint">No stages yet. Add the first stage below - it becomes the case's initial stage.</div>
+                    }
+                    else
+                    {
+                        <ol class="list-unstyled mb-2" style="display:flex;flex-direction:column;gap:0.35rem;">
+                            @for (var i = 0; i < _form.StageIDs.Count; i++)
+                            {
+                                var index = i;
+                                <li class="d-flex align-items-center gap-2" style="padding:0.35rem 0.6rem;border:1px solid var(--lts-border);border-radius:var(--lts-radius-sm);">
+                                    <span class="lts-badge lts-badge-muted" style="min-width:1.6rem;justify-content:center;">@(index + 1)</span>
+                                    <span class="flex-grow-1">@StageName(_form.StageIDs[index])</span>
+                                    <button type="button" class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Move up" disabled="@(_isSaving || index == 0)" @onclick="() => MoveStage(index, -1)"><i class="bi bi-arrow-up"></i></button>
+                                    <button type="button" class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Move down" disabled="@(_isSaving || index == _form.StageIDs.Count - 1)" @onclick="() => MoveStage(index, 1)"><i class="bi bi-arrow-down"></i></button>
+                                    <button type="button" class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Remove" disabled="@_isSaving" @onclick="() => RemoveStage(index)"><i class="bi bi-x-lg text-danger"></i></button>
+                                </li>
+                            }
+                        </ol>
+                    }
+                    <div class="d-flex flex-wrap gap-2 align-items-stretch">
+                        <div class="flex-grow-1" style="min-width:200px;">
+                            <InputText @bind-Value="_stageEntry" class="lts-form-control" list="workflow-stages"
+                                       placeholder="Search or type a workflow stage..." disabled="@(_isSaving || _isCreatingMaster)" />
+                            <datalist id="workflow-stages">
+                                @foreach (var stage in _stages.OrderBy(x => x.StageName)) { <option value="@stage.StageName"></option> }
+                            </datalist>
+                        </div>
+                        <button type="button" class="lts-btn lts-btn-outline" @onclick="AddStageAsync"
+                                disabled="@(_isSaving || _isCreatingMaster || string.IsNullOrWhiteSpace(_stageEntry))">
+                            @if (_isCreatingMaster) { <span class="lts-spinner lts-spinner-sm"></span> } else { <i class="bi bi-plus-lg"></i> }
+                            Use / Add Stage
+                        </button>
+                    </div>
+                    @if (_form.StageIDs.Count == 0)
+                    {
+                        <div class="lts-form-hint">Important: selecting a stage above does not add it yet. Click <strong>+ Add</strong>; the stage must appear in the numbered list before saving.</div>
+                    }
+                    @if (_showErrors && _form.StageIDs.Count == 0)
+                    {
+                        <div class="lts-form-error">Add at least one workflow stage before saving this template.</div>
+                    }
+                </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Documents</label>
+                    <div class="lts-form-hint mb-2">Choose which document types every case of this category must (or may) have. Files themselves are uploaded per case.</div>
+                    @foreach (var dt in _documentTypes)
+                    {
+                        <div class="d-flex align-items-center justify-content-between gap-2" style="padding:0.3rem 0;border-bottom:1px solid var(--lts-border);">
+                            <span>@dt.TypeName</span>
+                            <select class="lts-select" style="max-width:150px;" value="@DocMode(dt.DocumentTypeID)"
+                                    @onchange="e => SetDocMode(dt.DocumentTypeID, e.Value?.ToString())" disabled="@_isSaving">
+                                <option value="none">Not used</option>
+                                <option value="required">Required</option>
+                                <option value="optional">Optional</option>
+                            </select>
+                        </div>
+                    }
+                    @if (_documentTypes.Count == 0)
+                    {
+                        <div class="lts-form-hint">No active document types are configured yet. You can add one below without leaving this editor.</div>
+                    }
+                    <div class="d-flex flex-wrap gap-2 mt-3 align-items-stretch">
+                        <InputText @bind-Value="_newDocumentTypeName" class="lts-form-control" style="flex:1;min-width:200px;"
+                                   maxlength="160" placeholder="Search or type a document type..." list="workflow-document-types"
+                                   disabled="@(_isSaving || _isCreatingMaster)" />
+                        <datalist id="workflow-document-types">
+                            @foreach (var docType in _documentTypes.OrderBy(x => x.TypeName)) { <option value="@docType.TypeName"></option> }
+                        </datalist>
+                        <button type="button" class="lts-btn lts-btn-outline" @onclick="AddDocumentTypeAsync"
+                                disabled="@(_isSaving || _isCreatingMaster || string.IsNullOrWhiteSpace(_newDocumentTypeName))">Use / Add Type</button>
+                    </div>
+                    <div class="lts-form-hint mt-1">After adding a type, mark it Required or Optional in the list above.</div>
+                </div>
+
+                <div class="lts-switch-row">
+                    <div>
+                        <div class="fw-semibold" style="font-size:0.88rem;color:var(--lts-text);">Active</div>
+                        <div class="lts-form-hint" style="margin-top:0;">Inactive templates are ignored when creating cases.</div>
+                    </div>
+                    <label class="lts-switch">
+                        <InputCheckbox @bind-Value="_form.IsActive" disabled="@_isSaving" />
+                        <span class="lts-switch-slider"></span>
+                    </label>
+                </div>
+            }
+        </div>
+
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotSaving" disabled="@_isSaving">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="HandleSaveAsync" disabled="@(_isSaving || _isLoading)">
+                @if (_isSaving)
+                {
+                    <span class="lts-spinner lts-spinner-sm"></span>
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <i class="bi bi-check-lg"></i>
+                    <span>Save Workflow Template</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool _isOpen;
+    private bool _isLoading;
+    private bool _isSaving;
+    private bool _showErrors;
+    private string? _apiError;
+    private int _stageToAdd;
+    private bool _isCreatingMaster;
+    private string _departmentEntry = string.Empty;
+    private string _statusEntry = string.Empty;
+    private string _stageEntry = string.Empty;
+    private string _newDocumentTypeName = string.Empty;
+
+    private CaseWorkflowTemplateFormDTO _form = new();
+    private List<DepartmentDTO> _departments = new();
+    private List<CaseStatusDTO> _statuses = new();
+    private List<CaseStageDTO> _stages = new();
+    private List<DocumentTypeDTO> _documentTypes = new();
+
+    public async Task OpenAsync(CaseCategoryDTO category, CaseWorkflowTemplateDTO? existing)
+    {
+        _form = CaseWorkflowTemplateFormDTO.ForCategory(category, existing);
+        _departmentEntry = existing?.DefaultDepartmentName ?? string.Empty;
+        _statusEntry = existing?.InitialStatusName ?? string.Empty;
+        _stageEntry = string.Empty;
+        _newDocumentTypeName = string.Empty;
+        _apiError = null;
+        _showErrors = false;
+        _stageToAdd = 0;
+        _isOpen = true;
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+            _statuses = (await MasterDataService.GetCaseStatusesAsync(activeOnly: true)).OrderBy(s => s.SequenceNo).ToList();
+            _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+            _documentTypes = (await DocumentTypeService.GetAllAsync(activeOnly: true)).OrderBy(d => d.TypeName).ToList();
+            if (_form.DefaultDepartmentID > 0) _departmentEntry = _departments.FirstOrDefault(x => x.DepartmentID == _form.DefaultDepartmentID)?.DepartmentName ?? _departmentEntry;
+            if (_form.InitialStatusID > 0) _statusEntry = _statuses.FirstOrDefault(x => x.StatusID == _form.InitialStatusID)?.StatusName ?? _statusEntry;
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Couldn't load master data (departments, statuses, stages, document types). Please close and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearDepartment()
+    {
+        _form.DefaultDepartmentID = 0;
+        _departmentEntry = string.Empty;
+    }
+
+    private async Task UseOrCreateDepartmentAsync()
+    {
+        var name = _departmentEntry.Trim();
+        if (name.Length == 0) return;
+        _isCreatingMaster = true;
+        _apiError = null;
+        try
+        {
+            var match = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                await DepartmentService.CreateAsync(new DepartmentFormDTO { DepartmentName = name, IsActive = true });
+                _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+                match = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            }
+            if (match == null) throw new InvalidOperationException("Department was saved but could not be reloaded.");
+            _form.DefaultDepartmentID = match.DepartmentID;
+            _departmentEntry = match.DepartmentName;
+        }
+        catch (ApiException ex)
+        {
+            _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+            var match = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match != null) { _form.DefaultDepartmentID = match.DepartmentID; _departmentEntry = match.DepartmentName; }
+            else _apiError = ex.GetFullMessage();
+        }
+        catch (Exception ex) { _apiError = $"Could not use or add department: {ex.Message}"; }
+        finally { _isCreatingMaster = false; }
+    }
+
+    private async Task UseOrCreateStatusAsync()
+    {
+        var name = _statusEntry.Trim();
+        if (name.Length == 0) return;
+        _isCreatingMaster = true;
+        _apiError = null;
+        try
+        {
+            var match = _statuses.FirstOrDefault(x => string.Equals(x.StatusName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                await CaseStatusService.CreateAsync(new CaseStatusFormDTO { StatusName = name, SequenceNo = _statuses.Count, ColorCode = "#1B4FD6", IsActive = true });
+                _statuses = (await MasterDataService.GetCaseStatusesAsync(activeOnly: true)).OrderBy(x => x.SequenceNo).ToList();
+                match = _statuses.FirstOrDefault(x => string.Equals(x.StatusName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            }
+            if (match == null) throw new InvalidOperationException("Status was saved but could not be reloaded.");
+            _form.InitialStatusID = match.StatusID;
+            _statusEntry = match.StatusName;
+        }
+        catch (ApiException ex)
+        {
+            _statuses = (await MasterDataService.GetCaseStatusesAsync(activeOnly: true)).OrderBy(x => x.SequenceNo).ToList();
+            var match = _statuses.FirstOrDefault(x => string.Equals(x.StatusName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match != null) { _form.InitialStatusID = match.StatusID; _statusEntry = match.StatusName; }
+            else _apiError = ex.GetFullMessage();
+        }
+        catch (Exception ex) { _apiError = $"Could not use or add status: {ex.Message}"; }
+        finally { _isCreatingMaster = false; }
+    }
+
+    private async Task AddStageAsync()
+    {
+        var name = _stageEntry.Trim();
+        if (name.Length == 0) return;
+        _isCreatingMaster = true;
+        _apiError = null;
+        try
+        {
+            var match = _stages.FirstOrDefault(x => string.Equals(x.StageName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                await CaseStageService.CreateAsync(new CaseStageFormDTO { StageName = name, IsActive = true });
+                _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+                match = _stages.FirstOrDefault(x => string.Equals(x.StageName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            }
+            if (match == null) throw new InvalidOperationException("Stage was saved but could not be reloaded.");
+            if (!_form.StageIDs.Contains(match.StageID)) _form.StageIDs.Add(match.StageID);
+            _stageEntry = string.Empty;
+        }
+        catch (ApiException ex)
+        {
+            _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+            var match = _stages.FirstOrDefault(x => string.Equals(x.StageName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match != null) { if (!_form.StageIDs.Contains(match.StageID)) _form.StageIDs.Add(match.StageID); _stageEntry = string.Empty; }
+            else _apiError = ex.GetFullMessage();
+        }
+        catch (Exception ex) { _apiError = $"Could not use or add workflow stage: {ex.Message}"; }
+        finally { _isCreatingMaster = false; }
+    }
+
+    private async Task AddDocumentTypeAsync()
+    {
+        var name = _newDocumentTypeName.Trim();
+        if (name.Length == 0) return;
+        _isCreatingMaster = true;
+        _apiError = null;
+        try
+        {
+            var match = _documentTypes.FirstOrDefault(x => string.Equals(x.TypeName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                await DocumentTypeService.CreateAsync(new DocumentTypeFormDTO { TypeName = name, IsActive = true });
+                _documentTypes = (await DocumentTypeService.GetAllAsync(activeOnly: true)).OrderBy(x => x.TypeName).ToList();
+                match = _documentTypes.FirstOrDefault(x => string.Equals(x.TypeName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            }
+            if (match == null) throw new InvalidOperationException("Document type was saved but could not be reloaded.");
+            _newDocumentTypeName = string.Empty;
+        }
+        catch (ApiException ex)
+        {
+            _documentTypes = (await DocumentTypeService.GetAllAsync(activeOnly: true)).OrderBy(x => x.TypeName).ToList();
+            if (_documentTypes.Any(x => string.Equals(x.TypeName.Trim(), name, StringComparison.OrdinalIgnoreCase))) _newDocumentTypeName = string.Empty;
+            else _apiError = ex.GetFullMessage();
+        }
+        catch (Exception ex) { _apiError = $"Could not use or add document type: {ex.Message}"; }
+        finally { _isCreatingMaster = false; }
+    }
+
+    private string StageName(int id) => _stages.FirstOrDefault(s => s.StageID == id)?.StageName ?? $"Stage #{id}";
+
+    private void AddStage()
+    {
+        if (_stageToAdd > 0 && !_form.StageIDs.Contains(_stageToAdd))
+        {
+            _form.StageIDs.Add(_stageToAdd);
+        }
+        _stageToAdd = 0;
+    }
+
+    private void RemoveStage(int index) => _form.StageIDs.RemoveAt(index);
+
+    private void MoveStage(int index, int delta)
+    {
+        var target = index + delta;
+        if (target < 0 || target >= _form.StageIDs.Count) return;
+        (_form.StageIDs[index], _form.StageIDs[target]) = (_form.StageIDs[target], _form.StageIDs[index]);
+    }
+
+    private string DocMode(int documentTypeId) =>
+        _form.RequiredDocumentTypeIDs.Contains(documentTypeId) ? "required"
+        : _form.OptionalDocumentTypeIDs.Contains(documentTypeId) ? "optional" : "none";
+
+    private void SetDocMode(int documentTypeId, string? mode)
+    {
+        _form.RequiredDocumentTypeIDs.Remove(documentTypeId);
+        _form.OptionalDocumentTypeIDs.Remove(documentTypeId);
+        if (mode == "required") _form.RequiredDocumentTypeIDs.Add(documentTypeId);
+        else if (mode == "optional") _form.OptionalDocumentTypeIDs.Add(documentTypeId);
+    }
+
+    private void CloseIfNotSaving()
+    {
+        if (_isSaving) return;
+        _isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleSaveAsync()
+    {
+        _showErrors = true;
+        if (_form.InitialStatusID <= 0 || _form.StageIDs.Count == 0) return;
+
+        _isSaving = true;
+        _apiError = null;
+        try
+        {
+            var savedTemplateId = await TemplateService.SaveAsync(_form);
+            if (savedTemplateId <= 0)
+                throw new InvalidOperationException("The server did not return a valid workflow template ID. Please refresh and try again.");
+            _isOpen = false;
+            await OnSaved.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _apiError = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _apiError = "Something went wrong while saving the workflow template. Please try again.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

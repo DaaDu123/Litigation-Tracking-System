@@ -39,6 +39,12 @@ public sealed class DeleteCaseCategoryHandler(AppDbContext _context, ICurrentUse
             });
         }
 
+        // Workflow templates reference the category with NO ACTION: block with a clear message instead of a raw FK error.
+        if (await _context.CaseWorkflowTemplates.AnyAsync(x => x.CategoryID == request.CategoryID, cancellationToken))
+        {
+            throw new ValidationException(new() { "Cannot delete category. A workflow template is configured for it. Delete that template first, or deactivate the category instead." });
+        }
+
         _context.CaseCategories.Remove(category);
         await _context.SaveChangesAsync(cancellationToken);
 

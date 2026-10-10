@@ -114,12 +114,16 @@
                 <div class="col-md-4">
                     <div class="lts-form-group">
                         <label class="lts-form-label">Category</label>
-                        <InputSelect @bind-Value="_form.CategoryID" class="lts-form-control" disabled="@_isSaving">
+                        <InputSelect @bind-Value="_form.CategoryID" class="lts-form-control" disabled="@(_isSaving || _hasWorkflow)">
                             @foreach (var cat in _categories)
                             {
                                 <option value="@cat.CategoryID">@cat.CategoryName</option>
                             }
                         </InputSelect>
+                        @if (_hasWorkflow)
+                        {
+                            <div class="lts-form-hint">Fixed - this case's workflow and document checklist were generated from it.</div>
+                        }
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -132,6 +136,20 @@
                             }
                         </InputSelect>
                         <div class="lts-form-hint">To change the case Status, use "Update Status" from the case details page.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="lts-form-group">
+                        <label class="lts-form-label">Responsible Department</label>
+                        <InputSelect @bind-Value="_departmentId" class="lts-form-control" disabled="@_isSaving">
+                            <option value="0">Select department...</option>
+                            @foreach (var dept in _departments)
+                            {
+                                <option value="@dept.DepartmentID">@dept.DepartmentName</option>
+                            }
+                        </InputSelect>
                     </div>
                 </div>
             </div>
@@ -213,7 +231,13 @@
     private List<CourtDTO> _courts = new();
     private List<CaseCategoryDTO> _categories = new();
     private List<CaseStageDTO> _stages = new();
+    private List<DepartmentDTO> _departments = new();
     private List<UserDTO> _legalOfficers = new();
+
+    // Set when the case has a generated workflow: the stage dropdown then lists only THIS case's stages
+    // and the category is locked (the backend enforces both).
+    private bool _hasWorkflow;
+    private int _departmentId;
 
     private bool _isLoading = true;
     private bool _notFound;
@@ -228,6 +252,7 @@
             _courts = await CourtService.GetAllAsync(activeOnly: true);
             _categories = await MasterDataService.GetCaseCategoriesAsync(activeOnly: true);
             _stages = await MasterDataService.GetCaseStagesAsync(activeOnly: true);
+            _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
             var users = await UserService.GetAllAsync();
             _legalOfficers = users.Where(u => u.IsActive).OrderBy(u => u.FullName).ToList();
 
@@ -245,6 +270,15 @@
                 EnsureOptionPresent(_courts, _original.CourtID, _original.CourtName);
                 EnsureCategoryPresent(_original.CategoryID, _original.CategoryName);
                 EnsureStagePresent(_original.StageID, _original.StageName);
+                _departmentId = _original.DepartmentID ?? 0;
+
+                var workflow = await CaseService.GetWorkflowAsync(CaseId);
+                if (workflow != null && workflow.Stages.Count > 0)
+                {
+                    _hasWorkflow = true;
+                    _stages = workflow.Stages.OrderBy(x => x.SequenceNo)
+                        .Select(x => new CaseStageDTO { StageID = x.StageID, StageName = x.StageName, IsActive = true }).ToList();
+                }
             }
         }
         catch (ApiException)
@@ -284,6 +318,7 @@
         _isSaving = true;
         _apiError = null;
         _form.IsArchived = _isArchived;
+        _form.ResponsibleDepartmentID = _departmentId > 0 ? _departmentId : null;
         try
         {
             await CaseService.UpdateAsync(_form);

@@ -1,0 +1,96 @@
+@* Irreversible deletion of an ARCHIVED case. The user must type the exact case number and give a reason.
+   Opened imperatively: _permanentModal.Open(caseId, caseNumber). Raises OnDeleted after the server confirms. *@
+@using LTSFrontend.Features.Cases.Services
+@inject ICaseService CaseService
+@inject ToastService Toast
+
+<div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="CloseIfNotBusy"></div>
+<div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">
+    <div class="lts-modal" style="max-width:520px;" @onclick:stopPropagation="true">
+        <div class="lts-modal-header">
+            <div class="lts-modal-icon lts-modal-icon-danger"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <h5 class="lts-modal-title">Permanently delete case</h5>
+                <p class="lts-modal-subtitle mb-0">This removes the case, its documents (including files), hearings, notes and history. It cannot be undone.</p>
+            </div>
+        </div>
+        <div class="lts-modal-body">
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                    <i class="bi bi-exclamation-circle-fill"></i> <span style="white-space: pre-line;">@_error</span>
+                </div>
+            }
+            <label class="lts-form-label">Type the case number <strong>@_caseNumber</strong> to confirm</label>
+            <input class="lts-input mb-3" @bind="_typed" @bind:event="oninput" disabled="@_busy" autocomplete="off" />
+            <label class="lts-form-label">Reason (min 5 characters)</label>
+            <textarea class="lts-input" rows="3" maxlength="500" @bind="_reason" @bind:event="oninput" disabled="@_busy"></textarea>
+        </div>
+        <div class="lts-modal-footer">
+            <button type="button" class="lts-btn lts-btn-ghost" @onclick="CloseIfNotBusy" disabled="@_busy">Cancel</button>
+            <button type="button" class="lts-btn lts-btn-danger" @onclick="ConfirmAsync" disabled="@(_busy || !CanSubmit)">
+                @if (_busy) { <span class="lts-spinner lts-spinner-sm"></span><span>Deleting...</span> }
+                else { <i class="bi bi-trash"></i><span>Delete permanently</span> }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnDeleted { get; set; }
+
+    private bool _isOpen;
+    private bool _busy;
+    private long _caseId;
+    private string _caseNumber = string.Empty;
+    private string _typed = string.Empty;
+    private string _reason = string.Empty;
+    private string? _error;
+
+    private bool CanSubmit =>
+        string.Equals(_typed.Trim(), _caseNumber.Trim(), StringComparison.OrdinalIgnoreCase)
+        && _reason.Trim().Length >= 5;
+
+    public void Open(long caseId, string caseNumber)
+    {
+        _caseId = caseId;
+        _caseNumber = caseNumber;
+        _typed = string.Empty;
+        _reason = string.Empty;
+        _error = null;
+        _isOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseIfNotBusy()
+    {
+        if (_busy) return;
+        _isOpen = false;
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (!CanSubmit || _busy) return;
+        _busy = true;
+        _error = null;
+        try
+        {
+            await CaseService.PermanentDeleteAsync(_caseId, _typed.Trim(), _reason.Trim());
+            _isOpen = false;
+            Toast.Success("Case permanently deleted", $"\"{_caseNumber}\" and its data have been removed.");
+            await OnDeleted.InvokeAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _error = "Couldn't delete the case. Please try again.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

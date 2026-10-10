@@ -3,23 +3,31 @@ using LTSBackend.Data;
 using LTSBackend.Models.Cases;
 using LTSBackend.Services.Audit;
 using LTSBackend.Services.CurrentUser;
+using LTSBackend.Services.ProfileService;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace LTSBackend.Features.Cases.Commands.DeleteCase;
 
-public class DeleteCaseHandler(AppDbContext _context, IAuditService _auditService, ILogger<DeleteCaseHandler> _logger, IHttpContextAccessor _httpContextAccessor, ICurrentUserService _currentUser) : IRequestHandler<DeleteCaseCommand, bool>
+public class DeleteCaseHandler(AppDbContext _context, IAuditService _auditService, ILogger<DeleteCaseHandler> _logger, IHttpContextAccessor _httpContextAccessor, ICurrentUserService _currentUser, IFileService _fileService) : IRequestHandler<DeleteCaseCommand, bool>
 {
     // =====================================================
-    // HANDLE — permanently deletes a case and all its child records
-    // Firm-scoped lookup; refuses to delete an archived case (must be
-    // unarchived first). Runs inside a DB transaction (via
+    // HANDLE — PERMANENTLY deletes an ARCHIVED case and all its child records
+    // (normal deletion is ArchiveCase; this is the audited last resort).
+    // Firm-scoped lookup; the case must already be archived, the caller
+    // must type the exact case number and give a reason (controller gate:
+    // FirmAdmin only). Reusable master data (categories, departments,
+    // statuses, stages, document types, templates) is never touched.
+    // Physical document files are deleted only AFTER the DB commit
+    // succeeds, so a rollback can never leave rows pointing at missing
+    // files. Runs inside a DB transaction (via
     // CreateExecutionStrategy, compatible with EnableRetryOnFailure) that
     // deletes every dependent record in FK-safe order — grandchildren
     // (hearing attendance, document permissions) before children
     // (hearings, documents, parties, assignments, deadlines, milestones,
-    // status history, notes, notifications) — before removing the case
+    // status history, workflow stages, document checklist, notes,
+    // notifications) — before removing the case
     // itself and writing an audit log entry. Rolls back entirely on any
     // failure.
     // =====================================================
@@ -40,19 +48,33 @@ public class DeleteCaseHandler(AppDbContext _context, IAuditService _auditServic
             throw new NotFoundException($"Case ID {request.CaseID} not found");
         }
 
-        // 2. Check whether the Case is archived
-        if (caseToDelete.IsArchived)
+        // 2. Safety gates: must be archived first, typed case number must match, reason required
+        if (!caseToDelete.IsArchived)
         {
-            _logger.LogWarning("An archived case cannot be deleted: {CaseID}", request.CaseID);
-            throw new ValidationException(["Archived cases cannot be deleted. Unarchive it first"]);
+            _logger.LogWarning("Permanent delete refused, case not archived: {CaseID}", request.CaseID);
+            throw new ValidationException(["Only an archived case can be permanently deleted. Archive it first."]);
         }
+
+        if (!string.Equals(request.ConfirmCaseNumber?.Trim(), caseToDelete.CaseNumber?.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Permanent delete refused, confirmation mismatch: {CaseID}", request.CaseID);
+            throw new ValidationException(["The case number you typed does not match. Permanent deletion cancelled."]);
+        }
+
+        // Remember the physical files now; they are removed only after the commit.
+        var filesToDelete = await _context.Documents
+            .Where(x => x.CaseID == request.CaseID)
+            .Select(x => x.FilePath)
+            .ToListAsync(cancellationToken);
+        int firmIdForFiles = caseToDelete.FirmID;
+        string caseNumber = caseToDelete.CaseNumber;
 
         // 3. Start transaction (wrapped in CreateExecutionStrategy since
         // EnableRetryOnFailure is on - see CreateFirmCommandHandler for
         // the full explanation).
         var strategy = _context.Database.CreateExecutionStrategy();
 
-        return await strategy.ExecuteAsync(async () =>
+        bool deleted = await strategy.ExecuteAsync(async () =>
         {
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         try
@@ -115,6 +137,13 @@ public class DeleteCaseHandler(AppDbContext _context, IAuditService _auditServic
             var milestones = await _context.CaseMilestones.Where(x => x.CaseID == request.CaseID).ToListAsync(cancellationToken);
             if (milestones.Count > 0) _context.CaseMilestones.RemoveRange(milestones);
 
+            // Case-owned workflow progress + document checklist (master Stage/DocumentType rows are untouched)
+            var workflowStages = await _context.CaseWorkflowStages.Where(x => x.CaseID == request.CaseID).ToListAsync(cancellationToken);
+            if (workflowStages.Count > 0) _context.CaseWorkflowStages.RemoveRange(workflowStages);
+
+            var docRequirements = await _context.CaseDocumentRequirements.Where(x => x.CaseID == request.CaseID).ToListAsync(cancellationToken);
+            if (docRequirements.Count > 0) _context.CaseDocumentRequirements.RemoveRange(docRequirements);
+
             var statusHistories = await _context.CaseStatusHistories.Where(x => x.CaseID == request.CaseID).ToListAsync(cancellationToken);
             if (statusHistories.Count > 0) _context.CaseStatusHistories.RemoveRange(statusHistories);
 
@@ -131,7 +160,7 @@ public class DeleteCaseHandler(AppDbContext _context, IAuditService _auditServic
             _context.Cases.Remove(caseToDelete);
 
             // 6. Create Audit Log
-            var auditLog = _auditService.Create(currentUserId, $"Case Delete: {caseToDelete.CaseNumber}");
+            var auditLog = _auditService.Create(currentUserId, $"Case PERMANENT Delete: {caseToDelete.CaseNumber} (ID {request.CaseID}, {filesToDelete.Count} document file(s)) — reason: {request.Reason.Trim()}");
             _context.AuditLogs.Add(auditLog);
 
             // 7. Save changes
@@ -151,6 +180,22 @@ public class DeleteCaseHandler(AppDbContext _context, IAuditService _auditServic
             throw;
         }
         });
+
+        // 9. DB commit succeeded -> now remove the physical files (best effort, never fails the request;
+        // leftovers are logged so an operator can clean them up).
+        foreach (var path in filesToDelete)
+        {
+            try
+            {
+                _fileService.DeleteCaseDocument(path, firmIdForFiles, request.CaseID);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Case {CaseNumber} deleted but file could not be removed: {Path}", caseNumber, path);
+            }
+        }
+
+        return deleted;
     }
     // SECURITY FIX: see UpdateCaseHandler.GetCurrentUserId for full
     // rationale - previously defaulted to UserID = 1 (SuperAdmin) instead

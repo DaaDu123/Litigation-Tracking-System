@@ -102,6 +102,8 @@ public class GetCaseByIdHandler(AppDbContext _context, ICurrentUserService _curr
             ClaimedAmount = caseRecord.ClaimedAmount,
             PotentialLiability = caseRecord.PotentialLiability,
             IsArchived = caseRecord.IsArchived,
+            ArchivedDate = caseRecord.ArchivedDate,
+            ArchiveReason = caseRecord.ArchiveReason,
             CreatedDate = caseRecord.CreatedDate
         };
 

@@ -97,8 +97,8 @@ public class GetAllCasesHandler(AppDbContext _context, ICurrentUserService _curr
             _logger.LogInformation("Applied priority filter: {Priority}", request.Priority);
         }
 
-        // 6. Exclude archived cases by default
-        query = query.Where(x => !x.IsArchived);
+        // 6. Exclude archived cases by default; ArchivedOnly switches to the archive (restore) view
+        query = request.ArchivedOnly ? query.Where(x => x.IsArchived) : query.Where(x => !x.IsArchived);
 
         // 7. Get total records count
         var totalRecords = await query.CountAsync(cancellationToken);
@@ -138,6 +138,8 @@ public class GetAllCasesHandler(AppDbContext _context, ICurrentUserService _curr
                 ClaimedAmount = x.ClaimedAmount,
                 PotentialLiability = x.PotentialLiability,
                 IsArchived = x.IsArchived,
+                ArchivedDate = x.ArchivedDate,
+                ArchiveReason = x.ArchiveReason,
                 CreatedDate = x.CreatedDate
             })
             .ToListAsync(cancellationToken);

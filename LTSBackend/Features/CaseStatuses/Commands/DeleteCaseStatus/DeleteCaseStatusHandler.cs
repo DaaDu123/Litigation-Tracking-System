@@ -38,6 +38,11 @@ public sealed class DeleteCaseStatusHandler(AppDbContext _context, ICurrentUserS
             });
         }
 
+        if (await _context.CaseWorkflowTemplates.AnyAsync(x => x.InitialStatusID == request.StatusID, cancellationToken))
+        {
+            throw new ValidationException(new() { "Cannot delete status. It is the initial status of a workflow template. Change that template first, or deactivate the status instead." });
+        }
+
         _context.CaseStatuses.Remove(status);
         await _context.SaveChangesAsync(cancellationToken);
 

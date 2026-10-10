@@ -2,13 +2,19 @@
 @attribute [Authorize(Roles = "Partner,FirmAdmin")]
 @using LTSFrontend.Features.Cases.DTOs
 @using LTSFrontend.Features.Cases.Services
+@using LTSFrontend.Features.Documents.DTOs
+@using LTSFrontend.Features.Documents.Services
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @using LTSFrontend.Features.Users.DTOs
 @using LTSFrontend.Features.Users.Services
 @inject ICaseService CaseService
 @inject ICourtService CourtService
+@inject ICaseCategoryService CaseCategoryService
 @inject IMasterDataService MasterDataService
+@inject IDepartmentService DepartmentService
+@inject ICaseWorkflowTemplateService TemplateService
+@inject IDocumentService DocumentService
 @inject IUserService UserService
 @inject ToastService Toast
 @inject NavigationManager Nav
@@ -24,9 +30,50 @@
 <div class="lts-page-header">
     <div>
         <h1 class="lts-page-title">Register New Case</h1>
-        <p class="lts-page-subtitle">Enter the core details to create a new litigation case record.</p>
+        <p class="lts-page-subtitle">Select the type of case - its status, workflow stages, department and document checklist are set up automatically.</p>
     </div>
 </div>
+
+@if (_created != null && _uploadErrors.Count > 0)
+{
+    <div class="lts-card mb-3" style="border-color:#d97706;">
+        <h5 class="mb-1"><i class="bi bi-check-circle text-success"></i> Case "@_created.CaseNumber" was created</h5>
+        <p class="mb-2">Some attached documents could not be uploaded. The case is safe - retry the failed files or open the case and upload them later from its Documents tab.</p>
+        <ul class="mb-3">
+            @foreach (var (typeId, message) in _uploadErrors)
+            {
+                <li><strong>@(_created.Documents.FirstOrDefault(d => d.DocumentTypeID == typeId)?.TypeName ?? "Document")</strong>: @message</li>
+            }
+        </ul>
+        <div class="d-flex gap-2">
+            <button type="button" class="lts-btn lts-btn-primary" @onclick="RetryUploadsAsync" disabled="@_isSaving">
+                @if (_isSaving) { <span class="lts-spinner lts-spinner-sm"></span><span>@_savingText</span> }
+                else { <i class="bi bi-arrow-repeat"></i><span>Retry failed uploads</span> }
+            </button>
+            <button type="button" class="lts-btn lts-btn-outline" @onclick="OpenCreatedCase" disabled="@_isSaving">Open case</button>
+        </div>
+    </div>
+}
+
+<style>
+    .case-wizard-steps { display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.25rem; }
+    .case-wizard-step { display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0.75rem; border:1px solid var(--lts-border); border-radius:999px; font-size:0.82rem; color:var(--lts-text-muted); background:transparent; cursor:default; }
+    .case-wizard-step .num { display:inline-flex; align-items:center; justify-content:center; width:1.4rem; height:1.4rem; border-radius:50%; border:1px solid var(--lts-border); font-size:0.75rem; }
+    .case-wizard-step.active { color:var(--lts-text); border-color:var(--lts-primary, #1b4fd6); }
+    .case-wizard-step.active .num { background:var(--lts-primary, #1b4fd6); border-color:var(--lts-primary, #1b4fd6); color:#fff; }
+    .case-wizard-step.done { color:var(--lts-text); cursor:pointer; }
+    .case-wizard-step.done .num { background:#16a34a; border-color:#16a34a; color:#fff; }
+    .case-flow { display:flex; flex-wrap:wrap; align-items:center; gap:0.35rem; }
+    .case-flow .chip { padding:0.2rem 0.6rem; border:1px solid var(--lts-border); border-radius:999px; font-size:0.8rem; }
+    .case-flow .chip.first { border-color:#16a34a; }
+    .case-review-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; }
+    .case-review-box { border:1px solid var(--lts-border); border-radius:var(--lts-radius-sm); padding:0.8rem 1rem; }
+    .case-review-box h6 { margin-bottom:0.6rem; }
+    .case-review-box dl { margin:0; }
+    .case-review-box .row-item { display:flex; justify-content:space-between; gap:1rem; padding:0.15rem 0; font-size:0.86rem; }
+    .case-review-box .row-item dt { color:var(--lts-text-muted); font-weight:400; }
+    .case-review-box .row-item dd { margin:0; text-align:right; }
+</style>
 
 <div class="lts-card">
     @if (_isLoadingLookups)
@@ -38,6 +85,18 @@
     }
     else
     {
+        <div class="case-wizard-steps">
+            @for (var i = 0; i < _stepTitles.Length; i++)
+            {
+                var index = i;
+                <button type="button" class="case-wizard-step @(index == _step ? "active" : (index < _step ? "done" : ""))"
+                        disabled="@(index > _step || _isSaving)" @onclick="() => GoToStep(index)">
+                    <span class="num">@(index < _step ? "✓" : (index + 1).ToString())</span>
+                    <span>@_stepTitles[index]</span>
+                </button>
+            }
+        </div>
+
         @if (!string.IsNullOrWhiteSpace(_apiError))
         {
             <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
@@ -46,195 +105,404 @@
             </div>
         }
 
+        @if (_stepErrors.Count > 0)
+        {
+            <div class="lts-form-error mb-3" style="background: var(--lts-danger-bg); padding: 0.6rem 0.85rem; border-radius: var(--lts-radius-sm);">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span style="white-space: pre-line;">@string.Join("\n", _stepErrors)</span>
+            </div>
+        }
+
         <EditForm Model="_form" OnValidSubmit="HandleSubmitAsync">
             <DataAnnotationsValidator />
 
-            <h6 class="fw-semibold mb-3">Basic Information</h6>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Case Number <span class="required">*</span></label>
-                        <InputText @bind-Value="_form.CaseNumber" class="lts-form-control" maxlength="100"
-                                   placeholder="e.g. CIV-2026-0451" disabled="@_isSaving" />
-                        <ValidationMessage For="() => _form.CaseNumber" class="lts-form-error" />
+            @* ---------------- STEP 1: Basic Information ---------------- *@
+            <div style="@StepStyle(0)">
+                <h6 class="fw-semibold mb-3">Basic Information</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Case Number <span class="required">*</span></label>
+                            <InputText @bind-Value="_form.CaseNumber" class="lts-form-control" maxlength="100"
+                                       placeholder="e.g. CIV-2026-0451" disabled="@_isSaving" />
+                            <ValidationMessage For="() => _form.CaseNumber" class="lts-form-error" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Priority <span class="required">*</span></label>
+                            <InputSelect @bind-Value="_form.Priority" class="lts-form-control" disabled="@_isSaving">
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => _form.Priority" class="lts-form-error" />
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Priority <span class="required">*</span></label>
-                        <InputSelect @bind-Value="_form.Priority" class="lts-form-control" disabled="@_isSaving">
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </InputSelect>
-                        <ValidationMessage For="() => _form.Priority" class="lts-form-error" />
-                    </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Case Title <span class="required">*</span></label>
+                    <InputText @bind-Value="_form.CaseTitle" class="lts-form-control" maxlength="255"
+                               placeholder="e.g. ABC Textiles Ltd. vs. Federal Board of Revenue" disabled="@_isSaving" />
+                    <ValidationMessage For="() => _form.CaseTitle" class="lts-form-error" />
+                </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Case Description</label>
+                    <InputTextArea @bind-Value="_form.CaseDescription" class="lts-form-control" rows="3"
+                                   placeholder="Brief summary of the matter..." disabled="@_isSaving" />
+                </div>
+
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Subject Matter <span class="required">*</span></label>
+                    <InputText @bind-Value="_form.SubjectMatter" class="lts-form-control" maxlength="255"
+                               placeholder="e.g. Tax assessment dispute" disabled="@_isSaving" />
+                    <ValidationMessage For="() => _form.SubjectMatter" class="lts-form-error" />
                 </div>
             </div>
 
-            <div class="lts-form-group">
-                <label class="lts-form-label">Case Title <span class="required">*</span></label>
-                <InputText @bind-Value="_form.CaseTitle" class="lts-form-control" maxlength="255"
-                           placeholder="e.g. ABC Textiles Ltd. vs. Federal Board of Revenue" disabled="@_isSaving" />
-                <ValidationMessage For="() => _form.CaseTitle" class="lts-form-error" />
-            </div>
+            @* ---------------- STEP 2: Case Classification ---------------- *@
+            <div style="@StepStyle(1)">
+                <h6 class="fw-semibold mb-3">Case Classification</h6>
 
-            <div class="lts-form-group">
-                <label class="lts-form-label">Case Description</label>
-                <InputTextArea @bind-Value="_form.CaseDescription" class="lts-form-control" rows="3"
-                               placeholder="Brief summary of the matter..." disabled="@_isSaving" />
-            </div>
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Case Category / Case Type <span class="required">*</span></label>
+                    <div class="d-flex flex-wrap align-items-stretch gap-2">
+                        <div class="flex-grow-1" style="min-width:240px;">
+                            <InputText @bind-Value="_quickCategoryName" @bind-Value:after="OnCategoryEntryChangedAsync"
+                                       class="lts-form-control" maxlength="150" list="case-category-options"
+                                       placeholder="Search or type a case type..." disabled="@(_isSaving || _isQuickSaving)" />
+                            <datalist id="case-category-options">
+                                @foreach (var cat in _categories.OrderBy(x => x.CategoryName))
+                                {
+                                    <option value="@cat.CategoryName"></option>
+                                }
+                            </datalist>
+                        </div>
+                        <button type="button" class="lts-btn lts-btn-primary" @onclick="AddCategoryInlineAsync"
+                                disabled="@(_isSaving || _isQuickSaving || string.IsNullOrWhiteSpace(_quickCategoryName))">
+                            @if (_isQuickSaving) { <span class="lts-spinner lts-spinner-sm"></span><span>Saving...</span> }
+                            else { <i class="bi bi-check-lg"></i><span>Use / Add</span> }
+                        </button>
+                    </div>
+                    <div class="lts-form-hint mt-2">Type to search existing case types, choose a suggestion, or type a new name and press Use / Add. Existing names are reused; duplicates are not created.</div>
+                    @if (!string.IsNullOrWhiteSpace(_quickCategoryMessage))
+                    {
+                        <div class="lts-form-hint mt-2">@_quickCategoryMessage</div>
+                    }
+                    @if (_categories.Count == 0)
+                    {
+                        <div class="lts-form-hint">No case categories are configured. Add one here or use <a href="/masters/case-categories">Master Data → Case Categories</a>.</div>
+                    }
+                </div>
 
-            <div class="lts-form-group">
-                <label class="lts-form-label">Subject Matter <span class="required">*</span></label>
-                <InputText @bind-Value="_form.SubjectMatter" class="lts-form-control" maxlength="255"
-                           placeholder="e.g. Tax assessment dispute" disabled="@_isSaving" />
-                <ValidationMessage For="() => _form.SubjectMatter" class="lts-form-error" />
-            </div>
-
-            <h6 class="fw-semibold mb-3 mt-4">Classification</h6>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Court <span class="required">*</span></label>
-                        <input class="lts-form-control" list="courtOptions" placeholder="Type or select a court..."
-                               value="@_courtText" disabled="@_isSaving"
-                               @oninput="OnCourtInput" />
-                        <datalist id="courtOptions">
-                            @foreach (var court in _courts)
+                @if (_isLoadingTemplate)
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="lts-spinner lts-spinner-sm"></span><span>Loading workflow...</span>
+                    </div>
+                }
+                else if (_form.CategoryID > 0 && _template != null)
+                {
+                    <div class="case-review-box mb-3">
+                        <h6><i class="bi bi-diagram-3"></i> Workflow Preview - automatically configured</h6>
+                        <dl>
+                            <div class="row-item"><dt>Department</dt><dd>@(_template.DefaultDepartmentName ?? "Not set - select below")</dd></div>
+                            <div class="row-item"><dt>Initial Status</dt><dd>@_template.InitialStatusName</dd></div>
+                            <div class="row-item"><dt>Required Documents</dt><dd>@_template.RequiredDocuments.Count</dd></div>
+                            <div class="row-item"><dt>Optional Documents</dt><dd>@_template.OptionalDocuments.Count</dd></div>
+                        </dl>
+                        <div class="lts-form-label mt-2 mb-1">Workflow</div>
+                        <div class="case-flow">
+                            @for (var i = 0; i < _template.Stages.Count; i++)
                             {
-                                <option value="@court.CourtName" />
+                                var stage = _template.Stages.OrderBy(s => s.SequenceNo).ElementAt(i);
+                                @if (i > 0) { <i class="bi bi-arrow-right" style="font-size:0.75rem;color:var(--lts-text-muted);"></i> }
+                                <span class="chip @(i == 0 ? "first" : "")">@stage.StageName</span>
                             }
-                        </datalist>
-                        <div class="lts-form-hint">Pick an existing court, or type a new name to add it.</div>
-                        @if (_showCourtError)
+                        </div>
+                    </div>
+                }
+                else if (_form.CategoryID > 0)
+                {
+                    <div class="lts-form-hint mb-3" style="padding:0.6rem 0.85rem;border:1px dashed var(--lts-border);border-radius:var(--lts-radius-sm);">
+                        <i class="bi bi-info-circle"></i>
+                        No workflow template is configured for this category. The case will start as <strong>New</strong> at the <strong>Filing</strong> stage, with no document checklist.
+                        <a href="/masters/workflow-templates">Configure a Workflow Template</a>
+                    </div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Court <span class="required">*</span></label>
+                            <div class="d-flex flex-wrap align-items-stretch gap-2">
+                                <div class="flex-grow-1" style="min-width:220px;">
+                                    <InputText @bind-Value="_quickCourtName" @bind-Value:after="OnCourtEntryChanged"
+                                               class="lts-form-control" maxlength="150" list="court-options"
+                                               placeholder="Search or type a court..." disabled="@(_isSaving || _isQuickSaving)" />
+                                    <datalist id="court-options">
+                                        @foreach (var court in _courts.OrderBy(x => x.CourtName))
+                                        {
+                                            <option value="@court.CourtName"></option>
+                                        }
+                                    </datalist>
+                                </div>
+                                <button type="button" class="lts-btn lts-btn-primary" @onclick="AddCourtInlineAsync"
+                                        disabled="@(_isSaving || _isQuickSaving || string.IsNullOrWhiteSpace(_quickCourtName))">
+                                    @if (_isQuickSaving) { <span class="lts-spinner lts-spinner-sm"></span><span>Saving...</span> }
+                                    else { <i class="bi bi-check-lg"></i><span>Use / Add</span> }
+                                </button>
+                            </div>
+                            <div class="lts-form-hint mt-2">Type to search existing courts, choose a suggestion, or type a new name and press Use / Add. Existing names are reused; duplicates are not created.</div>
+                            @if (!string.IsNullOrWhiteSpace(_quickCourtMessage))
+                            {
+                                <div class="lts-form-hint mt-2">@_quickCourtMessage</div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Responsible Department</label>
+                            <div class="d-flex flex-wrap align-items-stretch gap-2">
+                                <div class="flex-grow-1" style="min-width:220px;">
+                                    <InputText @bind-Value="_quickDepartmentName" @bind-Value:after="OnDepartmentEntryChanged"
+                                               class="lts-form-control" maxlength="100" list="case-department-options"
+                                               placeholder="Search or type a department..." disabled="@(_isSaving || _isQuickSaving)" />
+                                    <datalist id="case-department-options">
+                                        @foreach (var dept in _departments.OrderBy(x => x.DepartmentName)) { <option value="@dept.DepartmentName"></option> }
+                                    </datalist>
+                                </div>
+                                <button type="button" class="lts-btn lts-btn-outline" @onclick="AddDepartmentInlineAsync"
+                                        disabled="@(_isSaving || _isQuickSaving || string.IsNullOrWhiteSpace(_quickDepartmentName))">
+                                    @if (_isQuickSaving) { <span class="lts-spinner lts-spinner-sm"></span> } else { <i class="bi bi-check-lg"></i> }
+                                    Use / Add
+                                </button>
+                                <button type="button" class="lts-btn lts-btn-ghost" @onclick="ClearDepartmentSelection" disabled="@_isSaving">None</button>
+                            </div>
+                            <div class="lts-form-hint">Pre-filled from the workflow template when configured. Type to search or add a department here; existing names are reused.</div>
+                            @if (!string.IsNullOrWhiteSpace(_quickDepartmentMessage))
+                            {
+                                <div class="lts-form-hint mt-1">@_quickDepartmentMessage</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ---------------- STEP 3: Assignment ---------------- *@
+            <div style="@StepStyle(2)">
+                <h6 class="fw-semibold mb-3">Assignment</h6>
+                <div class="lts-form-group">
+                    <label class="lts-form-label">Assigned Legal Officer <span class="required">*</span></label>
+                    <InputSelect @bind-Value="_form.CurrentLegalOfficerID" class="lts-form-control" disabled="@_isSaving">
+                        <option value="0">Select legal officer...</option>
+                        @foreach (var user in _legalOfficers)
                         {
-                            <div class="lts-form-error">Court is required</div>
+                            <option value="@user.UserID">@user.FullName (@LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(user.RoleName))</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => _form.CurrentLegalOfficerID" class="lts-form-error" />
+                </div>
+            </div>
+
+            @* ---------------- STEP 4: Important Dates ---------------- *@
+            <div style="@StepStyle(3)">
+                <h6 class="fw-semibold mb-3">Important Dates</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Filing Date <span class="required">*</span></label>
+                            <InputDate @bind-Value="_form.FilingDate" class="lts-form-control" disabled="@_isSaving" />
+                            <ValidationMessage For="() => _form.FilingDate" class="lts-form-error" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Institution Date <span class="required">*</span></label>
+                            <InputDate @bind-Value="_form.InstitutionDate" class="lts-form-control" disabled="@_isSaving" />
+                            <ValidationMessage For="() => _form.InstitutionDate" class="lts-form-error" />
+                            <div class="lts-form-hint">On or after the Filing Date.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Registration Date <span class="required">*</span></label>
+                            <InputDate @bind-Value="_form.RegistrationDate" class="lts-form-control" disabled="@_isSaving" />
+                            <ValidationMessage For="() => _form.RegistrationDate" class="lts-form-error" />
+                            <div class="lts-form-hint">On or after the Institution Date.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lts-form-group" style="max-width: 33%;">
+                    <label class="lts-form-label">Expected Disposal Date</label>
+                    <InputDate @bind-Value="_form.ExpectedDisposalDate" class="lts-form-control" disabled="@_isSaving" />
+                    <ValidationMessage For="() => _form.ExpectedDisposalDate" class="lts-form-error" />
+                    <div class="lts-form-hint">Today or later, and after the Registration Date.</div>
+                </div>
+            </div>
+
+            @* ---------------- STEP 5: Financial Information ---------------- *@
+            <div style="@StepStyle(4)">
+                <h6 class="fw-semibold mb-3">Financial Information</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Claimed Amount</label>
+                            <InputNumber @bind-Value="_form.ClaimedAmount" class="lts-form-control" disabled="@_isSaving" />
+                            <ValidationMessage For="() => _form.ClaimedAmount" class="lts-form-error" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Potential Liability</label>
+                            <InputNumber @bind-Value="_form.PotentialLiability" class="lts-form-control" disabled="@_isSaving" />
+                            <ValidationMessage For="() => _form.PotentialLiability" class="lts-form-error" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="lts-form-group">
+                            <label class="lts-form-label">Financial Implication</label>
+                            <InputText @bind-Value="_form.FinancialImplication" class="lts-form-control"
+                                       placeholder="e.g. Contingent liability" disabled="@_isSaving" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ---------------- STEP 6: Documents ---------------- *@
+            <div style="@StepStyle(5)">
+                <h6 class="fw-semibold mb-3">Documents</h6>
+                @if (_template == null || (_template.RequiredDocuments.Count == 0 && _template.OptionalDocuments.Count == 0))
+                {
+                    <div class="lts-form-hint">No document checklist is defined for this case type. You can upload documents from the case page after it is created.</div>
+                }
+                else
+                {
+                    <div class="lts-form-hint mb-3">This checklist is generated automatically. You can attach files now - they are uploaded to the case right after it is created - or upload them later from the case's Documents tab.</div>
+
+                    @if (_template.RequiredDocuments.Count > 0)
+                    {
+                        <div class="lts-form-label">Required Documents</div>
+                        @foreach (var doc in _template.RequiredDocuments)
+                        {
+                            @DocumentRow(doc, true)
+                        }
+                    }
+                    @if (_template.OptionalDocuments.Count > 0)
+                    {
+                        <div class="lts-form-label mt-3">Optional Documents</div>
+                        @foreach (var doc in _template.OptionalDocuments)
+                        {
+                            @DocumentRow(doc, false)
+                        }
+                    }
+                }
+            </div>
+
+            @* ---------------- STEP 7: Review & Create ---------------- *@
+            <div style="@StepStyle(6)">
+                <h6 class="fw-semibold mb-3">Review &amp; Create</h6>
+                <div class="case-review-grid">
+                    <div class="case-review-box">
+                        <h6>Case Information</h6>
+                        <dl>
+                            <div class="row-item"><dt>Case Number</dt><dd>@_form.CaseNumber</dd></div>
+                            <div class="row-item"><dt>Title</dt><dd>@_form.CaseTitle</dd></div>
+                            <div class="row-item"><dt>Subject Matter</dt><dd>@_form.SubjectMatter</dd></div>
+                            <div class="row-item"><dt>Priority</dt><dd>@_form.Priority</dd></div>
+                        </dl>
+                    </div>
+                    <div class="case-review-box">
+                        <h6>Classification</h6>
+                        <dl>
+                            <div class="row-item"><dt>Category</dt><dd>@(_categories.FirstOrDefault(c => c.CategoryID == _form.CategoryID)?.CategoryName)</dd></div>
+                            <div class="row-item"><dt>Court</dt><dd>@(_courts.FirstOrDefault(c => c.CourtID == _form.CourtID)?.CourtName)</dd></div>
+                            <div class="row-item"><dt>Department</dt><dd>@(EffectiveDepartmentName ?? "None")</dd></div>
+                            <div class="row-item"><dt>Initial Status</dt><dd>@(_template?.InitialStatusName ?? "New")</dd></div>
+                        </dl>
+                    </div>
+                    <div class="case-review-box">
+                        <h6>Workflow Stages</h6>
+                        @if (_template != null)
+                        {
+                            <div class="case-flow">
+                                @for (var i = 0; i < _template.Stages.Count; i++)
+                                {
+                                    var stage = _template.Stages.OrderBy(s => s.SequenceNo).ElementAt(i);
+                                    @if (i > 0) { <i class="bi bi-arrow-right" style="font-size:0.75rem;color:var(--lts-text-muted);"></i> }
+                                    <span class="chip @(i == 0 ? "first" : "")">@stage.StageName</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="lts-form-hint">Filing (default - no template configured)</div>
                         }
                     </div>
+                    <div class="case-review-box">
+                        <h6>Assigned Officer</h6>
+                        <dl>
+                            <div class="row-item"><dt>Legal Officer</dt><dd>@(_legalOfficers.FirstOrDefault(u => u.UserID == _form.CurrentLegalOfficerID)?.FullName)</dd></div>
+                        </dl>
+                    </div>
+                    <div class="case-review-box">
+                        <h6>Dates</h6>
+                        <dl>
+                            <div class="row-item"><dt>Filing</dt><dd>@_form.FilingDate?.ToString("dd MMM yyyy")</dd></div>
+                            <div class="row-item"><dt>Institution</dt><dd>@_form.InstitutionDate?.ToString("dd MMM yyyy")</dd></div>
+                            <div class="row-item"><dt>Registration</dt><dd>@_form.RegistrationDate?.ToString("dd MMM yyyy")</dd></div>
+                            <div class="row-item"><dt>Expected Disposal</dt><dd>@(_form.ExpectedDisposalDate?.ToString("dd MMM yyyy") ?? "-")</dd></div>
+                        </dl>
+                    </div>
+                    <div class="case-review-box">
+                        <h6>Financial Information</h6>
+                        <dl>
+                            <div class="row-item"><dt>Claimed Amount</dt><dd>@_form.ClaimedAmount.ToString("N0")</dd></div>
+                            <div class="row-item"><dt>Potential Liability</dt><dd>@_form.PotentialLiability.ToString("N0")</dd></div>
+                            <div class="row-item"><dt>Implication</dt><dd>@(string.IsNullOrWhiteSpace(_form.FinancialImplication) ? "-" : _form.FinancialImplication)</dd></div>
+                        </dl>
+                    </div>
+                    <div class="case-review-box">
+                        <h6>Document Requirements</h6>
+                        <dl>
+                            <div class="row-item"><dt>Required</dt><dd>@(_template?.RequiredDocuments.Count ?? 0)</dd></div>
+                            <div class="row-item"><dt>Optional</dt><dd>@(_template?.OptionalDocuments.Count ?? 0)</dd></div>
+                            <div class="row-item"><dt>Files attached now</dt><dd>@_pendingFiles.Count</dd></div>
+                        </dl>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Category <span class="required">*</span></label>
-                        <input class="lts-form-control" list="categoryOptions" placeholder="Type or select a category..."
-                               value="@_categoryText" disabled="@_isSaving"
-                               @oninput="OnCategoryInput" />
-                        <datalist id="categoryOptions">
-                            @foreach (var cat in _categories)
-                            {
-                                <option value="@cat.CategoryName" />
-                            }
-                        </datalist>
-                        <div class="lts-form-hint">Pick an existing category, or type a new name to add it.</div>
-                        @if (_showCategoryError)
+            </div>
+
+            <div class="lts-modal-footer" style="padding: 1.25rem 0 0; margin-top: 1rem; justify-content: flex-start; gap: 0.6rem;">
+                @if (_step > 0)
+                {
+                    <button type="button" class="lts-btn lts-btn-outline" @onclick="Back" disabled="@_isSaving">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </button>
+                }
+                @if (_step < _stepTitles.Length - 1)
+                {
+                    <button type="button" class="lts-btn lts-btn-primary" @onclick="Next" disabled="@(_isSaving || _isLoadingTemplate)">
+                        Next <i class="bi bi-arrow-right"></i>
+                    </button>
+                }
+                else
+                {
+                    <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
+                        @if (_isSaving)
                         {
-                            <div class="lts-form-error">Category is required</div>
+                            <span class="lts-spinner lts-spinner-sm"></span>
+                            <span>@_savingText</span>
                         }
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Responsible Department <span class="required">*</span></label>
-                        <input class="lts-form-control" list="departmentOptions" placeholder="Type or select a department..."
-                               value="@_departmentText" disabled="@_isSaving"
-                               @oninput="OnDepartmentInput" />
-                        <datalist id="departmentOptions">
-                            @foreach (var dept in _departments)
-                            {
-                                <option value="@dept.DepartmentName" />
-                            }
-                        </datalist>
-                        <div class="lts-form-hint">Pick an existing department, or type a new name to add it.</div>
-                        @if (_showDepartmentError)
+                        else
                         {
-                            <div class="lts-form-error">Department is required</div>
+                            <i class="bi bi-check-lg"></i>
+                            <span>Create Case</span>
                         }
-                    </div>
-                </div>
-            </div>
-
-            <div class="lts-form-group">
-                <label class="lts-form-label">Assigned Legal Officer <span class="required">*</span></label>
-                <InputSelect @bind-Value="_form.CurrentLegalOfficerID" class="lts-form-control" disabled="@_isSaving">
-                    <option value="0">Select legal officer...</option>
-                    @foreach (var user in _legalOfficers)
-                    {
-                        <option value="@user.UserID">@user.FullName (@LTSFrontend.Core.Enums.UserRoleExtensions.DisplayName(user.RoleName))</option>
-                    }
-                </InputSelect>
-                <ValidationMessage For="() => _form.CurrentLegalOfficerID" class="lts-form-error" />
-            </div>
-
-            <h6 class="fw-semibold mb-3 mt-4">Important Dates</h6>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Filing Date <span class="required">*</span></label>
-                        <InputDate @bind-Value="_form.FilingDate" class="lts-form-control" disabled="@_isSaving" />
-                        <ValidationMessage For="() => _form.FilingDate" class="lts-form-error" />
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Institution Date <span class="required">*</span></label>
-                        <InputDate @bind-Value="_form.InstitutionDate" class="lts-form-control" disabled="@_isSaving" />
-                        <ValidationMessage For="() => _form.InstitutionDate" class="lts-form-error" />
-                        <div class="lts-form-hint">On or after the Filing Date.</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Registration Date <span class="required">*</span></label>
-                        <InputDate @bind-Value="_form.RegistrationDate" class="lts-form-control" disabled="@_isSaving" />
-                        <ValidationMessage For="() => _form.RegistrationDate" class="lts-form-error" />
-                        <div class="lts-form-hint">On or after the Institution Date.</div>
-                    </div>
-                </div>
-            </div>
-            <div class="lts-form-group" style="max-width: 33%;">
-                <label class="lts-form-label">Expected Disposal Date</label>
-                <InputDate @bind-Value="_form.ExpectedDisposalDate" class="lts-form-control" disabled="@_isSaving" />
-                <ValidationMessage For="() => _form.ExpectedDisposalDate" class="lts-form-error" />
-            </div>
-
-            <h6 class="fw-semibold mb-3 mt-4">Financial Information</h6>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Claimed Amount</label>
-                        <InputNumber @bind-Value="_form.ClaimedAmount" class="lts-form-control" disabled="@_isSaving" />
-                        <ValidationMessage For="() => _form.ClaimedAmount" class="lts-form-error" />
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Potential Liability</label>
-                        <InputNumber @bind-Value="_form.PotentialLiability" class="lts-form-control" disabled="@_isSaving" />
-                        <ValidationMessage For="() => _form.PotentialLiability" class="lts-form-error" />
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="lts-form-group">
-                        <label class="lts-form-label">Financial Implication</label>
-                        <InputText @bind-Value="_form.FinancialImplication" class="lts-form-control"
-                                   placeholder="e.g. Contingent liability" disabled="@_isSaving" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="lts-modal-footer" style="padding: 1.25rem 0 0; margin-top: 0.5rem; justify-content: flex-start; gap: 0.6rem;">
-                <button type="submit" class="lts-btn lts-btn-primary" disabled="@_isSaving">
-                    @if (_isSaving)
-                    {
-                        <span class="lts-spinner lts-spinner-sm"></span>
-                        <span>Creating...</span>
-                    }
-                    else
-                    {
-                        <i class="bi bi-check-lg"></i>
-                        <span>Create Case</span>
-                    }
-                </button>
+                    </button>
+                }
                 <button type="button" class="lts-btn lts-btn-ghost" @onclick='() => Nav.NavigateTo("/cases")' disabled="@_isSaving">
                     Cancel
                 </button>
@@ -244,6 +512,13 @@
 </div>
 
 @code {
+    private static readonly string[] _stepTitles =
+    {
+        "Basic Information", "Classification", "Assignment", "Important Dates", "Financial", "Documents", "Review & Create"
+    };
+
+    private const long MaxFileSizeBytes = 15 * 1024 * 1024; // mirrors the document upload limit
+
     private CreateCaseDTO _form = new() { FilingDate = DateTime.Today, InstitutionDate = DateTime.Today, RegistrationDate = DateTime.Today };
 
     private List<CourtDTO> _courts = new();
@@ -251,47 +526,38 @@
     private List<DepartmentDTO> _departments = new();
     private List<UserDTO> _legalOfficers = new();
 
-    private string _courtText = string.Empty;
-    private string _categoryText = string.Empty;
-    private string _departmentText = string.Empty;
-    private bool _showCourtError;
-    private bool _showCategoryError;
-    private bool _showDepartmentError;
+    private CaseWorkflowTemplateDTO? _template;
+    private bool _departmentTouched;
+    private readonly Dictionary<int, IBrowserFile> _pendingFiles = new();
+    private CreateCaseResultDTO? _created;
+    private readonly HashSet<int> _uploaded = new();
+    private readonly Dictionary<int, string> _uploadErrors = new();
+    private readonly Dictionary<int, string> _fileErrors = new();
+
+    private int _step;
+    private readonly List<string> _stepErrors = new();
 
     private bool _isLoadingLookups = true;
+    private bool _isLoadingTemplate;
     private bool _isSaving;
+    private bool _isQuickSaving;
+    private bool _showQuickCategory;
+    private bool _showQuickCourt;
+    private string _quickCategoryName = string.Empty;
+    private string _quickCourtName = string.Empty;
+    private string _quickDepartmentName = string.Empty;
+    private string? _quickDepartmentMessage;
+    private string? _quickCategoryMessage;
+    private string? _quickCourtMessage;
+    private string _savingText = "Creating...";
     private string? _apiError;
 
-    // Type-or-select combo boxes: whatever the user types is matched
-    // (case-insensitively) against the loaded list. A match resolves to
-    // that record's ID; no match keeps ID at 0 and sends the typed text
-    // as *Name instead, so the backend creates it as a new record.
-    private void OnCourtInput(ChangeEventArgs e)
-    {
-        _courtText = e.Value?.ToString() ?? string.Empty;
-        var match = _courts.FirstOrDefault(c => string.Equals(c.CourtName, _courtText.Trim(), StringComparison.OrdinalIgnoreCase));
-        _form.CourtID = match?.CourtID ?? 0;
-        _form.CourtName = match == null ? _courtText.Trim() : null;
-        _showCourtError = false;
-    }
+    private string StepStyle(int index) => index == _step ? string.Empty : "display:none;";
 
-    private void OnCategoryInput(ChangeEventArgs e)
-    {
-        _categoryText = e.Value?.ToString() ?? string.Empty;
-        var match = _categories.FirstOrDefault(c => string.Equals(c.CategoryName, _categoryText.Trim(), StringComparison.OrdinalIgnoreCase));
-        _form.CategoryID = match?.CategoryID ?? 0;
-        _form.CategoryName = match == null ? _categoryText.Trim() : null;
-        _showCategoryError = false;
-    }
-
-    private void OnDepartmentInput(ChangeEventArgs e)
-    {
-        _departmentText = e.Value?.ToString() ?? string.Empty;
-        var match = _departments.FirstOrDefault(d => string.Equals(d.DepartmentName, _departmentText.Trim(), StringComparison.OrdinalIgnoreCase));
-        _form.ResponsibleDepartmentID = match?.DepartmentID ?? 0;
-        _form.DepartmentName = match == null ? _departmentText.Trim() : null;
-        _showDepartmentError = false;
-    }
+    private string? EffectiveDepartmentName =>
+        _form.ResponsibleDepartmentID > 0
+            ? _departments.FirstOrDefault(d => d.DepartmentID == _form.ResponsibleDepartmentID)?.DepartmentName
+            : _template?.DefaultDepartmentName;
 
     protected override async Task OnInitializedAsync()
     {
@@ -301,6 +567,8 @@
             _courts = await CourtService.GetAllAsync(activeOnly: true);
             _categories = await MasterDataService.GetCaseCategoriesAsync(activeOnly: true);
             _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+            if (_form.ResponsibleDepartmentID > 0)
+                _quickDepartmentName = _departments.FirstOrDefault(d => d.DepartmentID == _form.ResponsibleDepartmentID)?.DepartmentName ?? string.Empty;
             var users = await UserService.GetAllAsync();
             _legalOfficers = users.Where(u => u.IsActive).OrderBy(u => u.FullName).ToList();
         }
@@ -318,24 +586,34 @@
         }
     }
 
-    private async Task HandleSubmitAsync()
+    // Selecting a category loads its workflow template: department, initial status,
+    // ordered stages and the document checklist - nothing for the user to configure.
+    private async Task OnCategoryChangedAsync()
     {
-        _showCourtError = _form.CourtID <= 0 && string.IsNullOrWhiteSpace(_form.CourtName);
-        _showCategoryError = _form.CategoryID <= 0 && string.IsNullOrWhiteSpace(_form.CategoryName);
-        _showDepartmentError = _form.ResponsibleDepartmentID <= 0 && string.IsNullOrWhiteSpace(_form.DepartmentName);
-
-        if (_showCourtError || _showCategoryError || _showDepartmentError)
+        _template = null;
+        _pendingFiles.Clear();
+        _fileErrors.Clear();
+        if (_form.CategoryID <= 0)
         {
+            if (!_departmentTouched) _form.ResponsibleDepartmentID = 0;
             return;
         }
 
-        _isSaving = true;
+        _isLoadingTemplate = true;
         _apiError = null;
+        var requestedCategory = _form.CategoryID;
         try
         {
-            var newId = await CaseService.CreateAsync(_form);
-            Toast.Success("Case created", $"\"{_form.CaseTitle}\" has been registered.");
-            Nav.NavigateTo($"/cases/{newId}");
+            var template = await TemplateService.GetByCategoryAsync(requestedCategory);
+            if (requestedCategory != _form.CategoryID) return; // user already picked another category
+            _template = template;
+
+            if (!_departmentTouched || _form.ResponsibleDepartmentID <= 0)
+            {
+                _form.ResponsibleDepartmentID = _template?.DefaultDepartmentID ?? 0;
+                _quickDepartmentName = _template?.DefaultDepartmentName ?? string.Empty;
+                _departmentTouched = false;
+            }
         }
         catch (ApiException ex)
         {
@@ -343,11 +621,448 @@
         }
         catch (Exception)
         {
-            _apiError = "Something went wrong while creating the case. Please try again.";
+            _apiError = "Couldn't load the workflow for this category. Please try again.";
         }
         finally
         {
-            _isSaving = false;
+            _isLoadingTemplate = false;
         }
+    }
+
+    private void OnDepartmentEntryChanged()
+    {
+        var name = _quickDepartmentName.Trim();
+        var match = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (match == null)
+        {
+            _form.ResponsibleDepartmentID = 0;
+            _departmentTouched = true;
+            _quickDepartmentMessage = string.IsNullOrWhiteSpace(name) ? null : "New department name. Press Use / Add to create it.";
+            return;
+        }
+        _form.ResponsibleDepartmentID = match.DepartmentID;
+        _departmentTouched = true;
+        _quickDepartmentName = match.DepartmentName;
+        _quickDepartmentMessage = $"Existing department '{match.DepartmentName}' selected.";
+    }
+
+    private void ClearDepartmentSelection()
+    {
+        _form.ResponsibleDepartmentID = 0;
+        _quickDepartmentName = string.Empty;
+        _departmentTouched = true;
+        _quickDepartmentMessage = "No default department selected; you can assign one later.";
+    }
+
+    private async Task AddDepartmentInlineAsync()
+    {
+        var name = _quickDepartmentName.Trim();
+        if (name.Length == 0) return;
+        var existing = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            _form.ResponsibleDepartmentID = existing.DepartmentID;
+            _quickDepartmentName = existing.DepartmentName;
+            _departmentTouched = true;
+            _quickDepartmentMessage = $"Existing department '{existing.DepartmentName}' selected; no duplicate created.";
+            return;
+        }
+
+        _isQuickSaving = true;
+        _quickDepartmentMessage = null;
+        try
+        {
+            await DepartmentService.CreateAsync(new DepartmentFormDTO { DepartmentName = name, IsActive = true });
+            _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+            var created = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (created == null) throw new InvalidOperationException("Department was created but could not be found in the refreshed list.");
+            _form.ResponsibleDepartmentID = created.DepartmentID;
+            _quickDepartmentName = created.DepartmentName;
+            _departmentTouched = true;
+            _quickDepartmentMessage = $"Department '{created.DepartmentName}' added and selected.";
+            Toast.Success("Department added", $"'{created.DepartmentName}' is selected for this case.");
+        }
+        catch (ApiException ex)
+        {
+            _departments = await MasterDataService.GetDepartmentsAsync(activeOnly: true);
+            var duplicate = _departments.FirstOrDefault(x => string.Equals(x.DepartmentName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (duplicate != null)
+            {
+                _form.ResponsibleDepartmentID = duplicate.DepartmentID;
+                _quickDepartmentName = duplicate.DepartmentName;
+                _departmentTouched = true;
+                _quickDepartmentMessage = $"Existing department '{duplicate.DepartmentName}' selected; no duplicate created.";
+            }
+            else _quickDepartmentMessage = ex.GetFullMessage();
+        }
+        catch (Exception ex) { _quickDepartmentMessage = $"Could not add department: {ex.Message}"; }
+        finally { _isQuickSaving = false; }
+    }
+
+    private void MarkDepartmentTouched() => _departmentTouched = true;
+
+    private async Task OnCategoryEntryChangedAsync()
+    {
+        var name = _quickCategoryName.Trim();
+        var match = _categories.FirstOrDefault(x => string.Equals(x.CategoryName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (match is null)
+        {
+            _form.CategoryID = 0;
+            _template = null;
+            _quickCategoryMessage = string.IsNullOrWhiteSpace(name) ? null : "New case type name. Press Use / Add to create it.";
+            return;
+        }
+        if (_form.CategoryID == match.CategoryID) return;
+        _form.CategoryID = match.CategoryID;
+        _quickCategoryMessage = $"Existing case type '{match.CategoryName}' selected.";
+        await OnCategoryChangedAsync();
+    }
+
+    private void OnCourtEntryChanged()
+    {
+        var name = _quickCourtName.Trim();
+        var match = _courts.FirstOrDefault(x => string.Equals(x.CourtName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (match is null)
+        {
+            _form.CourtID = 0;
+            _quickCourtMessage = string.IsNullOrWhiteSpace(name) ? null : "New court name. Press Use / Add to create it.";
+            return;
+        }
+        _form.CourtID = match.CourtID;
+        _quickCourtMessage = $"Existing court '{match.CourtName}' selected.";
+    }
+
+    private void ToggleQuickCategory()
+    {
+        _showQuickCategory = !_showQuickCategory;
+        _quickCategoryName = string.Empty;
+        _quickCategoryMessage = null;
+    }
+
+    private void ToggleQuickCourt()
+    {
+        _showQuickCourt = !_showQuickCourt;
+        _quickCourtName = string.Empty;
+        _quickCourtMessage = null;
+    }
+
+    private async Task AddCategoryInlineAsync()
+    {
+        var name = _quickCategoryName.Trim();
+        if (name.Length == 0) return;
+        var existing = _categories.FirstOrDefault(x => string.Equals(x.CategoryName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            _form.CategoryID = existing.CategoryID;
+            _quickCategoryName = existing.CategoryName;
+            _quickCategoryMessage = $"'{existing.CategoryName}' already exists. Existing category selected; no duplicate was created.";
+            _showQuickCategory = false;
+            await OnCategoryChangedAsync();
+            return;
+        }
+
+        _isQuickSaving = true;
+        _quickCategoryMessage = null;
+        try
+        {
+            await CaseCategoryService.CreateAsync(new CaseCategoryFormDTO { CategoryName = name, IsActive = true });
+            _categories = await MasterDataService.GetCaseCategoriesAsync(activeOnly: true);
+            var created = _categories.FirstOrDefault(x => string.Equals(x.CategoryName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (created == null) throw new InvalidOperationException("The category was created but could not be found in the refreshed list.");
+            _form.CategoryID = created.CategoryID;
+            _quickCategoryName = created.CategoryName;
+            _showQuickCategory = false;
+            await OnCategoryChangedAsync();
+            Toast.Success("Case type added", $"'{created.CategoryName}' is selected for this case.");
+        }
+        catch (ApiException ex)
+        {
+            // If another user created the same name at the same time, refresh and select it instead.
+            _categories = await MasterDataService.GetCaseCategoriesAsync(activeOnly: true);
+            var duplicate = _categories.FirstOrDefault(x => string.Equals(x.CategoryName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (duplicate != null)
+            {
+                _form.CategoryID = duplicate.CategoryID;
+                _quickCategoryName = duplicate.CategoryName;
+                _showQuickCategory = false;
+                await OnCategoryChangedAsync();
+                Toast.Success("Existing case type selected", $"'{duplicate.CategoryName}' already exists; no duplicate was created.");
+            }
+            else _quickCategoryMessage = ex.GetFullMessage();
+        }
+        catch (Exception ex)
+        {
+            _quickCategoryMessage = $"Could not add case type: {ex.Message}";
+        }
+        finally { _isQuickSaving = false; }
+    }
+
+    private async Task AddCourtInlineAsync()
+    {
+        var name = _quickCourtName.Trim();
+        if (name.Length == 0) return;
+        var existing = _courts.FirstOrDefault(x => string.Equals(x.CourtName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (existing != null)
+        {
+            _form.CourtID = existing.CourtID;
+            _quickCourtName = existing.CourtName;
+            _quickCourtMessage = $"'{existing.CourtName}' already exists. Existing court selected; no duplicate was created.";
+            _showQuickCourt = false;
+            return;
+        }
+
+        _isQuickSaving = true;
+        _quickCourtMessage = null;
+        try
+        {
+            await CourtService.CreateAsync(new CourtFormDTO { CourtName = name, IsActive = true });
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+            var created = _courts.FirstOrDefault(x => string.Equals(x.CourtName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (created == null) throw new InvalidOperationException("The court was created but could not be found in the refreshed list.");
+            _form.CourtID = created.CourtID;
+            _quickCourtName = created.CourtName;
+            _showQuickCourt = false;
+            Toast.Success("Court added", $"'{created.CourtName}' is selected for this case.");
+        }
+        catch (ApiException ex)
+        {
+            _courts = await CourtService.GetAllAsync(activeOnly: true);
+            var duplicate = _courts.FirstOrDefault(x => string.Equals(x.CourtName.Trim(), name, StringComparison.OrdinalIgnoreCase));
+            if (duplicate != null)
+            {
+                _form.CourtID = duplicate.CourtID;
+                _quickCourtName = duplicate.CourtName;
+                _showQuickCourt = false;
+                Toast.Success("Existing court selected", $"'{duplicate.CourtName}' already exists; no duplicate was created.");
+            }
+            else _quickCourtMessage = ex.GetFullMessage();
+        }
+        catch (Exception ex)
+        {
+            _quickCourtMessage = $"Could not add court: {ex.Message}";
+        }
+        finally { _isQuickSaving = false; }
+    }
+
+    // ---- wizard navigation -------------------------------------------------
+
+    private void GoToStep(int index)
+    {
+        if (index < _step) { _step = index; _stepErrors.Clear(); }
+    }
+
+    private void Back()
+    {
+        if (_step > 0) _step--;
+        _stepErrors.Clear();
+    }
+
+    private void Next()
+    {
+        _stepErrors.Clear();
+        _stepErrors.AddRange(ValidateStep(_step));
+        if (_stepErrors.Count == 0 && _step < _stepTitles.Length - 1) _step++;
+    }
+
+    // Same rules as CreateCaseValidator on the server (which stays the source of truth).
+    private List<string> ValidateStep(int step)
+    {
+        var errors = new List<string>();
+        switch (step)
+        {
+            case 0:
+                if (string.IsNullOrWhiteSpace(_form.CaseNumber)) errors.Add("Case Number is required");
+                if (string.IsNullOrWhiteSpace(_form.CaseTitle)) errors.Add("Case Title is required");
+                if (string.IsNullOrWhiteSpace(_form.SubjectMatter)) errors.Add("Subject Matter is required");
+                if (string.IsNullOrWhiteSpace(_form.Priority)) errors.Add("Priority is required");
+                break;
+            case 1:
+                if (_form.CategoryID <= 0) errors.Add("Case Category is required");
+                if (_courts.Count == 0) errors.Add("No Courts have been configured for this Firm. Configure Courts first.");
+                else if (_form.CourtID <= 0) errors.Add("Court is required");
+                break;
+            case 2:
+                if (_form.CurrentLegalOfficerID <= 0) errors.Add("Legal Officer is required");
+                break;
+            case 3:
+                if (_form.FilingDate is null) errors.Add("Filing Date is required");
+                else if (_form.FilingDate.Value.Date > DateTime.Today) errors.Add("Filing Date must be today or earlier");
+                if (_form.InstitutionDate is null) errors.Add("Institution Date is required");
+                else if (_form.FilingDate is not null && _form.InstitutionDate.Value.Date < _form.FilingDate.Value.Date) errors.Add("Institution Date must be on or after the Filing Date");
+                if (_form.RegistrationDate is null) errors.Add("Registration Date is required");
+                else if (_form.InstitutionDate is not null && _form.RegistrationDate.Value.Date < _form.InstitutionDate.Value.Date) errors.Add("Registration Date must be on or after the Institution Date");
+                if (_form.ExpectedDisposalDate is not null)
+                {
+                    if (_form.ExpectedDisposalDate.Value.Date < DateTime.Today) errors.Add("Expected Disposal Date cannot be in the past");
+                    else if (_form.RegistrationDate is not null && _form.ExpectedDisposalDate.Value.Date <= _form.RegistrationDate.Value.Date) errors.Add("Expected Disposal Date must be after the Registration Date");
+                }
+                break;
+            case 4:
+                if (_form.ClaimedAmount < 0) errors.Add("Claimed Amount must be greater than or equal to 0");
+                if (_form.PotentialLiability < 0) errors.Add("Potential Liability must be greater than or equal to 0");
+                break;
+        }
+        return errors;
+    }
+
+    // ---- documents ---------------------------------------------------------
+
+    private RenderFragment DocumentRow(WorkflowDocumentItemDTO doc, bool required) => __builder =>
+    {
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap" style="padding:0.5rem 0;border-bottom:1px solid var(--lts-border);">
+            <div>
+                <i class="bi @(_pendingFiles.ContainsKey(doc.DocumentTypeID) ? "bi-check-square text-success" : (required ? "bi-square" : "bi-circle"))"></i>
+                <span style="margin-left:0.4rem;">@doc.TypeName</span>
+                @if (_pendingFiles.TryGetValue(doc.DocumentTypeID, out var picked))
+                {
+                    <span class="lts-form-hint" style="margin-left:0.4rem;">@picked.Name</span>
+                }
+                @if (_fileErrors.TryGetValue(doc.DocumentTypeID, out var err))
+                {
+                    <div class="lts-form-error">@err</div>
+                }
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <InputFile OnChange="e => OnFilePicked(doc.DocumentTypeID, e)" disabled="@_isSaving" class="lts-form-control" style="max-width:260px;" />
+                @if (_pendingFiles.ContainsKey(doc.DocumentTypeID))
+                {
+                    <button type="button" class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Remove file" @onclick="() => RemoveFile(doc.DocumentTypeID)">
+                        <i class="bi bi-x-lg text-danger"></i>
+                    </button>
+                }
+            </div>
+        </div>
+    };
+
+    private void OnFilePicked(int documentTypeId, InputFileChangeEventArgs e)
+    {
+        _fileErrors.Remove(documentTypeId);
+        var file = e.File;
+        if (file.Size > MaxFileSizeBytes)
+        {
+            _pendingFiles.Remove(documentTypeId);
+            _fileErrors[documentTypeId] = "File size is too large. Please reduce the document size to 15MB or less.";
+            return;
+        }
+        _pendingFiles[documentTypeId] = file;
+    }
+
+    private void RemoveFile(int documentTypeId)
+    {
+        _pendingFiles.Remove(documentTypeId);
+        _fileErrors.Remove(documentTypeId);
+    }
+
+    // ---- submit ------------------------------------------------------------
+
+    private async Task HandleSubmitAsync()
+    {
+        // Re-check every step so a user can't submit with an earlier step left invalid.
+        for (var s = 0; s < _stepTitles.Length - 1; s++)
+        {
+            var errors = ValidateStep(s);
+            if (errors.Count > 0)
+            {
+                _step = s;
+                _stepErrors.Clear();
+                _stepErrors.AddRange(errors);
+                return;
+            }
+        }
+
+        _isSaving = true;
+        _savingText = "Creating case...";
+        _apiError = null;
+        _stepErrors.Clear();
+
+        // Never create the same case twice: if a previous attempt already created it, only (re)upload.
+        if (_created == null)
+        {
+            try
+            {
+                // ONE backend call: case + status history + workflow stages + document checklist in a single transaction.
+                _created = await CaseService.CreateAsync(_form);
+            }
+            catch (ApiException ex)
+            {
+                _apiError = ex.GetFullMessage();
+                _isSaving = false;
+                return;
+            }
+            catch (Exception)
+            {
+                _apiError = "Something went wrong while creating the case. Please try again.";
+                _isSaving = false;
+                return;
+            }
+
+            Toast.Success("Case created", $"\"{_form.CaseTitle}\" has been registered ({_created.StatusName}, {_created.Stages.Count} workflow stage(s), {_created.Documents.Count} document requirement(s)).");
+        }
+
+        // The case now exists; upload files attached to checklist lines. A failed upload never undoes the
+        // case - it is listed with a Retry button (and can always be done later from the Documents tab).
+        await UploadPendingAsync();
+        _isSaving = false;
+
+        if (_uploadErrors.Count == 0)
+        {
+            Nav.NavigateTo($"/cases/{_created.CaseID}");
+        }
+    }
+
+    private async Task UploadPendingAsync()
+    {
+        if (_created == null) return;
+
+        // Only files not yet uploaded: everything on the first pass, only the failed ones on retry.
+        var todo = _pendingFiles.Where(p => !_uploaded.Contains(p.Key)).ToList();
+        _uploadErrors.Clear();
+        if (todo.Count == 0) return;
+
+        _savingText = "Uploading documents...";
+        StateHasChanged();
+        foreach (var (documentTypeId, file) in todo)
+        {
+            try
+            {
+                await DocumentService.UploadAsync(new UploadDocumentRequest
+                {
+                    CaseID = _created.CaseID,
+                    DocumentTypeID = documentTypeId,
+                    DocumentName = Path.GetFileNameWithoutExtension(file.Name),
+                    File = file
+                });
+                _uploaded.Add(documentTypeId);
+            }
+            catch (ApiException ex)
+            {
+                _uploadErrors[documentTypeId] = ex.GetFullMessage();
+            }
+            catch (Exception)
+            {
+                _uploadErrors[documentTypeId] = "upload failed";
+            }
+        }
+
+        if (_uploadErrors.Count > 0)
+        {
+            Toast.Error("Some documents were not uploaded", "The case was created. Retry the failed uploads or open the case.");
+        }
+    }
+
+    private async Task RetryUploadsAsync()
+    {
+        _isSaving = true;
+        await UploadPendingAsync();
+        _isSaving = false;
+        if (_uploadErrors.Count == 0 && _created != null)
+        {
+            Nav.NavigateTo($"/cases/{_created.CaseID}");
+        }
+    }
+
+    private void OpenCreatedCase()
+    {
+        if (_created != null) Nav.NavigateTo($"/cases/{_created.CaseID}");
     }
 }

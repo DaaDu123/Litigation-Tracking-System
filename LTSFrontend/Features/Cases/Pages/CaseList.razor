@@ -22,6 +22,9 @@
     </div>
     <div class="lts-page-header-actions">
         <PermissionGate Roles="Partner,FirmAdmin">
+            <button class="lts-btn @(_showArchived ? "lts-btn-primary" : "lts-btn-outline")" @onclick="ToggleArchivedAsync">
+                <i class="bi bi-archive"></i> @(_showArchived ? "Back to active cases" : "Archived cases")
+            </button>
             <button class="lts-btn lts-btn-primary" @onclick='() => Nav.NavigateTo("/cases/create")'>
                 <i class="bi bi-plus-lg"></i> New Case
             </button>
@@ -127,7 +130,7 @@
                 }
             </div>
         }
-        else if (_viewMode == "table")
+        else if (_viewMode == "table" || _showArchived)
         {
             <div class="lts-table-wrap">
                 <table class="lts-table">
@@ -162,16 +165,32 @@
                                         <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="View" @onclick='() => Nav.NavigateTo($"/cases/{c.CaseID}")'>
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <PermissionGate Roles="Partner,FirmAdmin">
-                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick='() => Nav.NavigateTo($"/cases/{c.CaseID}/edit")'>
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                        </PermissionGate>
-                                        <PermissionGate Roles="FirmAdmin,Partner">
-                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete" @onclick="() => HandleDeleteAsync(c)">
-                                                <i class="bi bi-trash text-danger"></i>
-                                            </button>
-                                        </PermissionGate>
+                                        @if (_showArchived)
+                                        {
+                                            <PermissionGate Roles="FirmAdmin,Partner">
+                                                <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Restore" @onclick="() => HandleRestoreAsync(c)">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                            </PermissionGate>
+                                            <PermissionGate Roles="FirmAdmin">
+                                                <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete permanently" @onclick="() => _permanentModal.Open(c.CaseID, c.CaseNumber)">
+                                                    <i class="bi bi-trash text-danger"></i>
+                                                </button>
+                                            </PermissionGate>
+                                        }
+                                        else
+                                        {
+                                            <PermissionGate Roles="Partner,FirmAdmin">
+                                                <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Edit" @onclick='() => Nav.NavigateTo($"/cases/{c.CaseID}/edit")'>
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </PermissionGate>
+                                            <PermissionGate Roles="FirmAdmin,Partner">
+                                                <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Archive" @onclick="() => HandleDeleteAsync(c)">
+                                                    <i class="bi bi-archive text-danger"></i>
+                                                </button>
+                                            </PermissionGate>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -195,6 +214,7 @@
 </div>
 
 <ConfirmDialog @ref="_confirmDialog" />
+<PermanentDeleteCaseModal @ref="_permanentModal" OnDeleted="() => LoadAsync()" />
 
 @code {
     private List<CaseDTO> _cases = new();
@@ -218,6 +238,8 @@
     private int _totalRecords = 0;
 
     private ConfirmDialog _confirmDialog = default!;
+    private PermanentDeleteCaseModal _permanentModal = default!;
+    private bool _showArchived;
 
     private bool HasActiveFilters =>
         !string.IsNullOrWhiteSpace(_searchTerm) || _courtFilter > 0 || _statusFilter > 0 || !string.IsNullOrWhiteSpace(_priorityFilter);
@@ -275,7 +297,8 @@
                 statusID: _statusFilter > 0 ? _statusFilter : null,
                 priority: string.IsNullOrWhiteSpace(_priorityFilter) ? null : _priorityFilter,
                 pageNumber: _pageNumber,
-                pageSize: _pageSize);
+                pageSize: _pageSize,
+                archivedOnly: _showArchived);
 
             _cases = result.Items;
             _totalRecords = result.TotalRecords;
@@ -325,28 +348,54 @@
 
     private void EditCase(CaseDTO c) => Nav.NavigateTo($"/cases/{c.CaseID}/edit");
 
+    private async Task ToggleArchivedAsync()
+    {
+        _showArchived = !_showArchived;
+        _pageNumber = 1;
+        await LoadAsync();
+    }
+
+    // Normal delete = ARCHIVE (soft delete): reversible, nothing is removed.
     private async Task HandleDeleteAsync(CaseDTO c)
     {
         var confirmed = await _confirmDialog.ShowAsync(
-            $"Delete case \"{c.CaseNumber}\"?",
-            "This cannot be undone. Cases with linked hearings, deadlines, or documents cannot be deleted.",
-            "Delete", "danger");
+            $"Archive case \"{c.CaseNumber}\"?",
+            "The case will be hidden from the normal list but nothing is deleted. You can restore it any time from Archived cases.",
+            "Archive", "danger");
 
         if (!confirmed) return;
 
         try
         {
-            await CaseService.DeleteAsync(c.CaseID);
+            await CaseService.ArchiveAsync(c.CaseID);
             await LoadAsync();
-            Toast.Success("Case deleted", $"\"{c.CaseNumber}\" has been removed.");
+            Toast.Success("Case archived", $"\"{c.CaseNumber}\" was moved to the archive.");
         }
         catch (ApiException ex)
         {
-            Toast.Error("Couldn't delete case", ex.GetFullMessage());
+            Toast.Error("Couldn't archive case", ex.GetFullMessage());
         }
         catch (Exception)
         {
-            Toast.Error("Couldn't delete case", "Please try again.");
+            Toast.Error("Couldn't archive case", "Please try again.");
+        }
+    }
+
+    private async Task HandleRestoreAsync(CaseDTO c)
+    {
+        try
+        {
+            await CaseService.RestoreAsync(c.CaseID);
+            await LoadAsync();
+            Toast.Success("Case restored", $"\"{c.CaseNumber}\" is active again.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't restore case", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't restore case", "Please try again.");
         }
     }
 

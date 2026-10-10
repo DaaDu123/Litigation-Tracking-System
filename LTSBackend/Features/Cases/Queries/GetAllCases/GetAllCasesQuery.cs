@@ -10,5 +10,6 @@ public record GetAllCasesQuery(
     int? StatusID,
     string? Priority,
     int PageNumber = 1,
-    int PageSize = 10
+    int PageSize = 10,
+    bool ArchivedOnly = false
 ) : IRequest<PagedResult<CaseDTO>>;

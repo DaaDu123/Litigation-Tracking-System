@@ -31,5 +31,7 @@ public class CaseDTO
     public decimal ClaimedAmount { get; set; }
     public decimal PotentialLiability { get; set; }
     public bool IsArchived { get; set; }
+    public DateTime? ArchivedDate { get; set; }
+    public string? ArchiveReason { get; set; }
     public DateTime CreatedDate { get; set; }
 }

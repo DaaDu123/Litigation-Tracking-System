@@ -61,6 +61,18 @@ public class UpdateCaseHandler(AppDbContext _context, IAuditService _auditServic
                 throw new NotFoundException($"Category ID {request.CategoryID} not found");
             }
 
+            // The case's workflow + document checklist were generated from its
+            // category's template at creation, so switching category later would
+            // leave them describing the wrong case type.
+            if (request.CategoryID.Value != caseToUpdate.CategoryID
+                && await _context.CaseWorkflowStages.AsNoTracking().AnyAsync(x => x.CaseID == request.CaseID, cancellationToken))
+            {
+                throw new ValidationException(new List<string>
+                {
+                    "The Case Category cannot be changed after the case workflow has been generated."
+                });
+            }
+
             caseToUpdate.CategoryID = request.CategoryID.Value;
         }
 
@@ -73,6 +85,47 @@ public class UpdateCaseHandler(AppDbContext _context, IAuditService _auditServic
             {
                 _logger.LogWarning("Stage not found: {StageID}", request.StageID);
                 throw new NotFoundException($"Stage ID {request.StageID} not found");
+            }
+
+            if (request.StageID.Value != caseToUpdate.StageID)
+            {
+                // Move THIS case's own workflow progress. The shared CaseStage master is never modified.
+                var workflowRows = await _context.CaseWorkflowStages.Where(x => x.CaseID == request.CaseID).ToListAsync(cancellationToken);
+
+                if (workflowRows.Count > 0)
+                {
+                    var target = workflowRows.FirstOrDefault(x => x.StageID == request.StageID.Value);
+                    if (target == null)
+                    {
+                        throw new ValidationException(new List<string>
+                        {
+                            "The selected stage is not part of this case's workflow."
+                        });
+                    }
+
+                    var stageNow = DateTime.UtcNow;
+                    foreach (var row in workflowRows)
+                    {
+                        if (row.SequenceNo < target.SequenceNo)
+                        {
+                            row.Status = CaseWorkflowStageState.Completed;
+                            row.StartedDate ??= stageNow;
+                            row.CompletedDate ??= stageNow;
+                        }
+                        else if (row.SequenceNo == target.SequenceNo)
+                        {
+                            row.Status = CaseWorkflowStageState.Active;
+                            row.StartedDate ??= stageNow;
+                            row.CompletedDate = null;
+                        }
+                        else
+                        {
+                            row.Status = CaseWorkflowStageState.Pending;
+                            row.StartedDate = null;
+                            row.CompletedDate = null;
+                        }
+                    }
+                }
             }
 
             caseToUpdate.StageID = request.StageID.Value;
@@ -90,6 +143,19 @@ public class UpdateCaseHandler(AppDbContext _context, IAuditService _auditServic
             }
 
             caseToUpdate.CurrentLegalOfficerID = request.CurrentLegalOfficerID.Value;
+        }
+
+        // 5b. Department (optional change): active + visible to this firm
+        if (request.ResponsibleDepartmentID.HasValue && request.ResponsibleDepartmentID > 0)
+        {
+            bool departmentOk = await _context.Departments.AsNoTracking().AnyAsync(x => x.DepartmentID == request.ResponsibleDepartmentID && x.IsActive, cancellationToken);
+
+            if (!departmentOk)
+            {
+                throw new NotFoundException($"Department ID {request.ResponsibleDepartmentID} not found or is inactive");
+            }
+
+            caseToUpdate.ResponsibleDepartmentID = request.ResponsibleDepartmentID.Value;
         }
 
         // 6. Update optional fields
@@ -150,7 +216,14 @@ public class UpdateCaseHandler(AppDbContext _context, IAuditService _auditServic
 
         if (request.IsArchived.HasValue)
         {
-            caseToUpdate.IsArchived = request.IsArchived.Value;
+            // Keep the archive audit columns consistent with ArchiveCase/RestoreCase.
+            if (request.IsArchived.Value != caseToUpdate.IsArchived)
+            {
+                caseToUpdate.IsArchived = request.IsArchived.Value;
+                caseToUpdate.ArchivedDate = request.IsArchived.Value ? DateTime.UtcNow : null;
+                caseToUpdate.ArchivedBy = request.IsArchived.Value ? currentUserId : null;
+                if (!request.IsArchived.Value) caseToUpdate.ArchiveReason = null;
+            }
         }
 
         // 7. Update timestamps

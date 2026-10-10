@@ -1,4 +1,5 @@
 using LTSBackend.Comman.Middleware;
+using Microsoft.Extensions.FileProviders;
 
 namespace LTSBackend.Extensions;
 
@@ -29,6 +30,22 @@ public static class MiddlewarePipelineExtensions
 
         app.UseHttpsRedirection();
         app.UseStaticFiles();
+
+        // If production uploads live on a persistent mounted volume, serve that
+        // volume's uploads at the same /uploads URL stored in the database.
+        var configuredPublicRoot = app.Configuration["FileStorage:PublicRoot"];
+        if (!string.IsNullOrWhiteSpace(configuredPublicRoot))
+        {
+            var publicRoot = Path.GetFullPath(configuredPublicRoot);
+            var uploadsRoot = Path.Combine(publicRoot, "uploads");
+            Directory.CreateDirectory(uploadsRoot);
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsRoot),
+                RequestPath = "/uploads"
+            });
+        }
+
         app.UseRouting();
         app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "Production");
 

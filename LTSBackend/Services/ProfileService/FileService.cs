@@ -14,17 +14,27 @@ public class FileService(IWebHostEnvironment _environment, IVirusScanService _vi
         ".html", ".htm", ".svg", ".swf", ".scr", ".com", ".cpl", ".apk"
     };
 
-    // Saves a file to the public wwwroot/uploads folder (used for profile pictures).
+    // Saves public uploads (profile pictures). FileStorage:PublicRoot can point to a
+    // persistent mounted volume in production; otherwise wwwroot is used for local dev.
+    private string GetPublicRoot()
+    {
+        var configuredRoot = _configuration["FileStorage:PublicRoot"];
+        var root = string.IsNullOrWhiteSpace(configuredRoot)
+            ? (_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"))
+            : configuredRoot;
+        return Path.GetFullPath(root);
+    }
+
     public Task<string> SaveFileAsync(IFormFile file, string folderName)
     {
-        string publicRoot = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+        string publicRoot = GetPublicRoot();
         return SaveFileInternalAsync(file, folderName, publicRoot, isPublic: true);
     }
 
     // Deletes a previously saved public file, if it exists.
     public void DeleteFile(string? relativePath)
     {
-        string publicRoot = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+        string publicRoot = GetPublicRoot();
         DeleteFileInternal(relativePath, publicRoot, isPublic: true);
     }
 

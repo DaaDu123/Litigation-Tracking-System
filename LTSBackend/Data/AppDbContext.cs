@@ -92,6 +92,9 @@ public class AppDbContext : DbContext
     public DbSet<CaseStatus> CaseStatuses { get; set; } = null!;
     public DbSet<CaseStage> CaseStages { get; set; } = null!;
     public DbSet<DocumentType> DocumentTypes { get; set; } = null!;
+    public DbSet<CaseWorkflowTemplate> CaseWorkflowTemplates { get; set; } = null!;
+    public DbSet<CaseWorkflowTemplateStage> CaseWorkflowTemplateStages { get; set; } = null!;
+    public DbSet<CaseWorkflowTemplateDocument> CaseWorkflowTemplateDocuments { get; set; } = null!;
 
     // CORE CASE MANAGEMENT (Cases, Parties, Assignments)
     public DbSet<Case> Cases { get; set; } = null!;
@@ -99,6 +102,8 @@ public class AppDbContext : DbContext
     public DbSet<CaseAssignment> CaseAssignments { get; set; } = null!;
     public DbSet<CaseStatusHistory> CaseStatusHistories { get; set; } = null!;
     public DbSet<CaseMilestone> CaseMilestones { get; set; } = null!;
+    public DbSet<CaseWorkflowStage> CaseWorkflowStages { get; set; } = null!;
+    public DbSet<CaseDocumentRequirement> CaseDocumentRequirements { get; set; } = null!;
 
     // HEARINGS & DEADLINES
     public DbSet<Hearing> Hearings { get; set; } = null!;
@@ -388,6 +393,53 @@ public class AppDbContext : DbContext
         {
             entity.HasOne(e => e.Firm).WithMany().HasForeignKey(e => e.FirmID).OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => BypassTenantFilter || e.FirmID == null || e.FirmID == RequestFirmId);
+        });
+
+        modelBuilder.Entity<CaseWorkflowTemplate>(entity =>
+        {
+            entity.HasOne(e => e.Firm).WithMany().HasForeignKey(e => e.FirmID).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Category).WithMany().HasForeignKey(e => e.CategoryID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.DefaultDepartment).WithMany().HasForeignKey(e => e.DefaultDepartmentID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.InitialStatus).WithMany().HasForeignKey(e => e.InitialStatusID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasMany(e => e.Stages).WithOne(s => s.Template).HasForeignKey(s => s.TemplateID).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Documents).WithOne(d => d.Template).HasForeignKey(d => d.TemplateID).OnDelete(DeleteBehavior.Cascade);
+
+            // One template per category per scope (NULL FirmID = the single global template).
+            entity.HasIndex(e => new { e.FirmID, e.CategoryID }).IsUnique();
+
+            entity.HasQueryFilter(e => BypassTenantFilter || e.FirmID == null || e.FirmID == RequestFirmId);
+        });
+
+        modelBuilder.Entity<CaseWorkflowTemplateStage>(entity =>
+        {
+            entity.HasOne(e => e.Stage).WithMany().HasForeignKey(e => e.StageID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasIndex(e => new { e.TemplateID, e.StageID }).IsUnique();
+            entity.HasIndex(e => new { e.TemplateID, e.SequenceNo }).IsUnique();
+            entity.HasQueryFilter(e => BypassTenantFilter || e.Template.FirmID == null || e.Template.FirmID == RequestFirmId);
+        });
+
+        modelBuilder.Entity<CaseWorkflowTemplateDocument>(entity =>
+        {
+            entity.HasOne(e => e.DocumentType).WithMany().HasForeignKey(e => e.DocumentTypeID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasIndex(e => new { e.TemplateID, e.DocumentTypeID }).IsUnique();
+            entity.HasQueryFilter(e => BypassTenantFilter || e.Template.FirmID == null || e.Template.FirmID == RequestFirmId);
+        });
+
+        modelBuilder.Entity<CaseWorkflowStage>(entity =>
+        {
+            entity.HasOne(e => e.Case).WithMany().HasForeignKey(e => e.CaseID).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Stage).WithMany().HasForeignKey(e => e.StageID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasIndex(e => new { e.CaseID, e.StageID }).IsUnique();
+            entity.HasIndex(e => new { e.CaseID, e.SequenceNo }).IsUnique();
+            entity.HasQueryFilter(e => BypassTenantFilter || e.Case.FirmID == RequestFirmId);
+        });
+
+        modelBuilder.Entity<CaseDocumentRequirement>(entity =>
+        {
+            entity.HasOne(e => e.Case).WithMany().HasForeignKey(e => e.CaseID).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.DocumentType).WithMany().HasForeignKey(e => e.DocumentTypeID).OnDelete(DeleteBehavior.NoAction);
+            entity.HasIndex(e => new { e.CaseID, e.DocumentTypeID }).IsUnique();
+            entity.HasQueryFilter(e => BypassTenantFilter || e.Case.FirmID == RequestFirmId);
         });
 
         // CASE ENTITY CONFIGURATION

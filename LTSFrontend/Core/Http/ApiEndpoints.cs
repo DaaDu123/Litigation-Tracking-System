@@ -66,6 +66,14 @@
                 public static string ById(int id) => $"{Root}/{id}";
             }
 
+            public static class CaseWorkflowTemplates
+            {
+                private const string Root = Base + "/caseworkflowtemplates";
+                public const string Base_ = Root;
+                public static string ById(int id) => $"{Root}/{id}";
+                public static string ByCategory(int categoryId) => $"{Root}/by-category/{categoryId}";
+            }
+
             public static class CaseStages
             {
                 private const string Root = Base + "/casestages";
@@ -111,6 +119,10 @@
             public static string ById(long id) => $"{Root}/{id}";
             public static string Status(long id) => $"{Root}/{id}/status";
             public static string StatusHistory(long id) => $"{Root}/{id}/status-history";
+            public static string Workflow(long id) => $"{Root}/{id}/workflow";
+            public static string GenerateWorkflow(long id) => $"{Root}/{id}/workflow/generate";
+            public static string Restore(long id) => $"{Root}/{id}/restore";
+            public static string PermanentDelete(long id) => $"{Root}/{id}/permanent-delete";
         }
 
         public static class CaseAssignments

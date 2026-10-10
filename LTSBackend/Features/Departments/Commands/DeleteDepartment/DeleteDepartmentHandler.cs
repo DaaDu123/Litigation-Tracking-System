@@ -50,6 +50,12 @@ public sealed class DeleteDepartmentHandler(AppDbContext _context, ICurrentUserS
             });
         }
 
+        // 2b. Workflow templates use this department as their default (NO ACTION FK)
+        if (await _context.CaseWorkflowTemplates.AnyAsync(x => x.DefaultDepartmentID == request.DepartmentID, cancellationToken))
+        {
+            throw new ValidationException(new() { "Cannot delete department. It is the default department of a workflow template. Change that template first, or deactivate the department instead." });
+        }
+
         // 3. Delete department
         _context.Departments.Remove(department);
         await _context.SaveChangesAsync(cancellationToken);

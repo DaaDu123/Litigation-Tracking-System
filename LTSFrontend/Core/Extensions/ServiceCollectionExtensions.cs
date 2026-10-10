@@ -98,6 +98,7 @@ namespace LTSFrontend.Core.Extensions
             services.AddScoped<ICaseStatusService, CaseStatusService>();
             services.AddScoped<IDepartmentService, DepartmentService>();
             services.AddScoped<IDocumentTypeService, DocumentTypeService>();
+            services.AddScoped<ICaseWorkflowTemplateService, CaseWorkflowTemplateService>();
             services.AddScoped<IMasterDataService, MasterDataService>();
             services.AddScoped<ICaseService, CaseService>();
             services.AddScoped<ICaseAssignmentService, CaseAssignmentService>();

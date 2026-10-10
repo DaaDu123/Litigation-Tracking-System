@@ -38,6 +38,13 @@ public sealed class DeleteCaseStageHandler(AppDbContext _context, ICurrentUserSe
             });
         }
 
+        // Stage used by a workflow template or already part of a case's workflow history (NO ACTION FKs)
+        if (await _context.CaseWorkflowTemplateStages.AnyAsync(x => x.StageID == request.StageID, cancellationToken)
+            || await _context.CaseWorkflowStages.AnyAsync(x => x.StageID == request.StageID, cancellationToken))
+        {
+            throw new ValidationException(new() { "Cannot delete stage. It is used by a workflow template or by existing case workflows. Deactivate it instead." });
+        }
+
         _context.CaseStages.Remove(stage);
         await _context.SaveChangesAsync(cancellationToken);
 

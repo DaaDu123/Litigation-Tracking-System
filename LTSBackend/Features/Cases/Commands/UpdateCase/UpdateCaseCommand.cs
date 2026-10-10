@@ -17,5 +17,6 @@ public record UpdateCaseCommand(
     decimal? ClaimedAmount,
     decimal? PotentialLiability,
     int? CurrentLegalOfficerID,
-    bool? IsArchived
+    bool? IsArchived,
+    int? ResponsibleDepartmentID = null
 ) : IRequest<bool>;

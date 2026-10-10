@@ -23,6 +23,12 @@ public class UploadDocumentHandler(AppDbContext _context, IFileService _fileServ
     // per-role DocumentPermissions: a Restricted-mode Moharrir gets NO
     // view/download grant at all ("blind upload" — write-only), while
     // everyone else gets a role-appropriate view/download grant.
+    //
+    // FAILURE SAFETY: the file is written first, then the Document row,
+    // permission grant and audit line run in ONE transaction. If anything
+    // after the file write fails, the transaction rolls back (no half-saved
+    // document without permissions) AND the just-written file is deleted, so
+    // no orphan file is left on disk and the client can simply retry.
     // =====================================================
     public async Task<UploadDocumentResult> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
@@ -49,6 +55,12 @@ public class UploadDocumentHandler(AppDbContext _context, IFileService _fileServ
         {
             _logger.LogWarning("Upload failed: Case not found or cross-firm access blocked {CaseId}", request.CaseID);
             throw new NotFoundException($"Case {request.CaseID} not found");
+        }
+
+        if (caseRecord.IsArchived)
+        {
+            _logger.LogWarning("Upload refused: case {CaseId} is archived", request.CaseID);
+            throw new ValidationException(["This case is archived. Restore it before uploading documents."]);
         }
 
         var documentType = await _context.DocumentTypes.AsNoTracking().FirstOrDefaultAsync(x => x.DocumentTypeID == request.DocumentTypeID, cancellationToken);
@@ -79,62 +91,99 @@ public class UploadDocumentHandler(AppDbContext _context, IFileService _fileServ
         }
 
         bool isInternUpload = user.GetRole() == UserRole.InternParalegal;
+        bool isMohallirRestricted = false;
 
-        var document = new Document
+        try
         {
-            CaseID = request.CaseID,
-            DocumentTypeID = request.DocumentTypeID,
-            DocumentName = request.DocumentName,
-            FileName = request.File.FileName,
-            FilePath = filePath,
-            FileSize = request.File.Length,
-            VersionNo = 1,
-            UploadedBy = request.UserID,
-            UploadedDate = DateTime.UtcNow,
-            IsLatest = true,
-            Remarks = request.Remarks,
-            IsDraft = isInternUpload
-        };
-
-        _context.Documents.Add(document);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Document created with ID {DocumentId} for case {CaseId}", document.DocumentID, request.CaseID);
-
-        bool isMohallirRestricted = await _permissionService.IsMohallirRestrictedAsync(request.UserID, cancellationToken);
-        if (isMohallirRestricted)
-        {
-            _logger.LogInformation("Moharrir {UserId} blind upload: Document {DocumentId} - no view/download permissions granted",
-                request.UserID, document.DocumentID);
-        }
-        else
-        {
-            var role = user.Role;
-            if (role != null)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            long documentId = await strategy.ExecuteAsync(async () =>
             {
-                bool canView = true;
-                bool canDownload = user.GetRole() switch
+                // A retried attempt must not see entities left tracked by a failed one.
+                _context.ChangeTracker.Clear();
+
+                await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                try
                 {
-                    UserRole.Partner => true,
-                    UserRole.AssociateLawyer => true,
-                    UserRole.Moharrir => true,
-                    UserRole.InternParalegal => false,
-                    _ => false
-                };
+                    var document = new Document
+                    {
+                        CaseID = request.CaseID,
+                        DocumentTypeID = request.DocumentTypeID,
+                        DocumentName = request.DocumentName,
+                        FileName = request.File.FileName,
+                        FilePath = filePath,
+                        FileSize = request.File.Length,
+                        VersionNo = 1,
+                        UploadedBy = request.UserID,
+                        UploadedDate = DateTime.UtcNow,
+                        IsLatest = true,
+                        Remarks = request.Remarks,
+                        IsDraft = isInternUpload
+                    };
 
-                await _permissionService.GrantDocumentPermissionAsync(document.DocumentID, role.RoleID, canView, canDownload, true, cancellationToken);
+                    _context.Documents.Add(document);
+                    await _context.SaveChangesAsync(cancellationToken);
 
-                _logger.LogInformation("Document permissions granted for role {RoleId}: View={CanView}, Download={CanDownload}",
-                    role.RoleID, canView, canDownload);
-            }
+                    _logger.LogInformation("Document created with ID {DocumentId} for case {CaseId}", document.DocumentID, request.CaseID);
+
+                    isMohallirRestricted = await _permissionService.IsMohallirRestrictedAsync(request.UserID, cancellationToken);
+                    if (isMohallirRestricted)
+                    {
+                        _logger.LogInformation("Moharrir {UserId} blind upload: Document {DocumentId} - no view/download permissions granted",
+                            request.UserID, document.DocumentID);
+                    }
+                    else
+                    {
+                        var role = user.Role;
+                        if (role != null)
+                        {
+                            bool canView = true;
+                            bool canDownload = user.GetRole() switch
+                            {
+                                UserRole.Partner => true,
+                                UserRole.AssociateLawyer => true,
+                                UserRole.Moharrir => true,
+                                UserRole.InternParalegal => false,
+                                _ => false
+                            };
+
+                            await _permissionService.GrantDocumentPermissionAsync(document.DocumentID, role.RoleID, canView, canDownload, true, cancellationToken);
+
+                            _logger.LogInformation("Document permissions granted for role {RoleId}: View={CanView}, Download={CanDownload}",
+                                role.RoleID, canView, canDownload);
+                        }
+                    }
+
+                    var auditLog = _auditService.Create(request.UserID, $"Document Upload: {document.DocumentName} to Case {request.CaseID}" + (isInternUpload ? " (Draft - pending approval)" : ""));
+
+                    _context.AuditLogs.Add(auditLog);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    await transaction.CommitAsync(cancellationToken);
+                    return document.DocumentID;
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            });
+
+            _logger.LogInformation("Document upload completed - ID: {DocumentId}, User: {UserId}, Case: {CaseId}", documentId, request.UserID, request.CaseID);
+            return new UploadDocumentResult(documentId, isMohallirRestricted);
         }
-
-        var auditLog = _auditService.Create(request.UserID, $"Document Upload: {document.DocumentName} to Case {request.CaseID}" + (isInternUpload ? " (Draft - pending approval)" : ""));
-
-        _context.AuditLogs.Add(auditLog);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Document upload completed - ID: {DocumentId}, User: {UserId}, Case: {CaseId}",document.DocumentID, request.UserID, request.CaseID);
-        return new UploadDocumentResult(document.DocumentID, isMohallirRestricted);
+        catch (Exception ex)
+        {
+            // DB work failed and was rolled back -> remove the file we just wrote so nothing is orphaned.
+            _logger.LogError(ex, "Document upload failed after the file was saved; removing orphan file {FilePath}", filePath);
+            try
+            {
+                _fileService.DeleteCaseDocument(filePath, caseRecord.FirmID, request.CaseID);
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogError(cleanupEx, "Could not remove orphan file {FilePath} - manual cleanup needed", filePath);
+            }
+            throw;
+        }
     }
 }

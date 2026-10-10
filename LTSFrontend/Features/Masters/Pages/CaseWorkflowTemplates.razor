@@ -1,0 +1,204 @@
+@page "/masters/workflow-templates"
+@attribute [Authorize(Roles = "FirmAdmin,Partner")]
+@using LTSFrontend.Features.Masters.Components
+@using LTSFrontend.Features.Masters.DTOs
+@using LTSFrontend.Features.Masters.Services
+@inject ICaseWorkflowTemplateService TemplateService
+@inject ICaseCategoryService CaseCategoryService
+@inject ToastService Toast
+
+<PageTitle>Workflow Templates - Master Data - LTS</PageTitle>
+
+<div class="lts-breadcrumb">
+    <a href="/masters">Master Data</a>
+    <i class="bi bi-chevron-right" style="font-size:0.65rem;"></i>
+    <span class="current">Workflow Templates</span>
+</div>
+
+<div class="lts-page-header">
+    <div>
+        <h1 class="lts-page-title">Case Workflow Templates</h1>
+        <p class="lts-page-subtitle">Configure once per case category: default department, initial status, stages and required documents. New cases are generated from it automatically.</p>
+    </div>
+    <div class="lts-page-header-actions">
+        <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="LoadAsync" title="Refresh" disabled="@_isLoading">
+            <i class="bi bi-arrow-clockwise @(_isLoading ? "spin" : "")"></i>
+        </button>
+    </div>
+</div>
+
+<div class="lts-card p-0">
+    <div style="padding: 1rem 1.1rem;">
+        @if (_isLoading)
+        {
+            <div class="lts-state">
+                <span class="lts-spinner lts-spinner-md"></span>
+                <div class="lts-state-title" style="margin-top:0.75rem;">Loading workflow templates...</div>
+            </div>
+        }
+        else if (_hasError)
+        {
+            <div class="lts-state is-error">
+                <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="lts-state-title">Couldn't load workflow templates</div>
+                <div class="lts-state-desc">@_errorMessage</div>
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Try Again</button>
+            </div>
+        }
+        else if (_categories.Count == 0)
+        {
+            <div class="lts-state">
+                <div class="lts-state-icon"><i class="bi bi-diagram-2"></i></div>
+                <div class="lts-state-title">No case categories yet</div>
+                <div class="lts-state-desc">Create a case category first, then configure its workflow here.</div>
+                <a href="/masters/case-categories" class="lts-btn lts-btn-primary lts-btn-sm"><i class="bi bi-plus-lg"></i> Add Category</a>
+            </div>
+        }
+        else
+        {
+            <div class="lts-table-wrap">
+                <table class="lts-table">
+                    <thead>
+                        <tr>
+                            <th>Case Category</th>
+                            <th>Default Department</th>
+                            <th>Initial Status</th>
+                            <th>Workflow</th>
+                            <th>Documents</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in _categories)
+                        {
+                            var template = TemplateFor(category.CategoryID);
+                            <tr @key="category.CategoryID">
+                                <td class="lts-cell-primary" data-label="Case Category">@category.CategoryName</td>
+                                @if (template == null)
+                                {
+                                    <td colspan="4" class="lts-cell-muted" data-label="Template">
+                                        <span class="lts-badge lts-badge-warning">Not configured</span>
+                                        <span style="margin-left:0.4rem;">Cases start as New / Filing with no document checklist.</span>
+                                    </td>
+                                    <td data-label="Status">-</td>
+                                }
+                                else
+                                {
+                                    <td data-label="Default Department">@(template.DefaultDepartmentName ?? "-")</td>
+                                    <td data-label="Initial Status">@template.InitialStatusName</td>
+                                    <td data-label="Workflow">@(string.Join(" → ", template.Stages.OrderBy(s => s.SequenceNo).Select(s => s.StageName)))</td>
+                                    <td data-label="Documents">
+                                        <span class="lts-badge lts-badge-primary">@template.RequiredDocuments.Count required</span>
+                                        <span class="lts-badge lts-badge-muted">@template.OptionalDocuments.Count optional</span>
+                                    </td>
+                                    <td data-label="Status">
+                                        <StatusBadge IsActive="template.IsActive" />
+                                        @if (template.IsGlobal)
+                                        {
+                                            <span class="lts-badge lts-badge-muted" style="margin-left:0.3rem;" title="Shared system-wide template"><i class="bi bi-globe2"></i> Global</span>
+                                        }
+                                    </td>
+                                }
+                                <td data-label="Actions">
+                                    <div class="lts-row-actions">
+                                        <button class="lts-btn lts-btn-outline lts-btn-sm" @onclick="() => OpenEditor(category, template)">
+                                            <i class="bi @(template == null ? "bi-plus-lg" : (template.IsGlobal ? "bi-files" : "bi-pencil"))"></i>
+                                            @(template == null ? "Configure" : (template.IsGlobal ? "Customize" : "Edit"))
+                                        </button>
+                                        @if (template != null && !template.IsGlobal)
+                                        {
+                                            <button class="lts-btn lts-btn-ghost lts-btn-sm lts-btn-icon-only" title="Delete template" @onclick="() => HandleDeleteAsync(template)">
+                                                <i class="bi bi-trash text-danger"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<CaseWorkflowTemplateFormModal @ref="_formModal" OnSaved="HandleSavedAsync" />
+<ConfirmDialog @ref="_confirmDialog" />
+
+@code {
+    private List<CaseCategoryDTO> _categories = new();
+    private List<CaseWorkflowTemplateDTO> _templates = new();
+    private bool _isLoading = true;
+    private bool _hasError;
+    private string? _errorMessage;
+
+    private CaseWorkflowTemplateFormModal _formModal = default!;
+    private ConfirmDialog _confirmDialog = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+        try
+        {
+            _categories = (await CaseCategoryService.GetAllAsync(activeOnly: true)).OrderBy(c => c.CategoryName).ToList();
+            _templates = await TemplateService.GetAllAsync(activeOnly: false);
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Workflow templates could not be loaded. Please check your connection and try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    // A firm's own template for the category wins over the shared global one (same rule the backend applies when creating a case).
+    private CaseWorkflowTemplateDTO? TemplateFor(int categoryId) =>
+        _templates.FirstOrDefault(t => t.CategoryID == categoryId && !t.IsGlobal)
+        ?? _templates.FirstOrDefault(t => t.CategoryID == categoryId && t.IsGlobal);
+
+    private Task OpenEditor(CaseCategoryDTO category, CaseWorkflowTemplateDTO? template) => _formModal.OpenAsync(category, template);
+
+    private async Task HandleSavedAsync()
+    {
+        await LoadAsync();
+        Toast.Success("Workflow template saved", "New cases of this category will use it automatically.");
+    }
+
+    private async Task HandleDeleteAsync(CaseWorkflowTemplateDTO template)
+    {
+        var confirmed = await _confirmDialog.ShowAsync(
+            $"Delete the \"{template.CategoryName}\" workflow template?",
+            "Existing cases keep their generated workflow and checklist. New cases of this category will start as New / Filing with no document checklist. Master data is not affected.",
+            "Delete", "danger");
+
+        if (!confirmed) return;
+
+        try
+        {
+            await TemplateService.DeleteAsync(template.TemplateID);
+            await LoadAsync();
+            Toast.Success("Template deleted", $"\"{template.CategoryName}\" no longer has a workflow template.");
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't delete template", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't delete template", "Please try again.");
+        }
+    }
+}

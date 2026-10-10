@@ -78,6 +78,16 @@ namespace LTSBackend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("CaseID"));
 
+                    b.Property<string>("ArchiveReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ArchivedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ArchivedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("CaseDescription")
                         .HasColumnType("nvarchar(max)");
 
@@ -176,6 +186,12 @@ namespace LTSBackend.Migrations
                     b.Property<DateTime?>("UpcomingDeadline")
                         .HasColumnType("date");
 
+                    b.Property<int?>("WorkflowTemplateID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("WorkflowTemplateVersion")
+                        .HasColumnType("int");
+
                     b.HasKey("CaseID");
 
                     b.HasIndex("CaseNumber");
@@ -243,6 +259,33 @@ namespace LTSBackend.Migrations
                     b.HasIndex("CaseID", "EndDate");
 
                     b.ToTable("CaseAssignments");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Cases.CaseDocumentRequirement", b =>
+                {
+                    b.Property<long>("RequirementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("RequirementID"));
+
+                    b.Property<long>("CaseID")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("DocumentTypeID")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.HasKey("RequirementID");
+
+                    b.HasIndex("DocumentTypeID");
+
+                    b.HasIndex("CaseID", "DocumentTypeID")
+                        .IsUnique();
+
+                    b.ToTable("CaseDocumentRequirements");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseMilestone", b =>
@@ -408,6 +451,51 @@ namespace LTSBackend.Migrations
                     b.HasIndex("CaseID");
 
                     b.ToTable("CaseStatusHistory");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Cases.CaseWorkflowStage", b =>
+                {
+                    b.Property<long>("CaseWorkflowStageID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("CaseWorkflowStageID"));
+
+                    b.Property<long>("CaseID")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("SequenceNo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StageID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("CaseWorkflowStageID");
+
+                    b.HasIndex("StageID");
+
+                    b.HasIndex("CaseID", "SequenceNo")
+                        .IsUnique();
+
+                    b.HasIndex("CaseID", "StageID")
+                        .IsUnique();
+
+                    b.ToTable("CaseWorkflowStages");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Deadline", b =>
@@ -898,6 +986,116 @@ namespace LTSBackend.Migrations
                             SequenceNo = 5,
                             StatusName = "Closed"
                         });
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplate", b =>
+                {
+                    b.Property<int>("TemplateID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TemplateID"));
+
+                    b.Property<int>("CategoryID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DefaultDepartmentID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FirmID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("InitialStatusID")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ModifiedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("TemplateID");
+
+                    b.HasIndex("CategoryID");
+
+                    b.HasIndex("DefaultDepartmentID");
+
+                    b.HasIndex("InitialStatusID");
+
+                    b.HasIndex("FirmID", "CategoryID")
+                        .IsUnique()
+                        .HasFilter("[FirmID] IS NOT NULL");
+
+                    b.ToTable("CaseWorkflowTemplates");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplateDocument", b =>
+                {
+                    b.Property<int>("TemplateDocumentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TemplateDocumentID"));
+
+                    b.Property<int>("DocumentTypeID")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("TemplateID")
+                        .HasColumnType("int");
+
+                    b.HasKey("TemplateDocumentID");
+
+                    b.HasIndex("DocumentTypeID");
+
+                    b.HasIndex("TemplateID", "DocumentTypeID")
+                        .IsUnique();
+
+                    b.ToTable("CaseWorkflowTemplateDocuments");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplateStage", b =>
+                {
+                    b.Property<int>("TemplateStageID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TemplateStageID"));
+
+                    b.Property<int>("SequenceNo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StageID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TemplateID")
+                        .HasColumnType("int");
+
+                    b.HasKey("TemplateStageID");
+
+                    b.HasIndex("StageID");
+
+                    b.HasIndex("TemplateID", "SequenceNo")
+                        .IsUnique();
+
+                    b.HasIndex("TemplateID", "StageID")
+                        .IsUnique();
+
+                    b.ToTable("CaseWorkflowTemplateStages");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.Court", b =>
@@ -2586,6 +2784,25 @@ namespace LTSBackend.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LTSBackend.Models.Cases.CaseDocumentRequirement", b =>
+                {
+                    b.HasOne("LTSBackend.Models.Cases.Case", "Case")
+                        .WithMany()
+                        .HasForeignKey("CaseID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LTSBackend.Models.Masters.DocumentType", "DocumentType")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Case");
+
+                    b.Navigation("DocumentType");
+                });
+
             modelBuilder.Entity("LTSBackend.Models.Cases.CaseMilestone", b =>
                 {
                     b.HasOne("LTSBackend.Models.Cases.Case", "Case")
@@ -2636,6 +2853,25 @@ namespace LTSBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("Case");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Cases.CaseWorkflowStage", b =>
+                {
+                    b.HasOne("LTSBackend.Models.Cases.Case", "Case")
+                        .WithMany()
+                        .HasForeignKey("CaseID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LTSBackend.Models.Masters.CaseStage", "Stage")
+                        .WithMany()
+                        .HasForeignKey("StageID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Case");
+
+                    b.Navigation("Stage");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Cases.Deadline", b =>
@@ -2785,6 +3021,77 @@ namespace LTSBackend.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Firm");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplate", b =>
+                {
+                    b.HasOne("LTSBackend.Models.Masters.CaseCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LTSBackend.Models.Masters.Department", "DefaultDepartment")
+                        .WithMany()
+                        .HasForeignKey("DefaultDepartmentID")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("LTSBackend.Models.Security.Firm", "Firm")
+                        .WithMany()
+                        .HasForeignKey("FirmID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LTSBackend.Models.Masters.CaseStatus", "InitialStatus")
+                        .WithMany()
+                        .HasForeignKey("InitialStatusID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("DefaultDepartment");
+
+                    b.Navigation("Firm");
+
+                    b.Navigation("InitialStatus");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplateDocument", b =>
+                {
+                    b.HasOne("LTSBackend.Models.Masters.DocumentType", "DocumentType")
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LTSBackend.Models.Masters.CaseWorkflowTemplate", "Template")
+                        .WithMany("Documents")
+                        .HasForeignKey("TemplateID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DocumentType");
+
+                    b.Navigation("Template");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplateStage", b =>
+                {
+                    b.HasOne("LTSBackend.Models.Masters.CaseStage", "Stage")
+                        .WithMany()
+                        .HasForeignKey("StageID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("LTSBackend.Models.Masters.CaseWorkflowTemplate", "Template")
+                        .WithMany("Stages")
+                        .HasForeignKey("TemplateID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Stage");
+
+                    b.Navigation("Template");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Masters.Court", b =>
@@ -2972,6 +3279,13 @@ namespace LTSBackend.Migrations
             modelBuilder.Entity("LTSBackend.Models.Cases.Hearing", b =>
                 {
                     b.Navigation("HearingAttendances");
+                });
+
+            modelBuilder.Entity("LTSBackend.Models.Masters.CaseWorkflowTemplate", b =>
+                {
+                    b.Navigation("Documents");
+
+                    b.Navigation("Stages");
                 });
 
             modelBuilder.Entity("LTSBackend.Models.Security.Firm", b =>

@@ -84,6 +84,22 @@ public class Case
 
     public bool IsArchived { get; set; } = false;
 
+    // Archive (soft delete) audit trail - set by ArchiveCase, cleared by RestoreCase.
+    public DateTime? ArchivedDate { get; set; }
+
+    public int? ArchivedBy { get; set; }
+
+    [MaxLength(500)]
+    public string? ArchiveReason { get; set; }
+
+    // Workflow template snapshot reference: which template (and which version of it)
+    // this case was created from. Plain columns, intentionally NOT a foreign key, so
+    // a template can be edited/deleted without ever touching existing cases.
+    // NULL = legacy case created before workflow templates existed.
+    public int? WorkflowTemplateID { get; set; }
+
+    public int? WorkflowTemplateVersion { get; set; }
+
     public bool IsClosed { get; set; } = false;
 
     public DateTime? ClosureDate { get; set; }

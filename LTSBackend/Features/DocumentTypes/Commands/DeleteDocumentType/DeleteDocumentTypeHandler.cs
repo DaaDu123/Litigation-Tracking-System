@@ -38,6 +38,13 @@ public sealed class DeleteDocumentTypeHandler(AppDbContext _context, ICurrentUse
             });
         }
 
+        // Document type used by a workflow template or a case's document checklist (NO ACTION FKs)
+        if (await _context.CaseWorkflowTemplateDocuments.AnyAsync(x => x.DocumentTypeID == request.DocumentTypeID, cancellationToken)
+            || await _context.CaseDocumentRequirements.AnyAsync(x => x.DocumentTypeID == request.DocumentTypeID, cancellationToken))
+        {
+            throw new ValidationException(new() { "Cannot delete document type. It is used by a workflow template or by existing case checklists. Deactivate it instead." });
+        }
+
         _context.DocumentTypes.Remove(type);
         await _context.SaveChangesAsync(cancellationToken);
 

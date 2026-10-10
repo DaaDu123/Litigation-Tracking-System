@@ -39,6 +39,8 @@ namespace LTSFrontend.Features.Cases.DTOs
 
         public bool? IsArchived { get; set; }
 
+        public int? ResponsibleDepartmentID { get; set; }
+
         public static UpdateCaseDTO FromCaseDetails(long caseId, CaseDTO source) => new()
         {
             CaseID = caseId,
@@ -54,7 +56,8 @@ namespace LTSFrontend.Features.Cases.DTOs
             ClaimedAmount = source.ClaimedAmount,
             PotentialLiability = source.PotentialLiability,
             CurrentLegalOfficerID = source.LegalOfficerID,
-            IsArchived = source.IsArchived
+            IsArchived = source.IsArchived,
+            ResponsibleDepartmentID = source.DepartmentID
         };
     }
 }

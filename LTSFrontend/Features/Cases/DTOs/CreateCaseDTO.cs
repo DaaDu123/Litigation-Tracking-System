@@ -15,19 +15,13 @@ namespace LTSFrontend.Features.Cases.DTOs
 
         public string? CaseDescription { get; set; }
 
-        /// <summary>Set when an existing court is picked from the list. 0 means the user typed a new name in <see cref="CourtName"/> instead.</summary>
+        /// <summary>Court picked from the firm's configured courts (required). Courts are created once in Master Data and reused.</summary>
+        [Range(1, int.MaxValue, ErrorMessage = "Court is required")]
         public int CourtID { get; set; }
 
-        /// <summary>Free-typed court name, used only when <see cref="CourtID"/> is 0 (new court not yet in the list).</summary>
-        [StringLength(150)]
-        public string? CourtName { get; set; }
-
-        /// <summary>Set when an existing category is picked from the list. 0 means the user typed a new name in <see cref="CategoryName"/> instead.</summary>
+        /// <summary>Case Category / Case Type (required). Its workflow template drives department, status, stages and documents.</summary>
+        [Range(1, int.MaxValue, ErrorMessage = "Case Category is required")]
         public int CategoryID { get; set; }
-
-        /// <summary>Free-typed category name, used only when <see cref="CategoryID"/> is 0 (new category not yet in the list).</summary>
-        [StringLength(150)]
-        public string? CategoryName { get; set; }
 
         [Required(ErrorMessage = "Priority is required")]
         [RegularExpression("^(High|Medium|Low)$", ErrorMessage = "Priority must be High, Medium, or Low")]
@@ -56,12 +50,8 @@ namespace LTSFrontend.Features.Cases.DTOs
 
         public string? FinancialImplication { get; set; }
 
-        /// <summary>Set when an existing department is picked from the list. 0 means the user typed a new name in <see cref="DepartmentName"/> instead (optional field).</summary>
+        /// <summary>Defaults from the category template; the user may change it. 0 = none.</summary>
         public int ResponsibleDepartmentID { get; set; }
-
-        /// <summary>Free-typed department name, used only when <see cref="ResponsibleDepartmentID"/> is 0 (new department not yet in the list).</summary>
-        [StringLength(100)]
-        public string? DepartmentName { get; set; }
 
         [Range(1, int.MaxValue, ErrorMessage = "Legal Officer is required")]
         public int CurrentLegalOfficerID { get; set; }

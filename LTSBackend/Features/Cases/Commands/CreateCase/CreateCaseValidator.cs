@@ -5,8 +5,7 @@ namespace LTSBackend.Features.Cases.Commands.CreateCase;
 public class CreateCaseValidator : AbstractValidator<CreateCaseCommand>
 {
     // Requires the mandatory case fields (number/title/priority/subject
-    // matter/dates), a resolvable Court/Category (either an ID or a typed
-    // name), and — importantly — Expected Disposal Date must be today or
+    // matter/dates), a picked Court and Case Category, and — importantly — Expected Disposal Date must be today or
     // later (never a past date) and after the Registration Date.
     public CreateCaseValidator()
     {
@@ -34,20 +33,18 @@ public class CreateCaseValidator : AbstractValidator<CreateCaseCommand>
             .Must(x => x == "High" || x == "Medium" || x == "Low")
             .WithMessage("Priority can only be High, Medium, or Low");
 
-        RuleFor(x => x)
-            .Must(x => x.CourtID > 0 || !string.IsNullOrWhiteSpace(x.CourtName))
-            .WithMessage("Select a Court or type a new one")
-            .OverridePropertyName("CourtID");
+        RuleFor(x => x.CourtID)
+            .GreaterThan(0)
+            .WithMessage("Court is required");
 
-        RuleFor(x => x)
-            .Must(x => x.CategoryID > 0 || !string.IsNullOrWhiteSpace(x.CategoryName))
-            .WithMessage("Select a Category or type a new one")
-            .OverridePropertyName("CategoryID");
+        RuleFor(x => x.CategoryID)
+            .GreaterThan(0)
+            .WithMessage("Case Category is required");
 
         RuleFor(x => x.ResponsibleDepartmentID)
             .GreaterThan(0)
             .WithMessage("A valid Department is required — not 0 or a negative ID")
-            .When(x => x.ResponsibleDepartmentID.HasValue && string.IsNullOrWhiteSpace(x.DepartmentName));
+            .When(x => x.ResponsibleDepartmentID.HasValue);
 
         RuleFor(x => x.CurrentLegalOfficerID)
             .GreaterThan(0)

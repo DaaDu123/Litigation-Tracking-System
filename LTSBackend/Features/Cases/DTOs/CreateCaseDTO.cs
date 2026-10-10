@@ -14,19 +14,13 @@ public class CreateCaseDTO
 
     public string? CaseDescription { get; set; }
 
-    /// <summary>Set when the user picked an existing court from the list. Leave 0 if typing a new one via CourtName.</summary>
+    /// <summary>The Court picked from the firm's configured courts (required). Courts are created once in Master Data, never from a case.</summary>
+    [Range(1, int.MaxValue, ErrorMessage = "Court is required")]
     public int CourtID { get; set; }
 
-    /// <summary>Set when the user typed a court name that isn't in the list yet - the server will create it.</summary>
-    [StringLength(150)]
-    public string? CourtName { get; set; }
-
-    /// <summary>Set when the user picked an existing category from the list. Leave 0 if typing a new one via CategoryName.</summary>
+    /// <summary>The Case Category / Case Type (required). Its workflow template drives status, stages, department and document checklist.</summary>
+    [Range(1, int.MaxValue, ErrorMessage = "Case Category is required")]
     public int CategoryID { get; set; }
-
-    /// <summary>Set when the user typed a category name that isn't in the list yet - the server will create it.</summary>
-    [StringLength(150)]
-    public string? CategoryName { get; set; }
 
     [Required(ErrorMessage = "Priority is required")]
     [RegularExpression("^(High|Medium|Low)$")]
@@ -53,12 +47,8 @@ public class CreateCaseDTO
 
     public string? FinancialImplication { get; set; }
 
-    /// <summary>Set when the user picked an existing department from the list. Leave 0/null if typing a new one via DepartmentName.</summary>
-    public int ResponsibleDepartmentID { get; set; }
-
-    /// <summary>Set when the user typed a department name that isn't in the list yet - the server will create it.</summary>
-    [StringLength(100)]
-    public string? DepartmentName { get; set; }
+    /// <summary>Optional override. Leave null to use the category template's default department.</summary>
+    public int? ResponsibleDepartmentID { get; set; }
 
     [Required(ErrorMessage = "Legal Officer is required")]
     public int CurrentLegalOfficerID { get; set; }

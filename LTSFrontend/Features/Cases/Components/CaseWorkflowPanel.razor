@@ -1,0 +1,189 @@
+@* A case's OWN workflow progress (stage by stage) and generated document checklist.
+   Read-only: stage moves are done via "Update Stage", uploads via the Documents tab. *@
+@using LTSFrontend.Features.Cases.DTOs
+@using LTSFrontend.Features.Cases.Services
+@inject ICaseService CaseService
+@inject ToastService Toast
+
+@if (_isLoading)
+{
+    <div class="lts-state">
+        <span class="lts-spinner lts-spinner-md"></span>
+        <div class="lts-state-title" style="margin-top:0.75rem;">Loading workflow...</div>
+    </div>
+}
+else if (_hasError)
+{
+    <div class="lts-state is-error">
+        <div class="lts-state-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="lts-state-title">Couldn't load the case workflow</div>
+        <div class="lts-state-desc">@_errorMessage</div>
+        <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Try Again</button>
+    </div>
+}
+else if (_workflow == null || (_workflow.Stages.Count == 0 && _workflow.Documents.Count == 0))
+{
+    <div class="lts-state">
+        <div class="lts-state-icon"><i class="bi bi-list-check"></i></div>
+        <div class="lts-state-title">No workflow generated for this case</div>
+        <div class="lts-state-desc">This case was created without a workflow template (or before workflow templates existed). Its current stage is shown on the Overview tab.</div>
+        @if (_workflow?.CanGenerate == true)
+        {
+            <PermissionGate Roles="FirmAdmin,Partner">
+                <button class="lts-btn lts-btn-primary lts-btn-sm" @onclick="GenerateAsync" disabled="@_generating">
+                    @if (_generating) { <span class="lts-spinner lts-spinner-sm"></span><span>Generating...</span> }
+                    else { <i class="bi bi-magic"></i><span>Generate workflow from template</span> }
+                </button>
+            </PermissionGate>
+            <div class="lts-form-hint mt-2">Status, stage, department and documents of this case stay unchanged.</div>
+        }
+    </div>
+}
+else
+{
+    @if (_workflow.WorkflowTemplateVersion.HasValue)
+    {
+        <div class="lts-form-hint mb-2">
+            Generated from workflow template v@_workflow.WorkflowTemplateVersion
+            @if (_workflow.TemplateChangedSinceCreation)
+            {
+                <span class="lts-badge lts-badge-warning ms-1">Template since updated to v@_workflow.CurrentTemplateVersion - this case keeps its own copy</span>
+            }
+        </div>
+    }
+    <h6 class="fw-semibold mb-3">Workflow Stages</h6>
+    <div class="d-flex flex-column gap-2 mb-4">
+        @foreach (var stage in _workflow.Stages.OrderBy(s => s.SequenceNo))
+        {
+            <div class="d-flex align-items-center gap-3" style="padding:0.5rem 0.75rem;border:1px solid var(--lts-border);border-radius:var(--lts-radius-sm);@(stage.Status == "Active" ? "border-color:#1b4fd6;" : "")">
+                <span class="lts-badge lts-badge-muted" style="min-width:1.6rem;justify-content:center;">@stage.SequenceNo</span>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">@stage.StageName</div>
+                    <div class="lts-form-hint" style="margin-top:0;">
+                        @if (stage.CompletedDate.HasValue)
+                        {
+                            <span>Completed @stage.CompletedDate.Value.ToLocalTime().ToString("dd MMM yyyy")</span>
+                        }
+                        else if (stage.StartedDate.HasValue)
+                        {
+                            <span>Started @stage.StartedDate.Value.ToLocalTime().ToString("dd MMM yyyy")</span>
+                        }
+                        else
+                        {
+                            <span>Not started</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(stage.Notes)) { <span> - @stage.Notes</span> }
+                    </div>
+                </div>
+                <span class="lts-badge @StageBadge(stage.Status)">@stage.Status</span>
+            </div>
+        }
+    </div>
+
+    <h6 class="fw-semibold mb-3">Document Checklist</h6>
+    @if (_workflow.Documents.Count == 0)
+    {
+        <div class="lts-form-hint">No document checklist for this case.</div>
+    }
+    else
+    {
+        @ChecklistGroup("Required", true)
+        @ChecklistGroup("Optional", false)
+    }
+}
+
+@code {
+    [Parameter] public long CaseId { get; set; }
+
+    private CaseWorkflowDTO? _workflow;
+    private bool _isLoading = true;
+    private bool _hasError;
+    private bool _generating;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _hasError = false;
+        try
+        {
+            _workflow = await CaseService.GetWorkflowAsync(CaseId);
+        }
+        catch (ApiException ex)
+        {
+            _hasError = true;
+            _errorMessage = ex.GetFullMessage();
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "The case workflow could not be loaded. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task GenerateAsync()
+    {
+        if (_generating) return;
+        _generating = true;
+        try
+        {
+            await CaseService.GenerateWorkflowAsync(CaseId);
+            Toast.Success("Workflow generated", "Stages and document checklist were created from the template.");
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            Toast.Error("Couldn't generate workflow", ex.GetFullMessage());
+        }
+        catch (Exception)
+        {
+            Toast.Error("Couldn't generate workflow", "Please try again.");
+        }
+        finally
+        {
+            _generating = false;
+        }
+    }
+
+    private RenderFragment ChecklistGroup(string title, bool required) => __builder =>
+    {
+        var items = _workflow!.Documents.Where(d => d.IsRequired == required).ToList();
+        if (items.Count == 0) return;
+
+        <div class="lts-form-label mt-2">@title (@items.Count(i => i.IsFulfilled)/@items.Count uploaded)</div>
+        @foreach (var doc in items)
+        {
+            <div class="d-flex align-items-center justify-content-between" style="padding:0.4rem 0;border-bottom:1px solid var(--lts-border);">
+                <span>
+                    <i class="bi @(doc.IsFulfilled ? "bi-check-square-fill text-success" : "bi-square")"></i>
+                    <span style="margin-left:0.4rem;">@doc.TypeName</span>
+                </span>
+                @if (doc.IsFulfilled)
+                {
+                    <span class="lts-badge lts-badge-success">Uploaded</span>
+                }
+                else if (doc.UploadedCount > 0)
+                {
+                    <span class="lts-badge lts-badge-info">Pending approval</span>
+                }
+                else
+                {
+                    <span class="lts-badge @(doc.IsRequired ? "lts-badge-warning" : "lts-badge-muted")">@(doc.IsRequired ? "Missing" : "Not uploaded")</span>
+                }
+            </div>
+        }
+    };
+
+    private static string StageBadge(string status) => status switch
+    {
+        "Completed" => "lts-badge-success",
+        "Active" => "lts-badge-primary",
+        _ => "lts-badge-muted"
+    };
+}
