@@ -49,7 +49,18 @@ else
 
     private void RedirectToLogin()
     {
-        var returnUrl = Uri.EscapeDataString(new Uri(Navigation.Uri).PathAndQuery);
+        var currentUri = new Uri(Navigation.Uri);
+        var currentPath = currentUri.PathAndQuery;
+
+        // Use the named login route as the default entry point. Preserve a
+        // requested deep link so users still return to it after signing in.
+        if (string.Equals(currentUri.AbsolutePath, "/", StringComparison.Ordinal))
+        {
+            Navigation.NavigateTo("/login", forceLoad: false, replace: true);
+            return;
+        }
+
+        var returnUrl = Uri.EscapeDataString(currentPath);
         Navigation.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: false);
     }
 }
