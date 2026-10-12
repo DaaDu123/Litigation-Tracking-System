@@ -1,5 +1,4 @@
 @inherits LayoutComponentBase
-@implements IDisposable
 @inject NavigationManager Nav
 
 <div class="public-shell">
@@ -39,67 +38,27 @@
         </div>
 
         <div class="auth-hero-right">
-            @if (_showCarousel)
-            {
-                <div class="auth-carousel-3d">
-                    <div class="auth-carousel-track">
-                        @for (int i = 0; i < _pages.Length; i++)
-                        {
-                            var index = i;
-                            var position = GetPosition(index);
-                            <div class="auth-carousel-card auth-carousel-card--@position"
-                                 @onclick="() => GoTo(index)">
-                                @if (position == "active")
-                                {
-                                    <div class="auth-form-card" @key="_currentIndex">
-                                        @Body
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="auth-form-card auth-form-card--ghost" aria-hidden="true">
-                                        <h2><i class="bi @_pages[index].Icon me-2"></i>@_pages[index].Label</h2>
-                                        <p class="auth-subtitle">@_pages[index].Subtitle</p>
-                                        <div class="auth-ghost-field"></div>
-                                        <div class="auth-ghost-field"></div>
-                                        <div class="auth-ghost-btn"></div>
-                                    </div>
-                                }
-                            </div>
-                        }
-                    </div>
-
-                    <div class="auth-carousel-controls" aria-label="Auth page navigation">
-                        <button type="button" class="auth-carousel-arrow" @onclick="GoPrev" aria-label="Previous">
-                            <i class="bi bi-chevron-left"></i>
-                        </button>
-
-                        <div class="auth-carousel-dots" role="tablist" aria-label="Jump to auth page">
-                            @for (int i = 0; i < _pages.Length; i++)
-                            {
-                                var index = i;
-                                <button type="button"
-                                        class="auth-carousel-dot @(index == _currentIndex ? "active" : "")"
-                                        role="tab"
-                                        aria-selected="@(index == _currentIndex ? "true" : "false")"
-                                        aria-label="@_pages[index].Label"
-                                        @onclick="() => GoTo(index)">
-                                </button>
-                            }
-                        </div>
-
-                        <button type="button" class="auth-carousel-arrow" @onclick="GoNext" aria-label="Next">
-                            <i class="bi bi-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="auth-form-card">
+            <section class="auth-form-card" aria-label="Account access">
+                <div class="auth-form-content" @key="CurrentPath">
                     @Body
                 </div>
-            }
+
+                @if (ShowAuthSwitcher)
+                {
+                    <div class="auth-panel-switch">
+                        @if (IsRegisterPage)
+                        {
+                            <span>Already have an account?</span>
+                            <a href="/login">Sign in</a>
+                        }
+                        else
+                        {
+                            <span>Don't have an account?</span>
+                            <a href="/register">Register</a>
+                        }
+                    </div>
+                }
+            </section>
         </div>
     </div>
 
@@ -107,59 +66,8 @@
 </div>
 
 @code {
-    private sealed record AuthPage(string Path, string Label, string Subtitle, string Icon);
-
-    private readonly AuthPage[] _pages =
-    [
-        new AuthPage("/login", "Sign In", "Sign in to continue", "bi-box-arrow-in-right"),
-        new AuthPage("/register", "Create Account", "Join an existing firm", "bi-person-plus"),
-        new AuthPage("/request-firm-admin", "Request Firm Admin", "Start a new firm workspace", "bi-building-add")
-    ];
-
-    private int _currentIndex;
-    private bool _showCarousel;
-
-    protected override void OnInitialized()
-    {
-        UpdateCurrentIndex();
-        Nav.LocationChanged += OnLocationChanged;
-    }
-
-    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
-    {
-        UpdateCurrentIndex();
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void UpdateCurrentIndex()
-    {
-        var path = new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
-        var index = Array.FindIndex(_pages, p => string.Equals(p.Path, path, StringComparison.OrdinalIgnoreCase));
-        _showCarousel = index >= 0;
-        _currentIndex = index >= 0 ? index : 0;
-    }
-
-    private string GetPosition(int index)
-    {
-        if (index == _currentIndex)
-            return "active";
-
-        var diff = ((index - _currentIndex) % _pages.Length + _pages.Length) % _pages.Length;
-        return diff == 1 ? "next" : "prev";
-    }
-
-    private void GoPrev() => GoTo(((_currentIndex - 1) % _pages.Length + _pages.Length) % _pages.Length);
-
-    private void GoNext() => GoTo((_currentIndex + 1) % _pages.Length);
-
-    private void GoTo(int index)
-    {
-        if (index != _currentIndex)
-            Nav.NavigateTo(_pages[index].Path);
-    }
-
-    public void Dispose()
-    {
-        Nav.LocationChanged -= OnLocationChanged;
-    }
+    private string CurrentPath => new Uri(Nav.Uri).AbsolutePath.TrimEnd('/');
+    private bool IsRegisterPage => string.Equals(CurrentPath, "/register", StringComparison.OrdinalIgnoreCase);
+    private bool ShowAuthSwitcher =>
+        IsRegisterPage || string.Equals(CurrentPath, "/login", StringComparison.OrdinalIgnoreCase);
 }

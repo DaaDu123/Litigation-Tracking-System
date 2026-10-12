@@ -34,7 +34,7 @@ namespace LTSFrontend.Core.Extensions
         public static IServiceCollection AddLtsFrontendServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Blazor auth plumbing
-            services.AddAuthorizationCore();
+            services.AddAuthorization();
             services.AddCascadingAuthenticationState();
 
             // Session / token storage

@@ -15,5 +15,8 @@ WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:80
 EXPOSE 80
 
+RUN mkdir -p /var/aspnet/DataProtection-Keys \
+    && chmod 700 /var/aspnet/DataProtection-Keys
+
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "LTSFrontend.dll"]

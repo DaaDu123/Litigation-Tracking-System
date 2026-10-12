@@ -17,27 +17,28 @@
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
-    <div class="alert alert-danger py-2">@_errorMessage</div>
+    <div class="alert alert-danger py-2" role="alert">@_errorMessage</div>
 }
 
 <EditForm Model="_model" FormName="LoginForm" OnValidSubmit="HandleLoginAsync">
     <DataAnnotationsValidator />
 
     <div class="mb-3">
-        <label class="form-label">Email / Username</label>
-        <input type="email" class="form-control" placeholder="Enter your email address"
-               @bind="_model.Email" @bind:event="oninput" required />
+        <label class="form-label" for="login-email">Email / Username</label>
+        <input id="login-email" type="email" class="form-control" placeholder="Enter your email address"
+               autocomplete="username" @bind="_model.Email" @bind:event="oninput" required />
         <ValidationMessage For="() => _model.Email" class="text-danger small" />
     </div>
 
     <div class="mb-2">
-        <label class="form-label">Password</label>
+        <label class="form-label" for="login-password">Password</label>
         <div class="password-toggle-wrap">
-            <input type="@(_showPassword ? "text" : "password")" class="form-control"
-                   placeholder="Enter your password"
+            <input id="login-password" type="@(_showPassword ? "text" : "password")" class="form-control"
+                   placeholder="Enter your password" autocomplete="current-password"
                    @bind="_model.Password" @bind:event="oninput" required />
-            <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
-                <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+            <button type="button" class="password-toggle-btn" aria-label="@(_showPassword ? "Hide password" : "Show password")"
+                    aria-pressed="@_showPassword" @onclick="() => _showPassword = !_showPassword">
+                <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
             </button>
         </div>
         <ValidationMessage For="() => _model.Password" class="text-danger small" />

@@ -12,44 +12,44 @@
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
-    <div class="alert alert-danger py-2" style="white-space: pre-line;">@_errorMessage</div>
+    <div class="alert alert-danger py-2" role="alert" style="white-space: pre-line;">@_errorMessage</div>
 }
 
 <EditForm Model="_model" OnValidSubmit="HandleRegisterAsync">
     <DataAnnotationsValidator />
 
     <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-control" placeholder="Enter your email address"
-               @bind="_model.Email" @bind:event="oninput" disabled="@_isBusy" required />
+        <label class="form-label" for="register-email">Email</label>
+        <input id="register-email" type="email" class="form-control" placeholder="Enter your email address"
+               autocomplete="email" @bind="_model.Email" @bind:event="oninput" disabled="@_isBusy" required />
         <ValidationMessage For="() => _model.Email" class="text-danger small" />
     </div>
 
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Password</label>
-            <div class="password-toggle-wrap">
-                <input type="@(_showPassword ? "text" : "password")" class="form-control"
-                       placeholder="8+ chars, mixed case, number & symbol"
-                       @bind="_model.Password" @bind:event="oninput" disabled="@_isBusy" required />
-                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showPassword = !_showPassword">
-                    <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
-                </button>
-            </div>
-            <ValidationMessage For="() => _model.Password" class="text-danger small" />
+    <div class="mb-3">
+        <label class="form-label" for="register-password">Password</label>
+        <div class="password-toggle-wrap">
+            <input id="register-password" type="@(_showPassword ? "text" : "password")" class="form-control"
+                   placeholder="8+ chars, mixed case, number & symbol" autocomplete="new-password"
+                   @bind="_model.Password" @bind:event="oninput" disabled="@_isBusy" required />
+            <button type="button" class="password-toggle-btn" aria-label="@(_showPassword ? "Hide password" : "Show password")"
+                    aria-pressed="@_showPassword" @onclick="() => _showPassword = !_showPassword">
+                <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+            </button>
         </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Confirm Password</label>
-            <div class="password-toggle-wrap">
-                <input type="@(_showConfirmPassword ? "text" : "password")" class="form-control"
-                       placeholder="Re-enter your password"
-                       @bind="_model.ConfirmPassword" @bind:event="oninput" disabled="@_isBusy" required />
-                <button type="button" class="password-toggle-btn" tabindex="-1" @onclick="() => _showConfirmPassword = !_showConfirmPassword">
-                    <i class="bi @(_showConfirmPassword ? "bi-eye-slash" : "bi-eye")"></i>
-                </button>
-            </div>
-            <ValidationMessage For="() => _model.ConfirmPassword" class="text-danger small" />
+        <ValidationMessage For="() => _model.Password" class="text-danger small" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="register-confirm-password">Confirm Password</label>
+        <div class="password-toggle-wrap">
+            <input id="register-confirm-password" type="@(_showConfirmPassword ? "text" : "password")" class="form-control"
+                   placeholder="Re-enter your password" autocomplete="new-password"
+                   @bind="_model.ConfirmPassword" @bind:event="oninput" disabled="@_isBusy" required />
+            <button type="button" class="password-toggle-btn" aria-label="@(_showConfirmPassword ? "Hide confirmation password" : "Show confirmation password")"
+                    aria-pressed="@_showConfirmPassword" @onclick="() => _showConfirmPassword = !_showConfirmPassword">
+                <i class="bi @(_showConfirmPassword ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i>
+            </button>
         </div>
+        <ValidationMessage For="() => _model.ConfirmPassword" class="text-danger small" />
     </div>
 
     <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
@@ -61,12 +61,6 @@
     </button>
 </EditForm>
 
-<div class="auth-footer">
-    Already have an account? <a class="auth-link" href="/login">Sign in</a>
-</div>
-<div class="auth-footer">
-    Starting a new firm instead? <a class="auth-link" href="/request-firm-admin">Request Firm Admin access</a>
-</div>
 
 @code {
     private readonly RegisterRequest _model = new();

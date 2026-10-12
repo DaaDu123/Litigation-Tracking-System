@@ -344,3 +344,117 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Shared Login/Register panel: fixed outer dimensions, scrollable form area. */
+.auth-hero-right .auth-form-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 30rem);
+  height: clamp(32rem, calc(100dvh - 10rem), 42rem);
+  min-height: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.1rem;
+  box-shadow: 0 24px 64px rgba(10, 23, 51, 0.32);
+}
+
+.auth-form-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2.4rem 2.25rem 1.5rem;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  scrollbar-width: thin;
+  animation: auth-panel-enter 180ms ease-out both;
+}
+
+.auth-form-content > h2 {
+  margin-top: 0;
+  text-align: left;
+}
+
+.auth-form-content > .auth-subtitle {
+  min-height: 2.5rem;
+  line-height: 1.45;
+}
+
+.auth-form-content .form-control {
+  min-height: 2.9rem;
+}
+
+.auth-form-content .btn-auth-primary {
+  min-height: 3rem;
+}
+
+.auth-form-content .auth-footer {
+  margin-top: 1rem;
+}
+
+.auth-panel-switch {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 1.05rem 1.5rem 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(4, 13, 32, 0.22);
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.9rem;
+}
+
+.auth-panel-switch a {
+  color: var(--lts-gold-light);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-panel-switch a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.auth-panel-switch a:focus-visible {
+  outline: 2px solid var(--lts-gold-light);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@keyframes auth-panel-enter {
+  from {
+    opacity: 0.75;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .auth-hero-right {
+    width: 100%;
+  }
+
+  .auth-hero-right .auth-form-card {
+    height: clamp(32rem, calc(100dvh - 7rem), 42rem);
+    border-radius: 0.9rem;
+  }
+
+  .auth-form-content {
+    padding: 1.8rem 1.35rem 1rem;
+  }
+
+  .auth-panel-switch {
+    padding: 0.95rem 1rem 1.05rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-form-content {
+    animation: none;
+  }
+}

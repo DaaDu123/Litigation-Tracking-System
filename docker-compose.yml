@@ -51,6 +51,9 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:80
       ApiSettings__BaseUrl: http://backend:8080
+      DataProtection__KeysPath: /var/aspnet/DataProtection-Keys
+    volumes:
+      - lts_dataprotection_keys:/var/aspnet/DataProtection-Keys
     depends_on:
       - backend
 
@@ -64,3 +67,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  lts_dataprotection_keys:

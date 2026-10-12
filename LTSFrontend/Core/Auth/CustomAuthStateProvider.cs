@@ -25,6 +25,9 @@ namespace LTSFrontend.Core.Auth
                 {
                     _session.Set(stored.UserID, stored.FullName, stored.Email, stored.Role, stored.AccessToken, stored.AccessTokenExpiry);
                     _apiClient.SeedRefreshTokenCookie(stored.RefreshToken);
+                    var restoredIdentity = new ClaimsPrincipal(BuildIdentity(_session));
+                    var restoredState = new AuthenticationState(restoredIdentity);
+                    NotifyAuthenticationStateChanged(Task.FromResult(restoredState));
                     _logger.LogInformation(
                         "[AuthState] Restored session from storage for UserID={UserId}. IsAuthenticated now={IsAuth}",
                         stored.UserID, _session.IsAuthenticated);
