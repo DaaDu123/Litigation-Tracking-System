@@ -63,6 +63,13 @@
     private bool _showPassword;
     private string? _errorMessage;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+            Navigation.NavigateTo("/", replace: true);
+    }
+
     private async Task HandleLoginAsync()
     {
         _errorMessage = null;

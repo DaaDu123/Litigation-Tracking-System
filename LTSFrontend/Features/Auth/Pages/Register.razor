@@ -2,8 +2,10 @@
 @layout LTSFrontend.Layout.LoginLayout
 @using LTSFrontend.Features.Auth.DTOs
 @using LTSFrontend.Features.Auth.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Register - LTS</PageTitle>
 
@@ -68,6 +70,13 @@
     private bool _showPassword;
     private bool _showConfirmPassword;
     private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+            Navigation.NavigateTo("/", replace: true);
+    }
 
     private async Task HandleRegisterAsync()
     {

@@ -20,6 +20,7 @@
             public const string ChangePassword = Root + "/change-password";
             public const string ForgotPassword = Root + "/forgot-password";
             public const string ResetPassword = Root + "/reset-password";
+            public const string RegistrationStatus = Root + "/registration-status";
         }
 
         public static class Users

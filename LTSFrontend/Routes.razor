@@ -1,5 +1,6 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject LTSFrontend.Core.Http.ApiClient ApiClient
 
 @if (!_authReady)
 {
@@ -13,7 +14,7 @@ else
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
                 <NotAuthorized>
-                    @{ RedirectToLogin(); }
+                    @{ RedirectToAccessPage(); }
                 </NotAuthorized>
                 <Authorizing>
                     <div class="d-flex justify-content-center align-items-center" style="min-height: 60vh;">
@@ -36,31 +37,60 @@ else
 
 @code {
     private bool _authReady;
+    private bool _hasRegisteredAccounts;
+    private bool _isAuthenticated;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await AuthStateProvider.GetAuthenticationStateAsync();
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+            if (!_isAuthenticated)
+            {
+                try
+                {
+                    var status = await ApiClient.GetAsync<RegistrationStatus>(LTSFrontend.Core.Http.ApiEndpoints.Auth.RegistrationStatus);
+                    _hasRegisteredAccounts = status?.HasRegisteredAccounts ?? true;
+                }
+                catch
+                {
+                    // Fail closed: an unavailable status endpoint must never
+                    // make a protected route appear accessible.
+                    _hasRegisteredAccounts = true;
+                }
+            }
             _authReady = true;
             StateHasChanged();
+
+            var currentPath = new Uri(Navigation.Uri).AbsolutePath;
+            if (!_isAuthenticated)
+            {
+                if (currentPath == "/"
+                    || (currentPath.Equals("/login", StringComparison.OrdinalIgnoreCase) && !_hasRegisteredAccounts)
+                    || (currentPath.Equals("/register", StringComparison.OrdinalIgnoreCase) && _hasRegisteredAccounts))
+                {
+                    Navigation.NavigateTo(_hasRegisteredAccounts ? "/login" : "/register", replace: true);
+                }
+            }
+            else if (currentPath.Equals("/login", StringComparison.OrdinalIgnoreCase)
+                || currentPath.Equals("/register", StringComparison.OrdinalIgnoreCase))
+            {
+                Navigation.NavigateTo("/", replace: true);
+            }
         }
     }
 
-    private void RedirectToLogin()
+    private void RedirectToAccessPage()
     {
-        var currentUri = new Uri(Navigation.Uri);
-        var currentPath = currentUri.PathAndQuery;
-
-        // Use the named login route as the default entry point. Preserve a
-        // requested deep link so users still return to it after signing in.
-        if (string.Equals(currentUri.AbsolutePath, "/", StringComparison.Ordinal))
+        if (_isAuthenticated)
         {
-            Navigation.NavigateTo("/login", forceLoad: false, replace: true);
+            Navigation.NavigateTo("/access-denied", replace: true);
             return;
         }
 
-        var returnUrl = Uri.EscapeDataString(currentPath);
-        Navigation.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: false);
+        Navigation.NavigateTo(_hasRegisteredAccounts ? "/login" : "/register", replace: true);
     }
+
+    private sealed record RegistrationStatus(bool HasRegisteredAccounts);
 }

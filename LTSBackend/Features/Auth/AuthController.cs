@@ -8,6 +8,8 @@ using LTSBackend.Features.Auth.Register;
 using LTSBackend.Features.Auth.ResendOtp;
 using LTSBackend.Features.Auth.ResetPassword;
 using LTSBackend.Features.Auth.VerifyOtp;
+using LTSBackend.Data;
+using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,11 +24,24 @@ public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ILogger<AuthController> _logger;
+    private readonly AppDbContext _context;
 
-    public AuthController(IMediator mediator, ILogger<AuthController> logger)
+    public AuthController(IMediator mediator, ILogger<AuthController> logger, AppDbContext context)
     {
         _mediator = mediator;
         _logger = logger;
+        _context = context;
+    }
+
+    // Used only for first-run routing. This reveals whether the installation
+    // has any non-deleted accounts, never account identifiers or email data.
+    [HttpGet("registration-status")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RegistrationStatus(CancellationToken cancellationToken)
+    {
+        var hasRegisteredAccounts = await _context.Users.AsNoTracking()
+            .AnyAsync(user => !user.IsDeleted, cancellationToken);
+        return Ok(new { HasRegisteredAccounts = hasRegisteredAccounts });
     }
 
     // =====================================================
