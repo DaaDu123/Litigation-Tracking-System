@@ -8,9 +8,9 @@ namespace LTSBackend.Features.CaseStatuses.Queries.GetCaseStatusById;
 
 public sealed class GetCaseStatusByIdHandler(AppDbContext _context, ILogger<GetCaseStatusByIdHandler> _logger) : IRequestHandler<GetCaseStatusByIdQuery, CaseStatusDTO>
 {
-    // =====================================================
-    // HANDLE — fetches a single case status by ID
-    // =====================================================
+
+
+
     public async Task<CaseStatusDTO> Handle(GetCaseStatusByIdQuery request, CancellationToken cancellationToken)
     {
         var status = await _context.CaseStatuses.AsNoTracking().FirstOrDefaultAsync(x => x.StatusID == request.StatusID, cancellationToken);

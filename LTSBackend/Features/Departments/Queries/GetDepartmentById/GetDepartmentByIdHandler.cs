@@ -8,9 +8,9 @@ namespace LTSBackend.Features.Departments.Queries.GetDepartmentById;
 
 public sealed class GetDepartmentByIdHandler(AppDbContext _context, ILogger<GetDepartmentByIdHandler> _logger) : IRequestHandler<GetDepartmentByIdQuery, DepartmentDTO>
 {
-    // =====================================================
-    // HANDLE — fetches a single department by ID
-    // =====================================================
+
+
+
     public async Task<DepartmentDTO> Handle(GetDepartmentByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching department: {DepartmentID}", request.DepartmentID);

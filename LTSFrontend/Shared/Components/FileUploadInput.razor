@@ -1,8 +1,8 @@
-@* Reusable image picker with a circular preview - used for profile pictures
-   and anywhere else a single image upload is needed.
-   Usage:
-     <FileUploadInput CurrentImageUrl="_previewUrl" Disabled="_isSaving"
-                       FileSelected="OnFileSelected" /> *@
+
+
+
+
+
 
 <div class="lts-file-upload">
     <div class="lts-file-upload-preview">
@@ -32,7 +32,7 @@
 @code {
     [Parameter] public string? CurrentImageUrl { get; set; }
     [Parameter] public string Accept { get; set; } = "image/png,image/jpeg,image/webp";
-    [Parameter] public long MaxSizeBytes { get; set; } = 5 * 1024 * 1024; // 5 MB, mirrors backend rule
+    [Parameter] public long MaxSizeBytes { get; set; } = 5 * 1024 * 1024;
     [Parameter] public string HintText { get; set; } = "JPG, PNG, or WebP - up to 5 MB.";
     [Parameter] public string PlaceholderIcon { get; set; } = "bi-person-circle";
     [Parameter] public bool Disabled { get; set; }

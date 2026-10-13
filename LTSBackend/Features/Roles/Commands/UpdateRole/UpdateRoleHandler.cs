@@ -23,20 +23,20 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
         _logger = logger;
     }
 
-    // =====================================================
-    // HANDLE — renames/redescribes a role and replaces its permission set
-    // Refuses to touch a protected system role (SuperAdmin/FirmAdmin),
-    // checks the new name doesn't collide with another role, validates
-    // every supplied PermissionID exists, then inside one retry-safe
-    // transaction updates the role and swaps in the new permission set.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(
         UpdateRoleCommand request,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Updating role: {RoleID}", request.RoleID);
 
-        // 1. Normalize and deduplicate permission IDs
+
         request = request with
         {
             RoleName = request.RoleName.Trim(),
@@ -45,7 +45,7 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
                 .ToList()
         };
 
-        // 2. Find role with its permissions
+
         var role = await _context.Roles
             .Include(x => x.RolePermissions)
             .FirstOrDefaultAsync(x => x.RoleID == request.RoleID,cancellationToken);
@@ -56,7 +56,7 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
             throw new NotFoundException("Role not found.");
         }
 
-        // 3. Check if new role name is unique
+
         bool roleExists = await _context.Roles
             .AnyAsync(x =>x.RoleID != request.RoleID && x.RoleName.ToLower() == request.RoleName.ToLower(),cancellationToken);
 
@@ -76,7 +76,7 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
                 });
         }
 
-        // 4. Validate permissions exist in database
+
         var validPermissions = await _context.Permissions
             .Where(x => request.PermissionIds.Contains(x.PermissionID))
             .Select(x => x.PermissionID)
@@ -88,10 +88,10 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
             throw new ValidationException(new List<string> { "One or more permissions are invalid." });
         }
 
-        // 5. Begin transaction (wrapped in CreateExecutionStrategy since
-        // EnableRetryOnFailure is on - see CreateFirmCommandHandler for
-        // the full explanation of why a bare BeginTransactionAsync
-        // throws under that configuration).
+
+
+
+
         var strategy = _context.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
@@ -100,17 +100,17 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
 
             try
             {
-                // 6. Update role
+
                 role.RoleName = request.RoleName;
                 role.Description = request.Description;
 
-                // 7. Remove old permissions
+
                 _context.RolePermissions.RemoveRange(role.RolePermissions);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 _logger.LogInformation("Removed old permissions for role: {RoleID}", request.RoleID);
 
-                // 8. Assign new permissions
+
                 var rolePermissions = validPermissions.Select(permissionId => new RolePermission
                     {
                         RoleID = role.RoleID,
@@ -123,7 +123,7 @@ public class UpdateRoleHandler : IRequestHandler<UpdateRoleCommand, bool>
 
                 _logger.LogInformation("Role {RoleID} assigned {Count} new permissions",request.RoleID,validPermissions.Count);
 
-                // 9. Commit transaction
+
                 await transaction.CommitAsync(cancellationToken);
 
                 _logger.LogInformation("Role updated successfully: {RoleID}", request.RoleID);

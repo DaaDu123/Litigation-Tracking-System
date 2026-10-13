@@ -1,14 +1,14 @@
 namespace LTSFrontend.State
 {
-    /// <summary>
-    /// Scoped (one instance per user circuit) holder for the Case list's
-    /// search/filter selections, mirroring the fields CaseList.razor binds
-    /// to CaseFilterPanel (SearchTerm, CourtFilter, StatusFilter,
-    /// PriorityFilter, PageSize, ViewMode). Lets a person open a case from
-    /// the list, come back, and land on the same filtered/paged view
-    /// instead of losing their search - CaseList reads/writes this on
-    /// init/dispose instead of only keeping the values in local fields.
-    /// </summary>
+
+
+
+
+
+
+
+
+
     public class CaseFilterState
     {
         public string SearchTerm { get; set; } = string.Empty;

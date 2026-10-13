@@ -11,10 +11,10 @@ namespace LTSBackend.Features.Milestones.Commands.DeleteMilestone
     public class DeleteMilestoneHandler(AppDbContext _context, IAuditService _auditService,
         ICurrentUserService _currentUser, IHttpContextAccessor _httpContextAccessor) : IRequestHandler<DeleteMilestoneCommand, bool>
     {
-        // =====================================================
-        // HANDLE — permanently removes a milestone
-        // Firm-scoped lookup before deleting; writes an audit log entry.
-        // =====================================================
+
+
+
+
         public async Task<bool> Handle(DeleteMilestoneCommand request, CancellationToken cancellationToken)
         {
             var milestone = await _context.CaseMilestones

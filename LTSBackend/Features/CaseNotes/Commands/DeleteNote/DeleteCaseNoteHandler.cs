@@ -10,12 +10,12 @@ namespace LTSBackend.Features.CaseNotes.Commands.DeleteNote
 {
     public class DeleteCaseNoteHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,IHttpContextAccessor _httpContextAccessor) : IRequestHandler<DeleteCaseNoteCommand, bool>
     {
-        // =====================================================
-        // HANDLE — permanently removes a case note
-        // Same rule as Update: firm isolation, plus only the note's own
-        // author or a senior role (SuperAdmin/FirmAdmin/Partner) may
-        // delete it.
-        // =====================================================
+
+
+
+
+
+
         public async Task<bool> Handle(DeleteCaseNoteCommand request, CancellationToken cancellationToken)
         {
             var note = await _context.CaseNotes.Include(n => n.Case).FirstOrDefaultAsync(n => n.NoteID == request.NoteID, cancellationToken);

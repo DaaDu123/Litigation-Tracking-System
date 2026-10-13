@@ -9,12 +9,12 @@ namespace LTSBackend.Features.FirmAdminRequests.Queries.GetMyFirmAdminRequest;
 public class GetMyFirmAdminRequestQueryHandler(AppDbContext _context, ICurrentUserService _currentUser)
     : IRequestHandler<GetMyFirmAdminRequestQuery, FirmAdminRequestDTO?>
 {
-    // =====================================================
-    // HANDLE — the caller's own most recent Firm Admin request that was
-    // submitted FROM their account (UserID == the caller). Legacy/
-    // anonymous requests (UserID null) are intentionally excluded here -
-    // those aren't tied to any logged-in identity to match against.
-    // =====================================================
+
+
+
+
+
+
     public async Task<FirmAdminRequestDTO?> Handle(GetMyFirmAdminRequestQuery request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

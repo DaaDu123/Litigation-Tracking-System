@@ -10,12 +10,12 @@ using Microsoft.EntityFrameworkCore;
 public class GetUserByIdQueryHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<GetUserByIdQueryHandler> _logger) : IRequestHandler<GetUserByIdQuery, UserDTO?>
 {
 
-    // =====================================================
-    // HANDLE — fetches a single active user's profile by ID
-    // Firm-scoped (can't fetch a user outside your own firm), and only
-    // ever returns an active, non-deleted user — 404 otherwise, which
-    // also backs UsersController.GetById / GetMyProfile.
-    // =====================================================
+
+
+
+
+
+
     public async Task<UserDTO?> Handle(GetUserByIdQuery request,CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching user: {UserId}", request.UserID);
@@ -24,7 +24,7 @@ public class GetUserByIdQueryHandler(AppDbContext _context, ICurrentUserService 
             .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted && x.UserID == request.UserID);
 
-        // Multi-tenancy: can't fetch a user outside your own firm.
+
             query = query.Where(x => x.FirmID == _currentUser.FirmID);
 
         var user = await query

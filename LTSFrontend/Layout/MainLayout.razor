@@ -22,9 +22,9 @@
 }
 else if (Session.IsAuthenticated && ProfileState.Profile is { IsProfileCompleted: false })
 {
-    @* Profile is incomplete: show ONLY the completion page - no sidebar, no
-       topbar, no navigation, nothing else is reachable until it's done.
-       A logout option is still offered from inside the gate itself. *@
+
+
+
     <ProfileCompletionGate />
 }
 else
@@ -139,7 +139,7 @@ else
             }
             catch
             {
-                // JS interop not ready yet (prerender) - default to light theme.
+
             }
         }
     }

@@ -11,18 +11,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LTSBackend.Features.CaseWorkflowTemplates.Controllers;
 
-/// <summary>
-/// Master-data configuration of the Case Workflow Template: per Case
-/// Category, the default Department, initial Status, ordered Stages and
-/// required/optional Document Types a new Case is generated from. Same
-/// per-tenant model as the other masters (global + own firm).
-/// </summary>
+
+
+
+
+
+
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
 public class CaseWorkflowTemplatesController(IMediator mediator) : ControllerBase
 {
-    // LIST — FirmAdmin / Partner (master-data administration)
+
     [HttpGet]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = false)
@@ -31,8 +31,8 @@ public class CaseWorkflowTemplatesController(IMediator mediator) : ControllerBas
         return Ok(ApiResponse<List<CaseWorkflowTemplateDTO>>.SuccessResponse(result));
     }
 
-    // RESOLVE FOR A CATEGORY — everyone who can create a case (New Case wizard preview).
-    // Data is null when the category has no template yet (the case is then created with the default New status / Filing stage and no checklist).
+
+
     [HttpGet("by-category/{categoryId}")]
     [Authorize(Roles = RoleNames.PartnerAndAbove)]
     public async Task<IActionResult> GetByCategory(int categoryId)
@@ -42,7 +42,7 @@ public class CaseWorkflowTemplatesController(IMediator mediator) : ControllerBas
             result == null ? "No workflow template is configured for this category." : "Workflow template fetched."));
     }
 
-    // SAVE (create or replace the caller's template for the category)
+
     [HttpPost]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> Save([FromBody] SaveCaseWorkflowTemplateDTO dto)
@@ -53,7 +53,7 @@ public class CaseWorkflowTemplatesController(IMediator mediator) : ControllerBas
         return Ok(ApiResponse<int>.SuccessResponse(id, "Workflow template saved successfully."));
     }
 
-    // DELETE (own scope only)
+
     [HttpDelete("{id}")]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> Delete(int id)

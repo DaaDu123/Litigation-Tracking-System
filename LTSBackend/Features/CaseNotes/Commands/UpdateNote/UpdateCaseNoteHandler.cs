@@ -8,19 +8,19 @@ using System.Security.Claims;
 
 namespace LTSBackend.Features.CaseNotes.Commands.UpdateNote
 {
-    /// <summary>
-    /// SRS: Only the note author or Partner/FirmAdmin/SuperAdmin may edit a note
-    /// (protects "Confidential" internal notes from being altered by unrelated users)
-    /// </summary>
+
+
+
+
     public class UpdateCaseNoteHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<UpdateCaseNoteCommand, bool>
     {
-        // =====================================================
-        // HANDLE — edits an existing case note
-        // Enforces firm isolation, then only the note's own author or a
-        // senior role (SuperAdmin/FirmAdmin/Partner) may edit it — protects
-        // confidential internal notes from being altered by unrelated staff.
-        // =====================================================
+
+
+
+
+
+
         public async Task<bool> Handle(UpdateCaseNoteCommand request, CancellationToken cancellationToken)
         {
             var note = await _context.CaseNotes.Include(n => n.Case).FirstOrDefaultAsync(n => n.NoteID == request.Note.NoteID, cancellationToken);
@@ -30,7 +30,7 @@ namespace LTSBackend.Features.CaseNotes.Commands.UpdateNote
 
             int currentUserId = GetCurrentUserId();
             var currentUserRoleId = await GetCurrentUserRoleId(currentUserId, cancellationToken);
-            bool isElevated = currentUserRoleId is 1 or 2 or 3; // SuperAdmin, FirmAdmin, Partner
+            bool isElevated = currentUserRoleId is 1 or 2 or 3;
 
             if (note.UserID != currentUserId && !isElevated)
                 throw new UnauthorizedException("Only the note's author or senior staff can edit it");

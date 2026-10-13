@@ -13,25 +13,25 @@ namespace LTSBackend.Features.Cases.Commands.CreateCase;
 
 public class CreateCaseHandler(AppDbContext _context, IAuditService _auditService, ILogger<CreateCaseHandler> _logger, IHttpContextAccessor _httpContextAccessor, ICurrentUserService _currentUser) : IRequestHandler<CreateCaseCommand, CreateCaseResultDTO>
 {
-    // =====================================================
-    // HANDLE — registers a brand-new litigation case (SRS UC-01) as ONE
-    // consistent business operation.
-    //
-    // The Case is the central object; everything derived from its Category
-    // comes from the Case Workflow Template (firm template first, else the
-    // global one): default Department, initial Status, ordered Stages and
-    // the required/optional document checklist. Court/Category/Department/
-    // Status/Stage/DocumentType are shared master rows - the case only
-    // REFERENCES them (nothing is created or duplicated per case). Only the
-    // case-owned rows are generated: Case, initial CaseStatusHistory,
-    // CaseWorkflowStages (case-specific progress), CaseDocumentRequirements
-    // (checklist) and the audit log - all inside ONE transaction, so a
-    // failure rolls back everything (no orphan/half-built cases).
-    //
-    // A category with no template keeps the previous behaviour (status
-    // "New", stage "Filing", no checklist) so existing categories keep
-    // working until an admin configures their template.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<CreateCaseResultDTO> Handle(CreateCaseCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating new case: {CaseNumber}", request.CaseNumber);
@@ -45,7 +45,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
         }
         int firmId = _currentUser.FirmID.Value;
 
-        // 1. Case Number uniqueness (firm-scoped)
+
         bool caseExists = await _context.Cases.AsNoTracking().AnyAsync(x => x.CaseNumber == request.CaseNumber && x.FirmID == firmId, cancellationToken);
         if (caseExists)
         {
@@ -53,7 +53,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             throw new ValidationException([$"Case Number '{request.CaseNumber}' already exists"]);
         }
 
-        // 2. Court - must already exist in the firm's master data (global or own firm; the query filter enforces that)
+
         var court = await _context.Courts.AsNoTracking().FirstOrDefaultAsync(x => x.CourtID == request.CourtID && x.IsActive, cancellationToken);
         if (court == null)
         {
@@ -61,7 +61,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             throw new ValidationException(["The selected Court is not available for your firm. Courts are configured once in Master Data and then reused."]);
         }
 
-        // 3. Category (active, visible to this firm)
+
         var category = await _context.CaseCategories.AsNoTracking().FirstOrDefaultAsync(x => x.CategoryID == request.CategoryID && x.IsActive, cancellationToken);
         if (category == null)
         {
@@ -69,7 +69,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             throw new ValidationException(["The selected Case Category is not available for your firm."]);
         }
 
-        // 4. Resolve the workflow template (firm's own template wins over the global one)
+
         var templates = await _context.CaseWorkflowTemplates.AsNoTracking()
             .Include(t => t.Stages).ThenInclude(s => s.Stage)
             .Include(t => t.Documents).ThenInclude(d => d.DocumentType)
@@ -78,7 +78,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             .ToListAsync(cancellationToken);
         var template = templates.FirstOrDefault(t => t.FirmID == firmId) ?? templates.FirstOrDefault(t => t.FirmID == null);
 
-        // 5. Department: explicit pick, else the template's default
+
         int? departmentId = request.ResponsibleDepartmentID ?? template?.DefaultDepartmentID;
         Department? department = null;
         if (departmentId.HasValue)
@@ -91,7 +91,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             }
         }
 
-        // 6. Legal Officer (only if provided) must be an active user of this firm
+
         if (request.CurrentLegalOfficerID.HasValue)
         {
             var legalOfficer = await _context.Users.AsNoTracking().FirstOrDefaultAsync(
@@ -103,7 +103,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             }
         }
 
-        // 7. Initial Status: template's, else the global "New"
+
         CaseStatus? status = template != null
             ? await _context.CaseStatuses.AsNoTracking().FirstOrDefaultAsync(x => x.StatusID == template.InitialStatusID && x.IsActive, cancellationToken)
             : await _context.CaseStatuses.AsNoTracking().FirstOrDefaultAsync(x => x.StatusName == "New" && x.IsActive, cancellationToken);
@@ -115,7 +115,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
                 : "Default status 'New' not found"]);
         }
 
-        // 8. Stages: template's active stages in order, else the single legacy "Filing" stage
+
         var plannedStages = new List<(int StageId, string StageName, int Seq)>();
         if (template != null)
         {
@@ -136,12 +136,12 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
             ? new List<CaseWorkflowTemplateDocument>()
             : template.Documents.Where(d => d.DocumentType.IsActive).OrderByDescending(d => d.IsRequired).ThenBy(d => d.DocumentType.TypeName).ToList();
 
-        // 9. One atomic unit of work (CreateExecutionStrategy: required because EnableRetryOnFailure is on)
+
         var strategy = _context.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
         {
-            // A retried attempt must not see entities left tracked by a failed one (would insert duplicates).
+
             _context.ChangeTracker.Clear();
 
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -177,13 +177,13 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
                     CreatedDate = now,
                     IsClosed = status.IsClosed,
                     IsArchived = false,
-                    // Snapshot reference: which template revision this case was generated from (NULL = legacy flow)
+
                     WorkflowTemplateID = template?.TemplateID,
                     WorkflowTemplateVersion = template?.Version
                 };
                 _context.Cases.Add(newCase);
 
-                // Initial status history (Case nav so the identity CaseID is fixed up automatically)
+
                 _context.CaseStatusHistories.Add(new CaseStatusHistory
                 {
                     Case = newCase,
@@ -194,7 +194,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
                     Remarks = "Case created"
                 });
 
-                // Case-specific workflow: first stage Active, the rest Pending
+
                 foreach (var st in plannedStages)
                 {
                     bool isFirst = st.Seq == 1;
@@ -208,7 +208,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
                     });
                 }
 
-                // Document checklist (requirements only - no files, no new DocumentType rows)
+
                 foreach (var d in plannedDocs)
                 {
                     _context.CaseDocumentRequirements.Add(new CaseDocumentRequirement
@@ -260,9 +260,9 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
         });
     }
 
-    // SECURITY FIX: see UpdateCaseHandler.GetCurrentUserId for full
-    // rationale - previously defaulted to UserID = 1 (SuperAdmin) instead
-    // of failing when the identity claim was missing.
+
+
+
     private int GetCurrentUserId()
     {
         var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -276,9 +276,9 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
         return userId;
     }
 
-    // Generates a random, collision-checked InternalReferenceNo (retries a
-    // few times, then falls back to a GUID-based value if every attempt
-    // collides — astronomically unlikely, but keeps the method total).
+
+
+
     private async Task<string> GenerateUniqueInternalReferenceNoAsync(CancellationToken cancellationToken)
     {
         const int maxAttempts = 5;
@@ -297,7 +297,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
         return $"CASE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid():N}"[..24];
     }
 
-    // Builds one candidate reference number: CASE-yyyyMMdd-XXXX.
+
     private static string GenerateInternalReferenceNo()
     {
         var now = DateTime.UtcNow;
@@ -305,7 +305,7 @@ public class CreateCaseHandler(AppDbContext _context, IAuditService _auditServic
         return $"CASE-{now:yyyyMMdd}-{randomPart}";
     }
 
-    // Generates a short random alphanumeric suffix for the reference number.
+
     private static string GenerateRandomString(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

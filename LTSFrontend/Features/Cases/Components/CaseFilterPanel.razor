@@ -1,8 +1,8 @@
-@* Reusable filter/toolbar strip for the case list - search box, Court/Status/
-   Priority dropdowns, page-size selector, and the table/grid view toggle.
-   Extracted out of CaseList.razor so any other case-listing screen (e.g. a
-   future "My Assigned Cases" filter bar) can reuse the exact same controls
-   instead of re-building them inline. *@
+
+
+
+
+
 @using LTSFrontend.Features.Masters.DTOs
 
 <div class="lts-toolbar" style="padding: 1rem 1.1rem 0;">
@@ -79,7 +79,7 @@
 
     [Parameter] public bool IsLoading { get; set; }
 
-    /// <summary>Raised after any filter/page-size change - the parent re-queries page 1.</summary>
+
     [Parameter] public EventCallback OnFilterChanged { get; set; }
     [Parameter] public EventCallback OnRefresh { get; set; }
 

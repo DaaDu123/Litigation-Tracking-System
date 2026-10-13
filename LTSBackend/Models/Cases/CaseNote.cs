@@ -17,7 +17,7 @@ public class CaseNote
     public int UserID { get; set; }
 
     [Required, MaxLength(50)]
-    public string NoteType { get; set; } = string.Empty; // Internal, Confidential, General
+    public string NoteType { get; set; } = string.Empty;
 
     [Required]
     public string Notes { get; set; } = string.Empty;

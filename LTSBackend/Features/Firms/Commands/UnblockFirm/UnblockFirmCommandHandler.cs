@@ -7,9 +7,9 @@ namespace LTSBackend.Features.Firms.Commands.UnblockFirm;
 
 public class UnblockFirmCommandHandler(AppDbContext _context) : IRequestHandler<UnblockFirmCommand, bool>
 {
-    // =====================================================
-    // HANDLE — reverses Block, restoring the firm's ability to log in
-    // =====================================================
+
+
+
     public async Task<bool> Handle(UnblockFirmCommand request, CancellationToken cancellationToken)
     {
         var firm = await _context.Firms.FirstOrDefaultAsync(x => x.FirmID == request.FirmID, cancellationToken);

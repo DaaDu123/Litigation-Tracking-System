@@ -31,9 +31,9 @@
   border-bottom-color: var(--lts-primary, #1b4fd6);
 }
 
-/* ==========================================================================
-   Responsive — tabs: become a swipeable single row on narrow screens
-   ========================================================================== */
+
+
+
 .lts-tab {
   white-space: nowrap;
 }

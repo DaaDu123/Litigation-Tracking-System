@@ -4,10 +4,10 @@
 
 namespace LTSBackend.Migrations
 {
-    /// <inheritdoc />
+
     public partial class SeedCaseStatusesAndStages : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.InsertData(
@@ -36,7 +36,7 @@ namespace LTSBackend.Migrations
                 });
         }
 
-        /// <inheritdoc />
+
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DeleteData(

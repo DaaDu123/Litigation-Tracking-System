@@ -44,11 +44,11 @@ public static class JwtAuthenticationExtensions
         return builder;
     }
 
-    // A signed, unexpired JWT can still belong to a session that should no
-    // longer work - account deactivated, firm blocked, or password/logout
-    // rotated the security stamp since the token was issued. This runs on
-    // every authenticated request to catch those cases immediately instead
-    // of waiting for the token to expire naturally.
+
+
+
+
+
     private static async Task ValidateLiveSessionAsync(TokenValidatedContext context)
     {
         var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);

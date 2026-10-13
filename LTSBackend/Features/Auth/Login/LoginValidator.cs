@@ -3,7 +3,7 @@ namespace LTSBackend.Features.Auth.Login;
 
 public class LoginValidator : AbstractValidator<LoginCommand>
 {
-    // Requires a well-formed email and a non-empty password.
+
     public LoginValidator()
     {
         RuleFor(x => x.Email)

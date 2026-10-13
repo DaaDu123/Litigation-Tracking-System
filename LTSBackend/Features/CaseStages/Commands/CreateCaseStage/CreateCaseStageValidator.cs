@@ -4,8 +4,8 @@ namespace LTSBackend.Features.CaseStages.Commands.CreateCaseStage;
 
 public class CreateCaseStageValidator : AbstractValidator<CreateCaseStageCommand>
 {
-    // Requires a stage name (max 150 chars) and an optional description
-    // (max 500 chars).
+
+
     public CreateCaseStageValidator()
     {
         RuleFor(x => x.StageName)

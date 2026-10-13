@@ -6,7 +6,7 @@ namespace LTSBackend.Features.CaseAssignments.Commands.UpdateAssignment
     {
         private static readonly string[] ValidTypes = { "Legal Officer", "Supervisor", "Lawyer", "External Counsel" };
 
-        // Requires a valid AssignmentID and a recognised AssignmentType.
+
         public UpdateAssignmentValidator()
         {
             RuleFor(x => x.Assignment).NotNull();

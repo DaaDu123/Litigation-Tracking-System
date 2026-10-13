@@ -5,15 +5,15 @@ namespace LTSBackend.Features.Profile.Commands;
 
 public class UpdateMyProfileValidator : AbstractValidator<UpdateMyProfileCommand>
 {
-    // Requires a full name; phone/department are optional but
-    // format/length-checked. Phone goes through the same PakistaniFormat
-    // check as registration/profile-completion (see that class's doc
-    // comment: every write path MUST use it) - this used to be a looser,
-    // one-off regex that accepted things like "0300-123-4567" or a phone
-    // padded with spaces that IsValidPhone would reject, so a self-edit
-    // could drift out of the canonical +923XXXXXXXXX format enforced
-    // everywhere else. ProfileImage, if supplied, must be under 5MB and a
-    // JPG/JPEG/PNG/WebP file.
+
+
+
+
+
+
+
+
+
     public UpdateMyProfileValidator()
     {
         RuleFor(x => x.FullName)
@@ -37,7 +37,7 @@ public class UpdateMyProfileValidator : AbstractValidator<UpdateMyProfileCommand
                 if (file == null)
                     return true;
 
-                return file.Length <= 5 * 1024 * 1024;  // 5MB max
+                return file.Length <= 5 * 1024 * 1024;
             })
             .WithMessage("Profile image cannot exceed 5 MB.")
             .Must(file =>
@@ -49,7 +49,7 @@ public class UpdateMyProfileValidator : AbstractValidator<UpdateMyProfileCommand
                 return allowed.Contains(Path.GetExtension(file.FileName).ToLowerInvariant());
             })
             .WithMessage("Only JPG, JPEG, PNG, and WebP image formats are allowed.")
-            // SECURITY: same content-signature check used on create/update-user's photo.
+
             .Must(file =>
             {
                 if (file == null)

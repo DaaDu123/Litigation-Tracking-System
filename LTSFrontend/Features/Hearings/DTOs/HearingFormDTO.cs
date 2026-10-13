@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Hearings.DTOs
 {
-    /// <summary>Shared form model for creating/updating a hearing. HearingId stays 0 when creating.</summary>
+
     public class HearingFormDTO
     {
         public long HearingId { get; set; }

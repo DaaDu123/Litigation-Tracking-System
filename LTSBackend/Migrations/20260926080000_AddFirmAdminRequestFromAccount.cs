@@ -4,10 +4,10 @@
 
 namespace LTSBackend.Migrations
 {
-    /// <inheritdoc />
+
     public partial class AddFirmAdminRequestFromAccount : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(
@@ -40,7 +40,7 @@ namespace LTSBackend.Migrations
                 onDelete: ReferentialAction.Restrict);
         }
 
-        /// <inheritdoc />
+
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(

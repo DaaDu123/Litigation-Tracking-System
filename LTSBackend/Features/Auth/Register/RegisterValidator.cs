@@ -4,9 +4,9 @@ namespace LTSBackend.Features.Auth.Register;
 
 public class RegisterValidator : AbstractValidator<RegisterCommand>
 {
-    // Firm User self-registration is Email + Password only now - full
-    // name, phone, CNIC, and firm membership are all collected/chosen
-    // later (profile completion, then a join request from the dashboard).
+
+
+
     public RegisterValidator()
     {
         RuleFor(x => x.Email)

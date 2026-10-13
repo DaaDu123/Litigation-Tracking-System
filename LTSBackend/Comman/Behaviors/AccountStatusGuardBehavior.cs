@@ -7,20 +7,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LTSBackend.Comman.Behaviors;
 
-/// <summary>
-/// THE backend security boundary for blocked/removed/deleted accounts and
-/// blocked firm workspaces. Deliberately independent of the JWT's claims
-/// (which are only re-issued at login/refresh) - this behavior re-checks
-/// the LIVE database state on every single request, so an action taken
-/// against a user mid-session (Block, Remove, or their firm being
-/// blocked) takes effect immediately, on the very next call, and cannot
-/// be bypassed by holding on to an already-issued access token and
-/// calling the API directly.
-///
-/// Registered FIRST in the pipeline (see MediatRExtensions) so a rejected
-/// account never reaches ValidationBehavior, ProfileCompletionBehavior,
-/// or any handler/business logic at all.
-/// </summary>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 public class AccountStatusGuardBehavior<TRequest, TResponse>(AppDbContext _context, ICurrentUserService _currentUser)
     : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
@@ -42,7 +42,7 @@ public class AccountStatusGuardBehavior<TRequest, TResponse>(AppDbContext _conte
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        // No matching, non-deleted user row at all -> fail closed.
+
         if (status == null || status.IsDeleted)
             throw new UnauthorizedException("Your account is no longer active.");
 

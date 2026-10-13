@@ -8,7 +8,7 @@ public class ClamAvVirusScanService(IConfiguration _configuration, ILogger<ClamA
 {
     private const int ChunkSize = 8192;
 
-    // Streams the file to a clamd daemon over TCP and returns whether it is clean.
+
     public async Task<VirusScanResult> ScanAsync(Stream fileStream, string originalFileName, CancellationToken cancellationToken = default)
     {
         bool enabled = _configuration.GetValue("VirusScan:Enabled", true);

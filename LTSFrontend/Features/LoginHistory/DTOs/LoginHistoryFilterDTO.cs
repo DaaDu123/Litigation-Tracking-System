@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.LoginHistory.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.LoginHistory.DTOs.LoginHistoryFilterDTO</summary>
+
     public class LoginHistoryFilterDTO
     {
         public string? Search { get; set; }

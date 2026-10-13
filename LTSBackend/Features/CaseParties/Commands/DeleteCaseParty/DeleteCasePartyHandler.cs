@@ -11,11 +11,11 @@ namespace LTSBackend.Features.CaseParties.Commands.DeleteCaseParty
     public class DeleteCasePartyHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<DeleteCasePartyCommand, bool>
     {
-        // =====================================================
-        // HANDLE — removes a party from a case
-        // Enforces firm isolation (party's case must belong to the
-        // caller's own firm) before deleting; writes an audit log entry.
-        // =====================================================
+
+
+
+
+
         public async Task<bool> Handle(DeleteCasePartyCommand request, CancellationToken cancellationToken)
         {
             var party = await _context.CaseParties.Include(p => p.Case).FirstOrDefaultAsync(p => p.PartyID == request.PartyID, cancellationToken);

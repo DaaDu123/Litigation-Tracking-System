@@ -18,7 +18,7 @@ public class UserOtp
     public OtpPurpose Purpose { get; set; } = OtpPurpose.Registration;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public int? UserID { get; set; }
-    // Foreign Key & Navigation Property
+
     [ForeignKey(nameof(UserID))]
     public User? User { get; set; }
 }

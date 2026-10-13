@@ -2,12 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.FirmAdminRequests.DTOs
 {
-    /// <summary>
-    /// Mirrors LTSBackend.Features.FirmAdminRequests.Commands.SubmitFirmAdminRequest.SubmitFirmAdminRequestCommand -
-    /// Email + Password only now. Firm name/code and personal details are
-    /// collected later, during mandatory profile completion after
-    /// SuperAdmin approval.
-    /// </summary>
+
+
+
+
+
+
     public class SubmitFirmAdminRequest : IValidatableObject
     {
         [Required(ErrorMessage = "Email is required.")]

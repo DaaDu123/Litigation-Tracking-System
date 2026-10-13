@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Hearings.Commands.RecordAttendance
 {
     public class RecordAttendanceValidator : AbstractValidator<RecordAttendanceCommand>
     {
-        // Requires a valid HearingID and UserID; role/remarks are optional but
-        // length-capped.
+
+
         public RecordAttendanceValidator()
         {
             RuleFor(x => x.Attendance).NotNull();

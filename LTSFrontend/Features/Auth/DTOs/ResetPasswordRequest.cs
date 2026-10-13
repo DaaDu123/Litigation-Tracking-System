@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Auth.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Auth.ResetPassword.ResetPasswordCommand / ResetPasswordValidator.
-    /// Email + OtpCode come from the forgot-password step; both are sent
-    /// together with the new password in one call (see ResetPasswordHandler).</summary>
+
+
+
     public class ResetPasswordRequest : IValidatableObject
     {
         [Required(ErrorMessage = "Email is required.")]

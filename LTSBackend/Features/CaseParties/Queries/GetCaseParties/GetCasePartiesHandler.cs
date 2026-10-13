@@ -9,14 +9,14 @@ namespace LTSBackend.Features.CaseParties.Queries.GetCaseParties
 {
     public class GetCasePartiesHandler(AppDbContext _context, ICurrentUserService _currentUser, IPermissionService _permissionService) : IRequestHandler<GetCasePartiesQuery, List<CasePartyDetailDTO>>
     {
-        // =====================================================
-        // HANDLE — lists a case's parties, scoped to who's allowed to see it
-        // Only SuperAdmin/FirmAdmin/Partner (full case-directory
-        // visibility) or a user actually assigned to this case can see
-        // its parties — returns an empty list (not an error) otherwise, so
-        // the case's existence isn't disclosed. Also enforces firm
-        // isolation.
-        // =====================================================
+
+
+
+
+
+
+
+
         public async Task<List<CasePartyDetailDTO>> Handle(GetCasePartiesQuery request, CancellationToken cancellationToken)
         {
             if (_currentUser.UserID.HasValue)
@@ -35,7 +35,7 @@ namespace LTSBackend.Features.CaseParties.Queries.GetCaseParties
 
             var query = _context.CaseParties.AsNoTracking().Where(p => p.CaseID == request.CaseID);
 
-            // Multi-tenant isolation
+
                 query = query.Where(p => p.Case.FirmID == _currentUser.FirmID);
 
             return await query

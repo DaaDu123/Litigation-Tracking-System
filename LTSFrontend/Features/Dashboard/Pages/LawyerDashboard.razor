@@ -70,8 +70,6 @@ else
         _errorMessage = null;
         try
         {
-            // GetAllCases already returns only cases this lawyer is actively
-            // assigned to (server-side scoping), so this IS "my cases".
             var paged = await CaseService.GetAllAsync(pageSize: 100);
             _cases = paged.Items;
             _totalCases = paged.TotalRecords;

@@ -11,8 +11,8 @@ namespace LTSFrontend.Features.Hearings.Services
         Task<bool> UpdateAsync(HearingFormDTO form);
         Task<bool> DeleteAsync(long id);
 
-        // Hearing Attendance (Complete Database Schema - HearingAttendance table;
-        // backend endpoints existed with no frontend caller until now)
+
+
         Task<List<HearingAttendanceDTO>> GetAttendanceAsync(long hearingId);
         Task<long> RecordAttendanceAsync(AttendanceFormDTO form);
         Task<bool> UpdateAttendanceAsync(AttendanceFormDTO form);

@@ -1,4 +1,4 @@
-/* ---------- Breadcrumb / page header ---------- */
+
 
 .lts-breadcrumb {
     display: flex;
@@ -62,9 +62,9 @@
     }
 }
 
-/* ==========================================================================
-   Responsive — breadcrumb & page header
-   ========================================================================== */
+
+
+
 .lts-breadcrumb {
     flex-wrap: wrap;
     overflow-wrap: anywhere;
@@ -72,7 +72,7 @@
 
 .lts-page-header > div:first-child {
     min-width: 0;
-    flex: 1 1 18rem; /* row layout only (>= 768px) */
+    flex: 1 1 18rem;
 }
 
 .lts-page-title {
@@ -85,8 +85,8 @@
 }
 
 @media (max-width: 767.98px) {
-    /* The header is a COLUMN here: a flex-basis would become a HEIGHT and leave
-     a big empty gap under the title, so reset it to content height. */
+
+
     .lts-page-header > div:first-child {
         flex: 0 0 auto;
     }

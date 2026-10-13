@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Deadlines.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Deadlines.DTOs.DeadlineDetailDTO</summary>
+
     public class DeadlineDTO
     {
         public long DeadlineID { get; set; }

@@ -11,12 +11,12 @@ namespace LTSBackend.Features.FirmAdminRequests.Commands.CancelFirmAdminRequestF
 public class CancelFirmAdminRequestFromAccountCommandHandler(AppDbContext _context, ICurrentUserService _currentUser,
     ILogger<CancelFirmAdminRequestFromAccountCommandHandler> _logger) : IRequestHandler<CancelFirmAdminRequestFromAccountCommand, bool>
 {
-    // =====================================================
-    // HANDLE — cancels the caller's OWN pending Firm Admin request only.
-    // Checks UserID == the caller (not just RequestID) so nobody can cancel
-    // someone else's request by guessing its ID. Request status change and
-    // slot release are committed together in one SaveChanges.
-    // =====================================================
+
+
+
+
+
+
     public async Task<bool> Handle(CancelFirmAdminRequestFromAccountCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

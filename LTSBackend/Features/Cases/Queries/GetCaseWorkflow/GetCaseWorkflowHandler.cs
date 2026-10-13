@@ -10,15 +10,15 @@ namespace LTSBackend.Features.Cases.Queries.GetCaseWorkflow;
 
 public class GetCaseWorkflowHandler(AppDbContext _context, ICurrentUserService _currentUser, IPermissionService _permissionService, ILogger<GetCaseWorkflowHandler> _logger) : IRequestHandler<GetCaseWorkflowQuery, CaseWorkflowDTO>
 {
-    // =====================================================
-    // HANDLE — a case's own workflow progress + document checklist
-    // Same visibility rule as GetCaseById (firm scoped; users without
-    // full directory visibility must be assigned, otherwise 404 so the
-    // case's existence isn't disclosed). The checklist's "fulfilled" state
-    // is derived from the real Documents table (same CaseID + DocumentTypeID),
-    // never stored, and only counts are exposed - not file details - so no
-    // per-document permission is bypassed.
-    // =====================================================
+
+
+
+
+
+
+
+
+
     public async Task<CaseWorkflowDTO> Handle(GetCaseWorkflowQuery request, CancellationToken cancellationToken)
     {
         var caseInfo = await _context.Cases.AsNoTracking()
@@ -62,7 +62,7 @@ public class GetCaseWorkflowHandler(AppDbContext _context, ICurrentUserService _
                 IsRequired = x.IsRequired
             }).ToListAsync(cancellationToken);
 
-        // Latest-version documents per type on this case
+
         var uploaded = await _context.Documents.AsNoTracking()
             .Where(d => d.CaseID == request.CaseID && d.IsLatest)
             .GroupBy(d => d.DocumentTypeID)
@@ -76,7 +76,7 @@ public class GetCaseWorkflowHandler(AppDbContext _context, ICurrentUserService _
             r.IsFulfilled = (u?.Approved ?? 0) > 0;
         }
 
-        // Active template currently in force for the case's category (firm's own wins over global)
+
         var activeTemplates = await _context.CaseWorkflowTemplates.AsNoTracking()
             .Where(t => t.CategoryID == caseInfo.CategoryID && t.IsActive)
             .Select(t => new { t.FirmID, t.Version })

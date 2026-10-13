@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Auth.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Auth.Login.LoginCommand / LoginValidator</summary>
+
     public class LoginRequest
     {
         [Required(ErrorMessage = "Email is required.")]

@@ -1,9 +1,9 @@
-@* Generic reason-required confirmation modal, for actions where the
-   reason is mandatory (Block, Remove) - unlike ConfirmDialog/
-   RejectFirmAdminRequestModal, this one won't let the caller confirm
-   with a blank reason.
-   Usage: <ReasonRequiredModal @ref="_blockModal" OnConfirmed="HandleBlockConfirmedAsync" />
-          _blockModal.Open(user.UserID, $"Block \"{user.FullName}\"?", "...", "Block", "danger"); *@
+
+
+
+
+
+
 @using LTSFrontend.Features.Users.DTOs
 
 <div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>

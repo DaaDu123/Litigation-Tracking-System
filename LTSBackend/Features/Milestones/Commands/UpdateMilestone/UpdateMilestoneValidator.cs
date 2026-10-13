@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Milestones.Commands.UpdateMilestone
 {
     public class UpdateMilestoneValidator : AbstractValidator<UpdateMilestoneCommand>
     {
-        // Requires a valid MilestoneID plus the same name/date rules as
-        // CreateMilestoneValidator.
+
+
         public UpdateMilestoneValidator()
         {
             RuleFor(x => x.Milestone).NotNull();

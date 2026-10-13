@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.UserJoinRequests.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.UserJoinRequests.DTOs.UserJoinRequestDTO</summary>
+
     public class UserJoinRequestDTO
     {
         public int RequestID { get; set; }

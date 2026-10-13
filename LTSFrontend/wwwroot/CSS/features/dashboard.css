@@ -1,4 +1,4 @@
-/* ---------- Dashboard: page layout ---------- */
+
 
 .lts-dashboard-grid {
   display: grid;
@@ -26,7 +26,7 @@
   }
 }
 
-/* ---------- Dashboard: chart widget (pure CSS bar chart, no JS dependency) ---------- */
+
 
 .lts-chart-widget-title {
   font-size: 0.85rem;
@@ -78,7 +78,7 @@
   color: var(--lts-text);
 }
 
-/* ---------- Dashboard: recent activity panel ---------- */
+
 
 .lts-activity-list {
   display: flex;
@@ -137,7 +137,7 @@ a.lts-activity-item:hover {
   padding-left: 0.5rem;
 }
 
-/* ---------- Dashboard: quick links ---------- */
+
 
 .lts-quicklink-grid {
   display: grid;
@@ -172,12 +172,12 @@ a.lts-activity-item:hover {
   font-size: 1.05rem;
 }
 
-/* ==========================================================================
-   Responsive — dashboards
-   XL/LG : two-column (main + side) / three-column grids
-   MD    : thirds become 2-up, main+side stack
-   SM/XS : everything single-column
-   ========================================================================== */
+
+
+
+
+
+
 .lts-dashboard-grid > *,
 .lts-dashboard-grid-thirds > * {
   min-width: 0;

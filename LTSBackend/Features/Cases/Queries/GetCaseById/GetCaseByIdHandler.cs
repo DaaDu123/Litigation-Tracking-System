@@ -10,18 +10,18 @@ namespace LTSBackend.Features.Cases.Queries.GetCaseById;
 
 public class GetCaseByIdHandler(AppDbContext _context, ICurrentUserService _currentUser, IPermissionService _permissionService, ILogger<GetCaseByIdHandler> _logger) : IRequestHandler<GetCaseByIdQuery, CaseDTO?>
 {
-    // =====================================================
-    // HANDLE — fetches a single case's full detail (firm + assignment scoped)
-    // Firm-scoped lookup, then the same assignment check as GetAllCases:
-    // a user without full case-directory visibility must be actively
-    // assigned to THIS case, or gets 404 (not 403) so the case's
-    // existence isn't disclosed.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<CaseDTO?> Handle(GetCaseByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching case: {CaseID}", request.CaseID);
 
-        // 1. Find case with all relations (firm-scoped)
+
         var query = _context.Cases
             .AsNoTracking()
             .Include(x => x.Court)
@@ -42,16 +42,16 @@ public class GetCaseByIdHandler(AppDbContext _context, ICurrentUserService _curr
             throw new NotFoundException($"Case ID {request.CaseID} not found");
         }
 
-        // 1b. SECURITY FIX (BOLA): the query above only enforces firm-level
-        // (tenant) scoping. Per the Roles & Permissions Matrix, only
-        // SuperAdmin / FirmAdmin / Partner may view every case in the
-        // firm's directory — AssociateLawyer, Moharrir, and
-        // InternParalegal must only be able to open cases they are
-        // actively assigned to. Previously this endpoint had no
-        // assignment check at all, so any authenticated firm user
-        // could read any case in the firm just by guessing/incrementing
-        // the CaseID. We return 404 (not 403) so an unassigned case's
-        // existence isn't disclosed to a user who shouldn't see it.
+
+
+
+
+
+
+
+
+
+
         if (_currentUser.UserID.HasValue)
         {
             bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);
@@ -71,9 +71,9 @@ public class GetCaseByIdHandler(AppDbContext _context, ICurrentUserService _curr
             }
         }
 
-        // 2. Map to DTO
-        // Department / LegalOfficer are nullable FKs (per schema),
-        // accessed with null-conditional to avoid NullReferenceException.
+
+
+
         var caseDto = new CaseDTO
         {
             CaseID = caseRecord.CaseID,

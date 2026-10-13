@@ -13,24 +13,24 @@ namespace LTSBackend.Features.Deadlines.Commands.CreateDeadline
     public class CreateDeadlineHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,IPermissionService _permissionService,
         IHttpContextAccessor _httpContextAccessor,ILogger<CreateDeadlineHandler> _logger) : IRequestHandler<CreateDeadlineCommand, long>
     {
-        // =====================================================
-        // HANDLE — adds a new deadline against a case
-        // Verifies the case belongs to the caller's own firm, and —
-        // since Create is open to AssociateLawyer/Moharrir at the
-        // controller — that the caller has full case-directory
-        // visibility or is actually assigned to this case. Saves the
-        // deadline with the caller's own chosen ReminderDays (see
-        // ReminderService for how that's used).
-        // =====================================================
+
+
+
+
+
+
+
+
+
         public async Task<long> Handle(CreateDeadlineCommand request, CancellationToken cancellationToken)
         {
             var caseEntity = await _context.Cases.FirstOrDefaultAsync(c => c.CaseID == request.Deadline.CaseID, cancellationToken);
             if (caseEntity == null || (caseEntity.FirmID != _currentUser.FirmID))
                 throw new NotFoundException($"Case ID {request.Deadline.CaseID} not found");
 
-            // SECURITY FIX (IDOR): controller allows RoleNames.AllLawyers
-            // (includes AssociateLawyer/Moharrir), who must be scoped to
-            // their assigned cases only.
+
+
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

@@ -70,8 +70,6 @@ else
         _errorMessage = null;
         try
         {
-            // GetAllCases already returns only cases this Moharrir is actively
-            // assigned to (server-side scoping) - i.e. their own court diary.
             var paged = await CaseService.GetAllAsync(pageSize: 100);
             _cases = paged.Items;
             _totalCases = paged.TotalRecords;

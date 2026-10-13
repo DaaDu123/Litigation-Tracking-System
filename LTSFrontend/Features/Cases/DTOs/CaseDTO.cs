@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Cases.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Cases.DTOs.CaseDTO (read model, used in list/details).</summary>
+
     public class CaseDTO
     {
         public long CaseID { get; set; }

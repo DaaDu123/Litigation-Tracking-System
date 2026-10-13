@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Hearings.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Hearings.DTOs.HearingAttendanceDTO</summary>
+
     public class HearingAttendanceDTO
     {
         public long AttendanceId { get; set; }

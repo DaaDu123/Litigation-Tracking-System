@@ -15,7 +15,7 @@ namespace LTSBackend.Services
             }
             catch
             {
-                // Hash format invalid — password cannot match
+
                 return false;
             }
         }

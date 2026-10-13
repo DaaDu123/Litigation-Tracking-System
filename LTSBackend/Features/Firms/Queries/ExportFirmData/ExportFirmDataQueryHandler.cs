@@ -9,11 +9,11 @@ namespace LTSBackend.Features.Firms.Queries.ExportFirmData;
 
 public class ExportFirmDataQueryHandler(AppDbContext _context, ILogger<ExportFirmDataQueryHandler> _logger) : IRequestHandler<ExportFirmDataQuery, byte[]>
 {
-    // =====================================================
-    // HANDLE — builds a downloadable zip of a firm's data (users/cases/parties CSVs)
-    // Used as part of the firm-offboarding flow: export the firm's data
-    // before blocking/removing its workspace.
-    // =====================================================
+
+
+
+
+
     public async Task<byte[]> Handle(ExportFirmDataQuery request, CancellationToken cancellationToken)
     {
         var firm = await _context.Firms.AsNoTracking().FirstOrDefaultAsync(f => f.FirmID == request.FirmID, cancellationToken);
@@ -49,9 +49,9 @@ public class ExportFirmDataQueryHandler(AppDbContext _context, ILogger<ExportFir
         return memoryStream.ToArray();
     }
 
-    // Writes one CSV file entry into the zip archive from a list of
-    // anonymous-typed rows, using reflection to derive the header row from
-    // the first row's properties.
+
+
+
     private static async Task WriteCsvEntryAsync(ZipArchive archive, string fileName, List<object> rows)
     {
         var entry = archive.CreateEntry(fileName, CompressionLevel.Fastest);

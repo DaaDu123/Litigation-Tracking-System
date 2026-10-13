@@ -3,7 +3,7 @@
     public class CreateCasePartyDTO
     {
         public long CaseID { get; set; }
-        public string PartyType { get; set; } = string.Empty; // Plaintiff, Defendant, Petitioner, Respondent, Applicant, Respondent Department
+        public string PartyType { get; set; } = string.Empty;
         public string PartyName { get; set; } = string.Empty;
         public string? Organization { get; set; }
         public string? CNIC { get; set; }

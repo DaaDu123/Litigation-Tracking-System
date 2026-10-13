@@ -164,7 +164,6 @@
         }
     }
 
-    // A firm's own template for the category wins over the shared global one (same rule the backend applies when creating a case).
     private CaseWorkflowTemplateDTO? TemplateFor(int categoryId) =>
         _templates.FirstOrDefault(t => t.CategoryID == categoryId && !t.IsGlobal)
         ?? _templates.FirstOrDefault(t => t.CategoryID == categoryId && t.IsGlobal);

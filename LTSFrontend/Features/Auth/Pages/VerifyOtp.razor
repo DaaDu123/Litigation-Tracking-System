@@ -82,13 +82,13 @@
     private string? _errorMessage;
     private string? _infoMessage;
 
-    // Resend cooldown: prevents spamming "Resend OTP" (which previously
-    // had no cooldown at all - a user could click it repeatedly, firing
-    // several emails in seconds and eventually hitting the backend's
-    // "auth-moderate" rate limiter with a raw 429 instead of a clear
-    // message). The button now shows a visible countdown and re-enables
-    // itself automatically, with no extra restriction, the instant the
-    // cooldown ends.
+
+
+
+
+
+
+
     private const int ResendCooldownSeconds = 45;
     private int _cooldownSecondsLeft;
     private System.Timers.Timer? _cooldownTimer;
@@ -139,9 +139,9 @@
 
             await provider.MarkUserAsAuthenticatedAsync(result.UserID, result.FullName, result.Email, result.RoleName, result.AccessToken, result.AccessTokenExpiry);
 
-            // No forceLoad - see Login.razor comment: session is already
-            // live in this circuit, a hard reload only risks the
-            // prerender-vs-JS-interop race.
+
+
+
             Navigation.NavigateTo("/");
         }
         catch (ApiException ex)

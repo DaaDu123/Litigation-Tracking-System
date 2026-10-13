@@ -6,8 +6,8 @@ namespace LTSBackend.Features.CaseNotes.Commands.UpdateNote
     {
         private static readonly string[] ValidTypes = { "Internal", "Confidential", "General" };
 
-        // Requires a valid NoteID plus the same NoteType/text rules as
-        // CreateCaseNoteValidator.
+
+
         public UpdateCaseNoteValidator()
         {
             RuleFor(x => x.Note).NotNull();

@@ -39,7 +39,7 @@
         }
         else if (!Status.Current.CanSubmit)
         {
-            @* Pending, Approved, or blocked by a Super Admin request: explain, don't offer a submit. *@
+
             <div class="lts-modal-header">
                 <div class="lts-modal-icon lts-modal-icon-primary">
                     <i class="bi bi-building-add"></i>
@@ -135,8 +135,8 @@
 
         try
         {
-            // Fresh status every time it opens - the request may have been
-            // approved/rejected (or a conflicting one created) since the page loaded.
+
+
             await Status.RefreshAsync();
         }
         finally
@@ -180,8 +180,8 @@
         await Status.RefreshAsync();
     }
 
-    // Withdraws the user's OWN pending request to the Super Admin, which frees
-    // their single access-request slot (they may then request a Firm Admin instead).
+
+
     private async Task CancelRequestAsync()
     {
         var pending = Status.Current?.LatestRequest;

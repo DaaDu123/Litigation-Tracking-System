@@ -13,18 +13,18 @@ namespace LTSBackend.Features.FirmAdminRequests.Commands.ApproveFirmAdminRequest
 public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailService _emailService,IAuditService _auditService,
     ILogger<ApproveFirmAdminRequestCommandHandler> _logger) : IRequestHandler<ApproveFirmAdminRequestCommand, int>
 {
-    // =====================================================
-    // HANDLE — accepts a pending Firm Admin request, creates a firm and
-    // either creates a brand-new admin account (anonymous flow) or
-    // promotes the requester's OWN existing account (from-account flow -
-    // see SubmitFirmAdminRequestFromAccountCommand). Refuses if the
-    // request isn't still Pending, re-checks uniqueness (something else
-    // may have taken it since submission), then — in one retry-safe
-    // transaction — creates the Firm, sets up the admin, marks the
-    // request Approved, and writes an audit log entry. Emails the
-    // requester on success (best-effort — a failed email doesn't roll
-    // back the approval).
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<int> Handle(ApproveFirmAdminRequestCommand request, CancellationToken cancellationToken)
     {
         var firmAdminRequest = await _context.FirmAdminRequests.FirstOrDefaultAsync(x => x.RequestID == request.RequestID, cancellationToken);
@@ -35,20 +35,20 @@ public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailS
         if (firmAdminRequest.Status != "Pending")
             throw new ValidationException([$"This request has already been {firmAdminRequest.Status.ToLower()}."]);
 
-        // Registration collects only Email + Password now, so generate
-        // internal placeholders here. FirmCode is purely an internal
-        // identifier now (never shown to or entered by users) - a GUID
-        // fragment guarantees uniqueness without needing a retry loop.
-        // The Firm Admin replaces the placeholder FirmName (and everything
-        // else) for real during mandatory profile completion.
+
+
+
+
+
+
         var placeholderCode = "FIRM-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
         var emailLocalPart = firmAdminRequest.AdminEmail.Split('@')[0];
         var placeholderFirmName = firmAdminRequest.FirmName ?? $"{emailLocalPart}'s Firm (setup pending)";
         var placeholderAdminName = firmAdminRequest.AdminFullName ?? emailLocalPart;
 
-        // EnableRetryOnFailure means a manually-opened transaction can't
-        // span retried operations - see CreateFirmCommandHandler for the
-        // full explanation of why CreateExecutionStrategy() is required.
+
+
+
         var strategy = _context.Database.CreateExecutionStrategy();
 
         var newFirmId = await strategy.ExecuteAsync(async () =>
@@ -72,11 +72,11 @@ public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailS
 
             if (firmAdminRequest.UserID.HasValue)
             {
-                // FROM-ACCOUNT FLOW: the requester already has a real
-                // account (see SubmitFirmAdminRequestFromAccountCommand) -
-                // promote that SAME row in place rather than creating a
-                // second one. Their email/password are reused exactly as
-                // they already are; nothing is re-entered or duplicated.
+
+
+
+
+
                 admin = await _context.Users.FirstOrDefaultAsync(x => x.UserID == firmAdminRequest.UserID.Value, cancellationToken)
                     ?? throw new NotFoundException("The requesting user account no longer exists.");
 
@@ -85,22 +85,22 @@ public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailS
 
                 admin.RoleID = (int)UserRole.FirmAdmin;
                 admin.FirmID = firm.FirmID;
-                // The rest of their profile (name/phone/CNIC) was already
-                // captured at registration - only the Firm's real details
-                // (FirmName, Address, etc.) still need to be collected, so
-                // this is flipped back to false to route them through the
-                // same CompleteFirmAdminProfileCommand gate once more; it
-                // simply re-saves their existing FullName/Phone/CNIC
-                // alongside the new Firm details.
+
+
+
+
+
+
+
                 admin.IsProfileCompleted = false;
             }
             else
             {
-                // ANONYMOUS/LEGACY FLOW: no existing account - re-check
-                // email uniqueness at approval time too (it could have
-                // been taken by something else since submission), then
-                // create a brand-new User row using the password hash
-                // captured at submission time.
+
+
+
+
+
                 bool emailTaken = await _context.Users.AsNoTracking().AnyAsync(x => x.Email == firmAdminRequest.AdminEmail, cancellationToken);
 
                 if (emailTaken)
@@ -120,10 +120,10 @@ public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailS
                     FirmID = firm.FirmID,
                     IsActive = true,
                     IsDeleted = false,
-                    // Mandatory profile completion gate: the Firm Admin cannot
-                    // reach the dashboard or any protected feature until they
-                    // complete their profile (CompleteFirmAdminProfileCommand),
-                    // enforced backend-side by ProfileCompletionBehavior.
+
+
+
+
                     IsProfileCompleted = false,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -150,7 +150,7 @@ public class ApproveFirmAdminRequestCommandHandler(AppDbContext _context,IEmailS
 
         _logger.LogInformation("Firm Admin request {RequestId} approved by {ActingUserId} - firm {FirmId} created",firmAdminRequest.RequestID, request.ActingUserID, newFirmId);
 
-        // Best-effort - don't fail the approval itself if the email send fails.
+
         try
         {
             await _emailService.SendNotificationEmailAsync(

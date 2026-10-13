@@ -90,21 +90,17 @@
     private ReasonRequiredModal _removeModal = default!;
     private ChangeRoleModal _roleModal = default!;
 
-    /// <summary>
-    /// Gates Edit/Deactivate/Activate/PermanentDelete/Block/Remove/Role
-    /// (the Actions column in UserTable). FirmAdmin-only: Partner CAN view
-    /// this page/list (see the page's own @attribute above, now
-    /// "FirmAdmin,Partner") but has NO Create/Update/Delete access to
-    /// users - view-only. SuperAdmin is likewise excluded: firm user
-    /// management is the firm's own domain, not the platform owner's.
-    /// </summary>
+
+
+
+
     private bool CanManageUsers => Session.Role is "FirmAdmin";
 
-    /// <summary>
-    /// Gates the "Add User" button. Same FirmAdmin-only rule as
-    /// CanManageUsers above (matches UsersController.Create's
-    /// [Authorize(Roles = RoleNames.FirmAdminOnly)] on the backend).
-    /// </summary>
+
+
+
+
+
     private bool CanCreateUsers => Session.Role is "FirmAdmin";
 
     private List<UserDTO> PagedUsers =>
@@ -122,8 +118,8 @@
         _errorMessage = null;
         try
         {
-            // Server-side search (per spec) - never fetches the full firm
-            // directory just to filter it client-side.
+
+
             _users = await UserService.GetAllAsync(_searchTerm);
         }
         catch (ApiException ex)

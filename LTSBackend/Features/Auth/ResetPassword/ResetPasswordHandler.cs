@@ -11,13 +11,13 @@ namespace LTSBackend.Features.Auth.ResetPassword;
 public class ResetPasswordHandler(AppDbContext _context,IPasswordService _passwordService,IAuditService _auditService,
     ILogger<ResetPasswordHandler> _logger) : IRequestHandler<ResetPasswordCommand, ResetPasswordResponseDTO>
 {
-    // =====================================================
-    // HANDLE — Anonymous, completes the forgot-password flow
-    // Validates the emailed OTP code, then sets the new password,
-    // rotates the security stamp, and revokes every active refresh
-    // token — signing out every device, since a password reset often
-    // follows a suspected compromise.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<ResetPasswordResponseDTO> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Password reset attempt via OTP for email: {Email}", request.Email);
@@ -49,9 +49,9 @@ public class ResetPasswordHandler(AppDbContext _context,IPasswordService _passwo
         user.UpdatedAt = DateTime.UtcNow;
         otp.IsUsed = true;
 
-        // Rotating the security stamp + revoking refresh tokens signs out
-        // every device already logged in - important since the account
-        // may have been compromised (that's often *why* it's being reset).
+
+
+
         user.SecurityStamp = Guid.NewGuid().ToString("N");
 
         var activeTokens = await _context.RefreshTokens.Where(x => x.UserID == user.UserID && !x.IsRevoked).ToListAsync(cancellationToken);

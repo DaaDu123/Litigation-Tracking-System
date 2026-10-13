@@ -4,8 +4,8 @@ namespace LTSBackend.Features.CaseCategories.Commands.UpdateCaseCategory;
 
 public class UpdateCaseCategoryValidator : AbstractValidator<UpdateCaseCategoryCommand>
 {
-    // Requires a valid CategoryID plus the same name/description rules as
-    // CreateCaseCategoryValidator.
+
+
     public UpdateCaseCategoryValidator()
     {
         RuleFor(x => x.CategoryID).GreaterThan(0).WithMessage("Valid category ID is required.");

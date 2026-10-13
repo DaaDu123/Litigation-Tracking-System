@@ -78,9 +78,6 @@ else
         _errorMessage = null;
         try
         {
-            // NOTE: no dedicated case-aggregate endpoint yet - GetAllCases already
-            // scopes to "cases this Partner can see" server-side, so a generous
-            // single page is a fair dashboard snapshot until that endpoint exists.
             var paged = await CaseService.GetAllAsync(pageSize: 100);
             _cases = paged.Items;
             _totalCases = paged.TotalRecords;

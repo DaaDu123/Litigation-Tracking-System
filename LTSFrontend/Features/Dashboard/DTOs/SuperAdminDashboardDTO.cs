@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Dashboard.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Dashboard.DTOs.SuperAdminDashboardDTO - platform-owner scope only, no case/document data.</summary>
+
     public class SuperAdminDashboardDTO
     {
         public int TotalFirms { get; set; }

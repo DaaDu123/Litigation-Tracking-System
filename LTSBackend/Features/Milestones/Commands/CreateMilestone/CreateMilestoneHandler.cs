@@ -13,22 +13,22 @@ namespace LTSBackend.Features.Milestones.Commands.CreateMilestone
     public class CreateMilestoneHandler(AppDbContext _context, IAuditService _auditService, ICurrentUserService _currentUser, IPermissionService _permissionService,
       IHttpContextAccessor _httpContextAccessor) : IRequestHandler<CreateMilestoneCommand, long>
     {
-        // =====================================================
-        // HANDLE — adds a new milestone against a case
-        // Verifies the case belongs to the caller's own firm, and — since
-        // Create is open to AssociateLawyer/Moharrir at the controller —
-        // that the caller has full case-directory visibility or is
-        // actually assigned to this case.
-        // =====================================================
+
+
+
+
+
+
+
         public async Task<long> Handle(CreateMilestoneCommand request, CancellationToken cancellationToken)
         {
             var caseEntity = await _context.Cases.FirstOrDefaultAsync(c => c.CaseID == request.Milestone.CaseID, cancellationToken);
             if (caseEntity == null || (caseEntity.FirmID != _currentUser.FirmID))
                 throw new NotFoundException($"Case ID {request.Milestone.CaseID} not found");
 
-            // SECURITY FIX (IDOR): controller allows RoleNames.AllLawyers
-            // (includes AssociateLawyer/Moharrir), who must be scoped to
-            // their assigned cases only.
+
+
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

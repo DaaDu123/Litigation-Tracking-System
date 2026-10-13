@@ -16,11 +16,11 @@ namespace LTSBackend.Features.Milestones.Commands.CompleteMilestone
         IPermissionService _permissionService,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<CompleteMilestoneCommand, bool>
     {
-        // =====================================================
-        // HANDLE — marks a milestone complete
-        // Same visibility rule as Create. Records who completed it and
-        // when.
-        // =====================================================
+
+
+
+
+
         public async Task<bool> Handle(CompleteMilestoneCommand request, CancellationToken cancellationToken)
         {
             var milestone = await _context.CaseMilestones
@@ -30,7 +30,7 @@ namespace LTSBackend.Features.Milestones.Commands.CompleteMilestone
             if (milestone == null || (milestone.Case.FirmID != _currentUser.FirmID))
                 throw new NotFoundException($"Milestone ID {request.MilestoneID} not found");
 
-            // SECURITY FIX (IDOR): see CreateMilestoneHandler for rationale.
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

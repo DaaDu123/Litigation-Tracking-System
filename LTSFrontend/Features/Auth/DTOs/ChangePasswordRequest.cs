@@ -2,13 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Auth.DTOs
 {
-    /// <summary>
-    /// Mirrors LTSBackend.Features.Auth.ChangePassword.ChangePasswordCommand /
-    /// ChangePasswordValidator. Used by the authenticated "Change Password"
-    /// screen (POST /api/auth/change-password) - distinct from
-    /// ForgotPasswordRequest/ResetPasswordRequest, which are for a user who
-    /// is signed OUT and has lost their password entirely.
-    /// </summary>
+
+
+
+
+
+
+
     public class ChangePasswordRequest : IValidatableObject
     {
         [Required(ErrorMessage = "Your current password is required.")]
@@ -23,12 +23,12 @@ namespace LTSFrontend.Features.Auth.DTOs
         [Required(ErrorMessage = "Please confirm your new password.")]
         public string ConfirmNewPassword { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Client-side mirror of the backend's NotEqual(OldPassword) rule,
-        /// plus the confirm-password match check. Both are re-validated
-        /// server-side regardless - this only gives the user instant
-        /// feedback instead of a round trip.
-        /// </summary>
+
+
+
+
+
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (!string.IsNullOrEmpty(NewPassword) && NewPassword != ConfirmNewPassword)

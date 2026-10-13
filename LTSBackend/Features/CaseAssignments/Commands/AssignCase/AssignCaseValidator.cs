@@ -6,8 +6,8 @@ namespace LTSBackend.Features.CaseAssignments.Commands.AssignCase
     {
         private static readonly string[] ValidTypes = { "Legal Officer", "Supervisor", "Lawyer", "External Counsel" };
 
-        // Requires a valid Case/User ID and a recognised AssignmentType
-        // (Legal Officer, Supervisor, Lawyer, or External Counsel).
+
+
         public AssignCaseValidator()
         {
             RuleFor(x => x.Assignment).NotNull();

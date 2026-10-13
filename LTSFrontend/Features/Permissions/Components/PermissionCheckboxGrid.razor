@@ -1,10 +1,10 @@
-@* Reusable grid of permission checkboxes, grouped by the permission name's
-   leading word (e.g. "Manage", "View") for readability. Two-way binds a
-   HashSet<int> of selected PermissionIDs.
-   Usage:
-     <PermissionCheckboxGrid AllPermissions="_allPermissions"
-                              SelectedIds="_form.PermissionIds"
-                              Disabled="_isSaving" /> *@
+
+
+
+
+
+
+
 @using LTSFrontend.Features.Permissions.DTOs
 
 @if (AllPermissions.Count == 0)
@@ -52,8 +52,8 @@ else
             .Select(g => new KeyValuePair<string, List<PermissionDTO>>(
                 g.Key, g.OrderBy(p => p.PermissionName).ToList()));
 
-    // Groups by the leading word of the permission name (e.g. "ManageCases" -> "Manage",
-    // "ViewCases" -> "View"), falling back to the whole name if there's no word boundary.
+
+
     private static string GroupKeyFor(string permissionName)
     {
         if (string.IsNullOrWhiteSpace(permissionName))

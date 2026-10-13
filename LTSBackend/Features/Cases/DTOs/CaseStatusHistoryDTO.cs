@@ -1,11 +1,11 @@
 namespace LTSBackend.Features.Cases.DTOs;
 
-/// <summary>
-/// One row of a case's status change timeline (LTS.CaseStatusHistory).
-/// Read side of FR-05 ("System shall maintain case status history") -
-/// the write side already existed in CreateCaseHandler / UpdateCaseStatusHandler,
-/// this DTO is what finally lets the UI display it.
-/// </summary>
+
+
+
+
+
+
 public class CaseStatusHistoryDTO
 {
     public long HistoryID { get; set; }

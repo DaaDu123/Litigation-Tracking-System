@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Auth.ResetPassword;
 
 public class ResetPasswordValidator : AbstractValidator<ResetPasswordCommand>
 {
-    // Requires a well-formed email, a 6-digit OTP code, and a new password
-    // meeting the standard complexity rules.
+
+
     public ResetPasswordValidator()
     {
         RuleFor(x => x.Email)

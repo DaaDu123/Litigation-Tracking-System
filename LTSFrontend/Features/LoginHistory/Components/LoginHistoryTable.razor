@@ -1,5 +1,5 @@
-@* Shared table for rendering login history rows.
-   Usage: <LoginHistoryTable Rows="_rows" ShowUser="true" /> *@
+
+
 @using LTSFrontend.Features.LoginHistory.DTOs
 
 @if (Rows.Count == 0)
@@ -63,29 +63,15 @@ else
     [Parameter, EditorRequired] public List<LoginHistoryRow> Rows { get; set; } = new();
     [Parameter] public bool ShowUser { get; set; } = true;
 
-    /// <summary>
-    /// A single normalized row shape so this table can render both the
-    /// admin-facing LoginHistoryDTO (all users) and the self-service
-    /// MyLoginHistoryDTO (current user only, no FullName/Email/FirmName)
-    /// without two nearly-identical table components.
-    ///
-    /// Login history is treated as a permanent, immutable audit trail -
-    /// there is deliberately no delete action anywhere in this table (or
-    /// its backing API) for any role, including SuperAdmin.
-    /// </summary>
     public class LoginHistoryRow
     {
         public int LoginID { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Which firm this login belongs to. Only meaningful/populated on
-        /// the admin-facing "All Login History" table - null for "My Login
-        /// History" (the viewer obviously already knows it's their own).
-        /// Matters most for SuperAdmin, whose view spans every firm at
-        /// once, so this is how they tell entries apart.
-        /// </summary>
+
+
+
         public string? FirmName { get; set; }
 
         public DateTime LoginTime { get; set; }

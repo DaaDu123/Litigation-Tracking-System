@@ -9,18 +9,18 @@ namespace LTSBackend.Features.Milestones.Queries.GetCaseMilestones
 {
     public class GetCaseMilestonesHandler(AppDbContext _context, ICurrentUserService _currentUser, IPermissionService _permissionService) : IRequestHandler<GetCaseMilestonesQuery, List<MilestoneDetailDTO>>
     {
-        // =====================================================
-        // HANDLE — lists a case's milestones, scoped to who's allowed to see it
-        // Same assignment-or-full-visibility rule as
-        // GetCaseAssignmentsHandler (empty list, not an error, if
-        // denied), plus firm isolation. Resolves each completed
-        // milestone's "completed by" name for display.
-        // =====================================================
+
+
+
+
+
+
+
         public async Task<List<MilestoneDetailDTO>> Handle(GetCaseMilestonesQuery request, CancellationToken cancellationToken)
         {
-            // SECURITY FIX (IDOR): firm scoping alone let any firm user - including
-            // AssociateLawyer/Moharrir/InternParalegal - read milestones for a case
-            // they aren't assigned to. Mirrors GetCaseAssignmentsHandler.
+
+
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);
@@ -37,7 +37,7 @@ namespace LTSBackend.Features.Milestones.Queries.GetCaseMilestones
                 .Include(m => m.Case)
                 .Where(m => m.CaseID == request.CaseID);
 
-            // Multi-tenant isolation
+
                 query = query.Where(m => m.Case.FirmID == _currentUser.FirmID);
 
             var milestones = await query

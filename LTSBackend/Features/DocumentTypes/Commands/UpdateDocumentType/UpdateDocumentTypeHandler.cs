@@ -8,13 +8,13 @@ namespace LTSBackend.Features.DocumentTypes.Commands.UpdateDocumentType;
 
 public sealed class UpdateDocumentTypeHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<UpdateDocumentTypeHandler> _logger) : IRequestHandler<UpdateDocumentTypeCommand, bool>
 {
-    // =====================================================
-    // HANDLE — edits an existing document type
-    // Ownership check: a FirmAdmin may only edit their OWN firm's custom
-    // document type — never a global one or another firm's (returns
-    // NotFound rather than Forbidden, so its existence isn't disclosed).
-    // Also re-checks name uniqueness before saving.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(UpdateDocumentTypeCommand request, CancellationToken cancellationToken)
     {
         request = request with { TypeName = request.TypeName.Trim(), Description = request.Description?.Trim() };

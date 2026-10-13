@@ -6,7 +6,7 @@ public class SaveCaseWorkflowTemplateDTO
     public int? DefaultDepartmentID { get; set; }
     public int InitialStatusID { get; set; }
 
-    /// <summary>Stage IDs in workflow order (first = initial stage).</summary>
+
     public List<int> StageIDs { get; set; } = [];
 
     public List<int> RequiredDocumentTypeIDs { get; set; } = [];

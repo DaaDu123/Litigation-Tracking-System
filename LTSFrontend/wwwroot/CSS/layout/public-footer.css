@@ -1,4 +1,4 @@
-/* ---------- Footer ---------- */
+
 
 .public-footer {
   background: linear-gradient(
@@ -127,10 +127,10 @@
   border-top-color: rgba(255, 255, 255, 0.1);
 }
 
-/* ==========================================================================
-   Responsive — public footer
-   XL : 4 items + quote in one row · LG/MD : 2 columns · XS : 1 column
-   ========================================================================== */
+
+
+
+
 .public-footer-top {
   padding-inline: var(--lts-page-pad-x);
 }

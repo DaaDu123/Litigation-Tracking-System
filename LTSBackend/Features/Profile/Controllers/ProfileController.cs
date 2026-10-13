@@ -23,13 +23,13 @@ public class ProfileController : ControllerBase
         _logger = logger;
     }
 
-    // =====================================================
-    // GET MY PROFILE — Any authenticated user
-    // Returns the currently logged-in user's own profile (name, email,
-    // phone, designation, photo, etc.). The user ID always comes from
-    // their own JWT claim, so a user can never fetch someone else's
-    // profile through this endpoint.
-    // =====================================================
+
+
+
+
+
+
+
     [HttpGet("me")]
     public async Task<IActionResult> GetMyProfile()
     {
@@ -47,18 +47,18 @@ public class ProfileController : ControllerBase
         return Ok(ApiResponse<ProfileDTO>.SuccessResponse(profile,"Profile fetched successfully."));
     }
 
-    // =====================================================
-    // UPDATE MY PROFILE — Any authenticated user
-    // Lets a user edit their own profile fields (name, contact info,
-    // photo, etc.) — and ONLY their own: UserID is always overwritten
-    // from the caller's own JWT claim just below, never trusted from the
-    // request body, so nobody can point this at someone else's account.
-    // Per SRS FR-19, a user cannot change their own role through this
-    // endpoint — role changes are FirmAdmin-only, via
-    // PUT /api/users/{id}/role (UsersController.ChangeRole). There is no
-    // endpoint, for any role, that edits another user's name/contact
-    // info/photo — see UsersController for that policy.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMyProfile([FromForm] UpdateMyProfileCommand command)
     {
@@ -77,14 +77,14 @@ public class ProfileController : ControllerBase
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Profile updated successfully!"));
     }
 
-    // =====================================================
-    // COMPLETE FIRM ADMIN PROFILE — Any authenticated user (Firm Admin)
-    // Mandatory one-time step immediately after a newly approved Firm
-    // Admin's first login. Blocked/allowed regardless of role by
-    // ProfileCompletionBehavior's allowlist - restricting to FirmAdmin
-    // specifically isn't needed here since a Firm User calling this by
-    // mistake simply gets "no firm workspace is associated" from the handler.
-    // =====================================================
+
+
+
+
+
+
+
+
     [HttpPost("complete/firm-admin")]
     public async Task<IActionResult> CompleteFirmAdminProfile([FromBody] Commands.CompleteFirmAdminProfile.CompleteFirmAdminProfileCommand command)
     {
@@ -92,11 +92,11 @@ public class ProfileController : ControllerBase
         return Ok(ApiResponse<ProfileCompletionResultDTO>.SuccessResponse(result, result.Message));
     }
 
-    // =====================================================
-    // COMPLETE FIRM USER PROFILE — Any authenticated user (Firm User)
-    // Mandatory step after registration and before the Firm-request
-    // functionality unlocks (enforced by ProfileCompletionBehavior).
-    // =====================================================
+
+
+
+
+
     [HttpPost("complete/firm-user")]
     public async Task<IActionResult> CompleteFirmUserProfile([FromBody] Commands.CompleteFirmUserProfile.CompleteFirmUserProfileCommand command)
     {

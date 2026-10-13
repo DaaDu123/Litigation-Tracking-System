@@ -298,11 +298,9 @@
 
     private void OpenCreate() => _formModal.OpenForCreate();
 
-    // A global (system-wide) category can only be edited/deactivated/deleted by
-    // SuperAdmin - a FirmAdmin only manages their own firm's custom categories.
-    // This mirrors the backend's ownership check in UpdateCaseCategoryHandler /
-    // DeleteCaseCategoryHandler, so the buttons that would just fail are hidden
-    // instead of showing and then throwing a 404 on submit.
+
+
+
     private bool CanManage(CaseCategoryDTO category) =>
         !category.IsGlobal || string.Equals(Session.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 

@@ -101,8 +101,8 @@
             StateHasChanged();
             try
             {
-                // A case moves only through ITS OWN workflow stages (generated from its category template).
-                // Cases without a generated workflow (created before templates existed) fall back to all stages.
+
+
                 var workflow = await CaseService.GetWorkflowAsync(caseId);
                 if (workflow != null && workflow.Stages.Count > 0)
                 {

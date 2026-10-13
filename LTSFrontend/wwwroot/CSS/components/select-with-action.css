@@ -15,7 +15,7 @@
   white-space: nowrap;
 }
 
-/* Muted helper line under a field (empty state / permission hint). */
+
 .lts-field-note {
   display: flex;
   align-items: flex-start;

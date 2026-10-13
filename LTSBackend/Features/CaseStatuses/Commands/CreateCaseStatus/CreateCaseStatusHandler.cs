@@ -9,13 +9,13 @@ namespace LTSBackend.Features.CaseStatuses.Commands.CreateCaseStatus;
 
 public sealed class CreateCaseStatusHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<CreateCaseStatusHandler> _logger) : IRequestHandler<CreateCaseStatusCommand, int>
 {
-    // =====================================================
-    // HANDLE — creates a new case status
-    // Trims input, checks the name is unique among what the caller can
-    // see (global statuses + their own firm's), then saves it. FirmID is
-    // set to the caller's own firm for a FirmAdmin, or left null (global,
-    // visible to every firm) for a SuperAdmin.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<int> Handle(CreateCaseStatusCommand request, CancellationToken cancellationToken)
     {
         request = request with { StatusName = request.StatusName.Trim(), ColorCode = request.ColorCode.Trim() };

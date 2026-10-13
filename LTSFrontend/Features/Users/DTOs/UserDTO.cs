@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Users.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Users.DTOs.UserDTO</summary>
+
     public class UserDTO
     {
         public int UserID { get; set; }

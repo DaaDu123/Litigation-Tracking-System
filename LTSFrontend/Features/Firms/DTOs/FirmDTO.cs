@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Firms.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Firms.DTOs.FirmDTO</summary>
+
     public class FirmDTO
     {
         public int FirmID { get; set; }

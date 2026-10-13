@@ -232,8 +232,6 @@
             {
                 Toast.Success("Permissions saved", "The role's permissions were updated successfully.");
 
-                // Keep the in-memory roles list (used for the protected-role check
-                // and the dropdown labels) in sync with what was just saved.
                 var role = _roles.FirstOrDefault(r => r.RoleID == _selectedRoleId);
                 if (role != null)
                 {

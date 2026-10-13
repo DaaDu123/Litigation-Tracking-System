@@ -3,7 +3,7 @@ namespace LTSBackend.Features.Auth.VerifyOtp;
 
 public class VerifyOtpValidator : AbstractValidator<VerifyOtpCommand>
 {
-    // Requires a well-formed email and a 6-digit OTP code.
+
     public VerifyOtpValidator()
     {
         RuleFor(x => x.Email)

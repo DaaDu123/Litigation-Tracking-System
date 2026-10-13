@@ -10,8 +10,8 @@ namespace LTSBackend.Services.Jwt;
 
 public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logger) : IJwtService
 {
-    // Issues a short-lived signed access token carrying identity, tenant (FirmID),
-    // role and security-stamp claims used by every downstream authorization check.
+
+
     public string GenerateToken(User user)
     {
         var claims = new List<Claim>
@@ -19,27 +19,27 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
             new(ClaimTypes.NameIdentifier, user.UserID.ToString()),
             new(ClaimTypes.Email, user.Email),
 
-            // Unique token identifier (JWT ID). Not currently checked against a
-            // blacklist, but present so a revocation/blacklist store can be added
-            // later without re-issuing the token contract.
+
+
+
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 
-            // Security stamp - compared against the current DB value on every
-            // request (Program.cs OnTokenValidated). If the user's password is
-            // reset, the account is blocked, or an admin forces logout, the stamp
-            // is regenerated and this token is rejected immediately even though
-            // it has not expired.
+
+
+
+
+
             new("SecurityStamp", user.SecurityStamp)
         };
 
-        // FirmID claim - drives multi-tenant row-level scoping on every
-        // request (null/absent for SuperAdmin = no firm restriction).
+
+
         if (user.FirmID.HasValue)
         {
             claims.Add(new Claim("FirmID", user.FirmID.Value.ToString()));
         }
 
-        // Add role claim
+
         var role = user.GetRole();
         if (role.HasValue)
         {
@@ -72,31 +72,31 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    // Generates a cryptographically random opaque refresh token (not a JWT) that
-    // is stored server-side (RefreshTokens table) and rotated on every use.
+
+
     public string GenerateRefreshToken()
     {
         var randomBytes = RandomNumberGenerator.GetBytes(64);
         return Convert.ToBase64String(randomBytes);
     }
 
-    // Computes the absolute UTC expiry timestamp for a newly issued access token.
+
     public DateTime GetAccessTokenExpiry()
     {
         int expiryMinutes = _configuration.GetValue<int>("JwtSettings:ExpiryMinutes", 60);
         return DateTime.UtcNow.AddMinutes(expiryMinutes);
     }
 
-    // Computes the absolute UTC expiry timestamp for a newly issued refresh token.
+
     public DateTime GetRefreshTokenExpiry()
     {
         return DateTime.UtcNow.Add(GetRefreshTokenLifetime());
     }
 
-    // Refresh-token lifetime. JwtSettings:RefreshTokenMinutes (when > 0) wins;
-    // otherwise falls back to JwtSettings:RefreshTokenDays (default 7 days).
-    // Single source for BOTH the DB expiry above and the cookie expiry below,
-    // so they can never disagree.
+
+
+
+
     private TimeSpan GetRefreshTokenLifetime()
     {
         int minutes = _configuration.GetValue<int>("JwtSettings:RefreshTokenMinutes", 0);
@@ -118,9 +118,9 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
         var hashBytes = SHA256.HashData(bytes);
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
-    // Sets the HttpOnly refresh-token cookie on the response, using the same
-    // JwtSettings configuration values (UseSecureCookies, RefreshTokenDays)
-    // already read by GetRefreshTokenExpiry() above.
+
+
+
     public void SetRefreshTokenCookie(HttpResponse response, string refreshToken)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
@@ -144,7 +144,7 @@ public class JwtService(IConfiguration _configuration, ILogger<JwtService> _logg
         _logger.LogDebug("Refresh token cookie set with {Minutes} minutes expiry", refreshLifetime.TotalMinutes);
     }
 
-    // Removes the refresh-token cookie from the response (used on logout).
+
     public void RemoveRefreshTokenCookie(HttpResponse response)
     {
         bool useSecureCookies = _configuration.GetValue<bool>("JwtSettings:UseSecureCookies", true);

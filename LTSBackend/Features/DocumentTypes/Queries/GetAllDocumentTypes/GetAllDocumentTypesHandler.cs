@@ -7,12 +7,12 @@ namespace LTSBackend.Features.DocumentTypes.Queries.GetAllDocumentTypes;
 
 public sealed class GetAllDocumentTypesHandler(AppDbContext _context, ILogger<GetAllDocumentTypesHandler> _logger) : IRequestHandler<GetAllDocumentTypesQuery, List<DocumentTypeDTO>>
 {
-    // =====================================================
-    // HANDLE — lists types for dropdowns / admin screens
-    // Optionally filtered by search text and by active-only. Visibility
-    // (global + own firm) is enforced by the entity's EF Core
-    // HasQueryFilter, not by this handler.
-    // =====================================================
+
+
+
+
+
+
     public async Task<List<DocumentTypeDTO>> Handle(GetAllDocumentTypesQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching all document types (SearchText={SearchText}, ActiveOnly={ActiveOnly})", request.SearchText, request.ActiveOnly);

@@ -1,9 +1,9 @@
 ﻿namespace LTSFrontend.Core.Http
 {
-    /// <summary>
-    /// Central place for every LTSBackend route the frontend calls.
-    /// Keeps raw route strings out of the services/pages.
-    /// </summary>
+
+
+
+
     public static class ApiEndpoints
     {
         private const string Base = "api";
@@ -20,7 +20,6 @@
             public const string ChangePassword = Root + "/change-password";
             public const string ForgotPassword = Root + "/forgot-password";
             public const string ResetPassword = Root + "/reset-password";
-            public const string RegistrationStatus = Root + "/registration-status";
         }
 
         public static class Users
@@ -102,13 +101,13 @@
                 public const string Base_ = Root;
                 public static string ById(int id) => $"{Root}/{id}";
 
-                /// <summary>
-                /// Lightweight {DocumentTypeID, TypeName} dropdown list, reachable by
-                /// every role that can upload a document (Partner/AssociateLawyer/
-                /// Moharrir/InternParalegal/FirmAdmin) — not just FirmAdmin/Partner
-                /// like Base_ (the full master-data admin list). Use this to
-                /// populate the "Document Type" dropdown on the upload form.
-                /// </summary>
+
+
+
+
+
+
+
                 public const string Options = Root + "/options";
             }
         }
@@ -220,17 +219,17 @@
                 string.IsNullOrWhiteSpace(status) ? Root : $"{Root}?status={status}";
             public static string Approve(int id) => $"{Root}/{id}/approve";
             public static string Reject(int id) => $"{Root}/{id}/reject";
-            // Requester withdraws their own pending "Create Firm" request.
+
             public static string Cancel(int id) => $"{Root}/{id}/cancel";
-            // Authenticated "Create Firm" flow - request from the caller's
-            // own already-registered account, no email/password needed.
+
+
             public const string FromAccount = Root + "/from-account";
             public const string Mine = Root + "/mine";
         }
 
-        // Read-only for now: lets the Firm Admin request UI honour the
-        // "one admin request path at a time" rule once the backend exposes
-        // the caller's own Super Admin request status (see Features/SuperAdminRequests).
+
+
+
         public static class SuperAdminRequests
         {
             private const string Root = Base + "/superadminrequests";

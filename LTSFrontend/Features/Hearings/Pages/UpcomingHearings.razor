@@ -107,7 +107,7 @@
         {
             _courts = await CourtService.GetAllAsync(activeOnly: true);
         }
-        catch (Exception) { /* filter dropdown is non-critical */ }
+        catch (Exception) {  }
 
         await LoadAsync();
     }

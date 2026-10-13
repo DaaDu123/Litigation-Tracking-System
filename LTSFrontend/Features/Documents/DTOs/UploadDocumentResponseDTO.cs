@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Documents.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Documents.Commands.UploadDocument.UploadDocumentResponseDTO</summary>
+
     public class UploadDocumentResponseDTO
     {
         public long DocumentID { get; set; }

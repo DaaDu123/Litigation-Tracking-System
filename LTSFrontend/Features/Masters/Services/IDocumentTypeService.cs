@@ -9,11 +9,11 @@ namespace LTSFrontend.Features.Masters.Services
         Task<bool> UpdateAsync(DocumentTypeFormDTO form);
         Task<bool> DeleteAsync(int id);
 
-        /// <summary>
-        /// Lightweight {DocumentTypeID, TypeName} list for the Upload Document
-        /// dropdown. Reachable by every role that can upload a document, unlike
-        /// GetAllAsync which is FirmAdmin/Partner (master-data admin) only.
-        /// </summary>
+
+
+
+
+
         Task<List<DocumentTypeOptionDTO>> GetOptionsAsync();
     }
 }

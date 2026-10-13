@@ -4,10 +4,10 @@ namespace LTSBackend.Features.CaseWorkflowTemplates.Commands.SaveCaseWorkflowTem
 
 public class SaveCaseWorkflowTemplateValidator : AbstractValidator<SaveCaseWorkflowTemplateCommand>
 {
-    // Structural rules only (existence/ownership/active checks need the DB
-    // and live in the handler): category + initial status are required,
-    // at least one stage, no duplicate stage or document type, and a
-    // document type can't be both required and optional.
+
+
+
+
     public SaveCaseWorkflowTemplateValidator()
     {
         RuleFor(x => x.CategoryID).GreaterThan(0).WithMessage("Case Category is required");

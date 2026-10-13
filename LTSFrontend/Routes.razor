@@ -1,6 +1,5 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
-@inject LTSFrontend.Core.Http.ApiClient ApiClient
 
 @if (!_authReady)
 {
@@ -37,7 +36,6 @@ else
 
 @code {
     private bool _authReady;
-    private bool _hasRegisteredAccounts;
     private bool _isAuthenticated;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -46,38 +44,19 @@ else
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
-            if (!_isAuthenticated)
-            {
-                try
-                {
-                    var status = await ApiClient.GetAsync<RegistrationStatus>(LTSFrontend.Core.Http.ApiEndpoints.Auth.RegistrationStatus);
-                    _hasRegisteredAccounts = status?.HasRegisteredAccounts ?? true;
-                }
-                catch
-                {
-                    // Fail closed: an unavailable status endpoint must never
-                    // make a protected route appear accessible.
-                    _hasRegisteredAccounts = true;
-                }
-            }
-            _authReady = true;
-            StateHasChanged();
-
             var currentPath = new Uri(Navigation.Uri).AbsolutePath;
-            if (!_isAuthenticated)
-            {
-                if (currentPath == "/"
-                    || (currentPath.Equals("/login", StringComparison.OrdinalIgnoreCase) && !_hasRegisteredAccounts)
-                    || (currentPath.Equals("/register", StringComparison.OrdinalIgnoreCase) && _hasRegisteredAccounts))
-                {
-                    Navigation.NavigateTo(_hasRegisteredAccounts ? "/login" : "/register", replace: true);
-                }
-            }
-            else if (currentPath.Equals("/login", StringComparison.OrdinalIgnoreCase)
-                || currentPath.Equals("/register", StringComparison.OrdinalIgnoreCase))
+            if (_isAuthenticated && (currentPath.Equals("/login", StringComparison.OrdinalIgnoreCase)
+                || currentPath.Equals("/register", StringComparison.OrdinalIgnoreCase)))
             {
                 Navigation.NavigateTo("/", replace: true);
             }
+            else if (!_isAuthenticated && currentPath == "/")
+            {
+                Navigation.NavigateTo("/login", replace: true);
+            }
+
+            _authReady = true;
+            StateHasChanged();
         }
     }
 
@@ -89,8 +68,8 @@ else
             return;
         }
 
-        Navigation.NavigateTo(_hasRegisteredAccounts ? "/login" : "/register", replace: true);
+        var currentUri = new Uri(Navigation.Uri);
+        var returnUrl = Uri.EscapeDataString(currentUri.PathAndQuery);
+        Navigation.NavigateTo($"/login?returnUrl={returnUrl}", replace: true);
     }
-
-    private sealed record RegistrationStatus(bool HasRegisteredAccounts);
 }

@@ -10,12 +10,12 @@ namespace LTSBackend.Features.Documents.Commands.ApproveDocument;
 
 public class ApproveDocumentHandler(AppDbContext _context, IAuditService _auditService, ICurrentUserService _currentUser, ILogger<ApproveDocumentHandler> _logger) : IRequestHandler<ApproveDocumentCommand, bool>
 {
-    // =====================================================
-    // HANDLE — approves a pending draft document (Partner and above)
-    // Firm-scoped lookup, refuses if the document isn't actually a
-    // pending draft, then flips IsDraft off and stamps who approved it
-    // and when, making it visible to the rest of the case team.
-    // =====================================================
+
+
+
+
+
+
     public async Task<bool> Handle(ApproveDocumentCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Approve document attempt - ID: {DocumentId}, User: {UserId}", request.DocumentID, request.UserID);

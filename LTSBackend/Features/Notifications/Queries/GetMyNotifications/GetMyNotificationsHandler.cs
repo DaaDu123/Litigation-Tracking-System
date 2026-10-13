@@ -9,12 +9,12 @@ namespace LTSBackend.Features.Notifications.Queries.GetMyNotifications;
 
 public class GetMyNotificationsHandler (AppDbContext _context, ICurrentUserService _currentUser, ILogger<GetMyNotificationsHandler> _logger) : IRequestHandler<GetMyNotificationsQuery, PagedResult<NotificationDTO>>
 {
-    // =====================================================
-    // HANDLE — paged list of the caller's own notifications
-    // Always scoped to the caller's own UserID; optionally filtered to
-    // only read or only unread. Returns an empty page if the user's
-    // identity can't be resolved.
-    // =====================================================
+
+
+
+
+
+
     public async Task<PagedResult<NotificationDTO>> Handle(GetMyNotificationsQuery request,CancellationToken cancellationToken)
     {
         if (!_currentUser.UserID.HasValue)

@@ -10,21 +10,21 @@ namespace LTSBackend.Features.Cases.Commands.GenerateCaseWorkflow;
 
 public sealed class GenerateCaseWorkflowHandler(AppDbContext _context, IAuditService _auditService, ICurrentUserService _currentUser, ILogger<GenerateCaseWorkflowHandler> _logger) : IRequestHandler<GenerateCaseWorkflowCommand, bool>
 {
-    // =====================================================
-    // HANDLE — gives an existing case created BEFORE workflow templates a
-    // workflow + document checklist, from the category's active template
-    // (firm's own wins over the global one).
-    //
-    // Non-destructive: the case's Status, Stage, Department and every
-    // document are left exactly as they are. The case's CURRENT stage is
-    // honoured: template stages before it are marked Completed, it is
-    // Active, the rest Pending; if the current stage isn't part of the
-    // template it is placed first as the Active stage so no history is
-    // lost. A closed case gets all stages Completed. Refuses cases that
-    // already have a workflow. One SaveChanges = one atomic transaction;
-    // a concurrent double-click is caught by the unique (CaseID, StageID)
-    // index and reported cleanly.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<bool> Handle(GenerateCaseWorkflowCommand request, CancellationToken cancellationToken)
     {
         int userId = _currentUser.UserID ?? throw new UnauthorizedException("Unable to determine the current user's identity.");
@@ -53,7 +53,7 @@ public sealed class GenerateCaseWorkflowHandler(AppDbContext _context, IAuditSer
         if (templateStages.Count == 0)
             throw new ValidationException(["The workflow template for this category has no active stages."]);
 
-        // Order: [current stage first if it is not part of the template] + template order
+
         var order = new List<int>();
         if (!templateStages.Contains(c.StageID)) order.Add(c.StageID);
         order.AddRange(templateStages);

@@ -38,7 +38,7 @@
   box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.18);
 }
 
-/* ---------- Form elements (used inside form modals) ---------- */
+
 
 .lts-form-group {
   margin-bottom: 1rem;
@@ -170,7 +170,7 @@ textarea.lts-form-control {
   box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.35);
 }
 
-/* ---------- Focus-visible accessibility ---------- */
+
 
 .lts-btn:focus-visible,
 .lts-icon-btn:focus-visible,
@@ -180,9 +180,9 @@ textarea.lts-form-control {
   outline-offset: 2px;
 }
 
-/* ==========================================================================
-   Responsive — forms
-   ========================================================================== */
+
+
+
 .lts-form-control,
 .lts-select,
 .form-control,
@@ -191,8 +191,8 @@ textarea.lts-form-control {
   min-width: 0;
 }
 
-/* Form grids: Bootstrap .row/.col-md-* already stack below 768px; make sure
-   inline "max-width: 33%" style fields and gutters behave on phones. */
+
+
 @media (max-width: 767.98px) {
   .lts-form-group[style*="max-width"] {
     max-width: 100% !important;
@@ -202,7 +202,7 @@ textarea.lts-form-control {
   .form-control,
   .form-select,
   .lts-select {
-    font-size: 1rem; /* prevents iOS zoom-on-focus */
+    font-size: 1rem;
     min-height: 2.6rem;
   }
 
@@ -224,7 +224,7 @@ textarea.lts-form-control {
     flex-wrap: wrap;
   }
 
-  /* form action rows (Save / Cancel) become full-width stacked buttons */
+
   form > .lts-modal-footer,
   .lts-card > form .lts-modal-footer {
     flex-direction: column-reverse;

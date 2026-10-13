@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Case Category. Maps 1:1
-    /// onto LTSBackend's CreateCaseCategoryCommand / UpdateCaseCategoryCommand,
-    /// with validation mirroring CreateCaseCategoryValidator.
-    /// </summary>
+
+
+
+
+
     public class CaseCategoryFormDTO
     {
-        /// <summary>Set only when editing an existing category; null on create.</summary>
+
         public int? CategoryID { get; set; }
 
         [Required(ErrorMessage = "Category name is required.")]

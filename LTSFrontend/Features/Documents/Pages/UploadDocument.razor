@@ -64,7 +64,7 @@
                     }
                 </select>
 
-                @* Creating master data is FirmAdmin/Partner only (DocumentTypesController) - same gate as the Master Data page. *@
+
                 <PermissionGate Roles="FirmAdmin,Partner">
                     <button type="button" class="lts-btn lts-btn-outline" @onclick="OpenAddType" disabled="@_isSaving"
                             title="Add a new document type">
@@ -161,8 +161,8 @@
 
     private void OpenAddType() => _typeModal.OpenForCreate();
 
-    // The modal already saved the type through the existing Master Data API; reload the
-    // list (no page refresh) and select the new entry so the user can carry on uploading.
+
+
     private async Task HandleTypeCreatedAsync(int newTypeId)
     {
         await LoadTypesAsync();
@@ -181,10 +181,10 @@
         _apiError = null;
         try
         {
-            // Uses the lightweight dropdown-only endpoint (not GetAllAsync,
-            // which is FirmAdmin/Partner-only master-data admin access) so
-            // AssociateLawyer/Moharrir/InternParalegal can populate this
-            // dropdown too, same as they're allowed to upload documents.
+
+
+
+
             _documentTypes = await DocumentTypeService.GetOptionsAsync();
         }
         catch (Exception)

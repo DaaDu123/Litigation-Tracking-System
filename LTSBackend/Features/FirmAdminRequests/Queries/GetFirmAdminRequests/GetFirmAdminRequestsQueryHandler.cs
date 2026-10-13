@@ -7,11 +7,11 @@ namespace LTSBackend.Features.FirmAdminRequests.Queries.GetFirmAdminRequests;
 
 public class GetFirmAdminRequestsQueryHandler(AppDbContext _context) : IRequestHandler<GetFirmAdminRequestsQuery, List<FirmAdminRequestDTO>>
 {
-    // =====================================================
-    // HANDLE — lists Firm Admin requests, optionally filtered by status
-    // Newest-first; resolves each reviewed request's reviewer name via a
-    // small follow-up query.
-    // =====================================================
+
+
+
+
+
     public async Task<List<FirmAdminRequestDTO>> Handle(GetFirmAdminRequestsQuery request, CancellationToken cancellationToken)
     {
         var query = _context.FirmAdminRequests.AsNoTracking();
@@ -39,9 +39,9 @@ public class GetFirmAdminRequestsQueryHandler(AppDbContext _context) : IRequestH
             })
             .ToListAsync(cancellationToken);
 
-        // Fill in the reviewer's name with a second, tiny query rather than
-        // a join above - keeps the projection simple and this list is
-        // small (Pending review queues don't grow large).
+
+
+
         var reviewerIds = requests.Where(x => x.ReviewedBy.HasValue).Select(x => x.ReviewedBy!.Value).Distinct().ToList();
         if (reviewerIds.Count > 0)
         {

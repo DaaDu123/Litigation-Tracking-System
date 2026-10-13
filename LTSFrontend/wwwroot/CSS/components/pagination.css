@@ -1,4 +1,4 @@
-/* ---------- Pagination ---------- */
+
 
 .lts-pagination {
   display: flex;
@@ -67,9 +67,9 @@
   }
 }
 
-/* ==========================================================================
-   Responsive — pagination
-   ========================================================================== */
+
+
+
 .lts-pagination-controls {
   flex-wrap: wrap;
 }
@@ -92,7 +92,7 @@
 }
 
 @media (max-width: 479.98px) {
-  /* first/last jumpers are redundant on very narrow screens */
+
   .lts-pagination-controls .lts-page-btn:first-child,
   .lts-pagination-controls .lts-page-btn:last-child {
     display: none;

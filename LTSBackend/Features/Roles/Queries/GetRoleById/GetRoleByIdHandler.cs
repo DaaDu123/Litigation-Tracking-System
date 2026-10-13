@@ -8,9 +8,9 @@ namespace LTSBackend.Features.Roles.Queries.GetRoleById;
 
 public class GetRoleByIdHandler (AppDbContext _context, ILogger<GetRoleByIdHandler> _logger) : IRequestHandler<GetRoleByIdQuery, RoleDTO>
 {
-    // =====================================================
-    // HANDLE — fetches a single role's details and granted permissions
-    // =====================================================
+
+
+
     public async Task<RoleDTO> Handle(GetRoleByIdQuery request,CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching role: {RoleID}", request.RoleID);

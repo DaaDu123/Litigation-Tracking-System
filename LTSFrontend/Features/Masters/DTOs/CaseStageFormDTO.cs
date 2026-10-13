@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Case Stage. Maps 1:1
-    /// onto LTSBackend's CreateCaseStageCommand / UpdateCaseStageCommand,
-    /// with validation mirroring CreateCaseStageValidator.
-    /// </summary>
+
+
+
+
+
     public class CaseStageFormDTO
     {
-        /// <summary>Set only when editing an existing stage; null on create.</summary>
+
         public int? StageID { get; set; }
 
         [Required(ErrorMessage = "Stage name is required.")]

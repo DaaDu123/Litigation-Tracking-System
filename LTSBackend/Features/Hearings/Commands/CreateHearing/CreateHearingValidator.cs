@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Hearings.Commands.CreateHearing
 {
     public class CreateHearingValidator : AbstractValidator<CreateHearingCommand>
     {
-        // Requires a valid Case/Court ID, a Hearing Date that is not in the
-        // past, a judge name, and a hearing purpose.
+
+
         public CreateHearingValidator()
         {
             RuleFor(x => x.Hearing).NotNull();

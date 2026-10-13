@@ -2,15 +2,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Roles.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Role together with its
-    /// full permission set. Mirrors LTSBackend's CreateRoleCommand /
-    /// UpdateRoleCommand, which both replace the role's ENTIRE permission
-    /// list in one call (see CreateRoleValidator / UpdateRoleValidator).
-    /// </summary>
+
+
+
+
+
+
     public class RoleFormDTO
     {
-        /// <summary>Set only when editing an existing role; null on create.</summary>
+
         public int? RoleID { get; set; }
 
         [Required(ErrorMessage = "Role name is required.")]

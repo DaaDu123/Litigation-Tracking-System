@@ -7,10 +7,10 @@ namespace LTSBackend.Features.CaseWorkflowTemplates.Queries.GetAllCaseWorkflowTe
 
 public sealed class GetAllCaseWorkflowTemplatesHandler(AppDbContext _context) : IRequestHandler<GetAllCaseWorkflowTemplatesQuery, List<CaseWorkflowTemplateDTO>>
 {
-    // =====================================================
-    // HANDLE — lists the global + own-firm templates the caller can see
-    // (tenant scoping comes from the HasQueryFilter on the template).
-    // =====================================================
+
+
+
+
     public async Task<List<CaseWorkflowTemplateDTO>> Handle(GetAllCaseWorkflowTemplatesQuery request, CancellationToken cancellationToken)
     {
         var query = _context.CaseWorkflowTemplates.AsNoTracking()

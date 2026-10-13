@@ -1,4 +1,4 @@
-/* ---------- Buttons ---------- */
+
 
 .lts-btn {
   display: inline-flex;
@@ -95,7 +95,7 @@
   border-radius: var(--lts-radius-sm);
 }
 
-/* Touch-friendly hit areas on coarse pointers (phones / tablets) */
+
 @media (pointer: coarse) {
   .lts-btn {
     min-height: 2.5rem;
@@ -113,6 +113,6 @@
 
 @media (max-width: 575.98px) {
   .lts-btn {
-    white-space: normal; /* long labels wrap instead of overflowing */
+    white-space: normal;
   }
 }

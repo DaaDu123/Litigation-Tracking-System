@@ -6,7 +6,7 @@ namespace LTSFrontend.Features.Profile.Services
 {
     public class ProfileService : IProfileService
     {
-        private const long MaxImageBytes = 5 * 1024 * 1024; // 5 MB, mirrors backend rule
+        private const long MaxImageBytes = 5 * 1024 * 1024;
         private readonly ApiClient _api;
 
         public ProfileService(ApiClient api)

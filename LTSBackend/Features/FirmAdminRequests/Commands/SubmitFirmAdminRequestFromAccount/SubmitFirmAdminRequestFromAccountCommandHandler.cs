@@ -14,7 +14,7 @@ namespace LTSBackend.Features.FirmAdminRequests.Commands.SubmitFirmAdminRequestF
 public class SubmitFirmAdminRequestFromAccountCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IEmailService _emailService,
     ILogger<SubmitFirmAdminRequestFromAccountCommandHandler> _logger) : IRequestHandler<SubmitFirmAdminRequestFromAccountCommand, int>
 {
-    // NotificationTypeID = 6 ("FirmAdminRequest") - seeded in AppDbContext.SeedNotificationTypes. Same one used by the anonymous flow.
+
     private const int FirmAdminRequestNotificationTypeId = 6;
 
     public async Task<int> Handle(SubmitFirmAdminRequestFromAccountCommand request, CancellationToken cancellationToken)
@@ -57,7 +57,7 @@ public class SubmitFirmAdminRequestFromAccountCommandHandler(AppDbContext _conte
 
         _context.FirmAdminRequests.Add(firmAdminRequest);
 
-        // DB-level guarantee (UserAccessRequestSlots PK) - see SubmitUserJoinRequestCommandHandler.
+
         await AccessRequestSlot.AcquireAsync(_context, userId, UserAccessRequestSlot.TargetSuperAdmin, cancellationToken);
 
         try

@@ -12,12 +12,12 @@ namespace LTSBackend.Features.Deadlines.Commands.UpdateDeadline
     public class UpdateDeadlineHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,IPermissionService _permissionService,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<UpdateDeadlineCommand, bool>
     {
-        // =====================================================
-        // HANDLE — edits an existing, not-yet-completed deadline
-        // Firm isolation plus the same assignment check as
-        // CreateDeadlineHandler. Refuses to edit a deadline that's
-        // already marked complete.
-        // =====================================================
+
+
+
+
+
+
         public async Task<bool> Handle(UpdateDeadlineCommand request, CancellationToken cancellationToken)
         {
             var deadline = await _context.Deadlines.Include(d => d.Case).FirstOrDefaultAsync(d => d.DeadlineID == request.Deadline.DeadlineID, cancellationToken);
@@ -25,7 +25,7 @@ namespace LTSBackend.Features.Deadlines.Commands.UpdateDeadline
             if (deadline == null || (deadline.Case.FirmID != _currentUser.FirmID))
                 throw new NotFoundException($"Deadline ID {request.Deadline.DeadlineID} not found");
 
-            // SECURITY FIX (IDOR): see CreateDeadlineHandler for rationale.
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

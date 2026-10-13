@@ -17,15 +17,15 @@ namespace LTSBackend.Features.Departments.Controllers;
 [Authorize]
 public class DepartmentsController(IMediator mediator) : ControllerBase
 {
-    // =====================================================
-    // GET ALL DEPARTMENTS — FirmAdmin and above ONLY
-    // Master-data management is FirmAdmin and Partner's task.
-    // AssociateLawyer, Moharrir, InternParalegal and SuperAdmin have NO
-    // access (not even read) to this master data admin surface. Query
-    // results are automatically scoped by the caller's visibility
-    // (system-wide global departments + their own firm's custom ones) via
-    // the HasQueryFilter on Department in AppDbContext.
-    // =====================================================
+
+
+
+
+
+
+
+
+
     [HttpGet]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = false)
@@ -34,10 +34,10 @@ public class DepartmentsController(IMediator mediator) : ControllerBase
         return Ok(ApiResponse<List<DepartmentDTO>>.SuccessResponse(departments));
     }
 
-    // =====================================================
-    // GET DEPARTMENT BY ID — FirmAdmin and above ONLY
-    // Fetches a single department's details by its ID.
-    // =====================================================
+
+
+
+
     [HttpGet("{id}")]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> GetById(int id)
@@ -46,14 +46,14 @@ public class DepartmentsController(IMediator mediator) : ControllerBase
         return Ok(ApiResponse<DepartmentDTO>.SuccessResponse(department));
     }
 
-    // =====================================================
-    // CREATE DEPARTMENT — FirmAdmin and above
-    // Adds a new department. Same per-tenant model as Court — FirmID is
-    // nullable (NULL = system-wide global department; a real value = a
-    // firm's own custom department). CreateDepartmentHandler assigns
-    // ownership on create. Requires the EF migration that adds
-    // Department.FirmID to be applied.
-    // =====================================================
+
+
+
+
+
+
+
+
     [HttpPost]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> Create(CreateDepartmentCommand command)
@@ -62,12 +62,12 @@ public class DepartmentsController(IMediator mediator) : ControllerBase
         return Ok(ApiResponse<int>.SuccessResponse(id, "Department created successfully."));
     }
 
-    // =====================================================
-    // UPDATE DEPARTMENT — FirmAdmin and above
-    // Edits an existing department. A FirmAdmin may only update their
-    // OWN firm's custom department (enforced in UpdateDepartmentHandler)
-    // — never a global or another firm's department.
-    // =====================================================
+
+
+
+
+
+
     [HttpPut("{id}")]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> Update(int id, UpdateDepartmentCommand command)
@@ -79,13 +79,13 @@ public class DepartmentsController(IMediator mediator) : ControllerBase
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Department updated successfully."));
     }
 
-    // =====================================================
-    // DELETE DEPARTMENT — FirmAdmin and above
-    // Removes a department the firm no longer needs. A FirmAdmin may only
-    // delete their OWN firm's custom department (enforced in
-    // DeleteDepartmentHandler) — never a global or another firm's
-    // department.
-    // =====================================================
+
+
+
+
+
+
+
     [HttpDelete("{id}")]
     [Authorize(Roles = RoleNames.FirmAdminAndAbove)]
     public async Task<IActionResult> Delete(int id)

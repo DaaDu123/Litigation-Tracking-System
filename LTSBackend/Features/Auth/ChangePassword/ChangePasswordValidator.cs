@@ -3,8 +3,8 @@ namespace LTSBackend.Features.Auth.ChangePassword;
 
 public class ChangePasswordValidator : AbstractValidator<ChangePasswordCommand>
 {
-    // Requires the old password, and a new password that meets complexity
-    // rules (8+ chars, upper/lower/digit/symbol) and differs from the old one.
+
+
     public ChangePasswordValidator()
     {
         RuleFor(x => x.OldPassword)

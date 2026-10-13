@@ -89,10 +89,10 @@
     transform 0.15s ease;
 }
 
-/* Icon and label sit on the same row, centered on the same line -
-           without an explicit line-height/vertical-align the icon glyph and
-           the text baseline can drift out of alignment (icon sitting lower,
-           label sitting higher). */
+
+
+
+
 
 .lts-sidebar .nav-link i {
   display: inline-flex;
@@ -161,7 +161,7 @@
   padding: 1.5rem;
 }
 
-/* ---------- App shell refinements ---------- */
+
 
 .lts-app-shell {
   transition: background 0.2s ease;
@@ -208,7 +208,7 @@
   display: none;
 }
 
-/* ---------- Sidebar show/hide handle ---------- */
+
 
 .lts-sidebar-handle {
   position: sticky;
@@ -254,7 +254,7 @@
   background: transparent;
 }
 
-/* ---------- Responsive ---------- */
+
 
 @media (max-width: 991.98px) {
   .lts-sidebar {
@@ -285,7 +285,7 @@
   }
 }
 
-/* ---------- Sidebar nav grouping ---------- */
+
 
 .nav-section-title {
   font-size: 0.66rem;
@@ -315,14 +315,14 @@
   padding-left: 0.85rem !important;
 }
 
-/* ==========================================================================
-   Responsive — app shell & sidebar
-   XL/XXL  : persistent sidebar, roomy gutters, content capped on ultra-wide
-   LG      : persistent sidebar (slightly narrower), collapsible to icons
-   MD/SM/XS: off-canvas drawer opened from the topbar hamburger
-   ========================================================================== */
+
+
+
+
+
+
 .lts-main-content {
-  min-width: 0; /* lets wide tables scroll inside their wrapper instead of stretching the page */
+  min-width: 0;
 }
 
 .lts-sidebar {
@@ -368,12 +368,12 @@
   }
 }
 
-/* ---- Tablet and below: navigation becomes an off-canvas drawer ---- */
+
 @media (max-width: 991.98px) {
-  /* NOTE: the drawer slides with `left`, not `transform`. A transformed
-     ancestor becomes the containing block for position:fixed descendants,
-     and NavMenu hosts the "Create Your Own Firm" modal (position:fixed) -
-     with a transform it would be trapped inside the drawer box. */
+
+
+
+
   .lts-sidebar,
   .sidebar-collapsed .lts-sidebar,
   .sidebar-hidden .lts-sidebar {
@@ -401,7 +401,7 @@
       visibility 0s;
   }
 
-  /* A collapsed (icon-only) desktop state must never leak into the drawer. */
+
   .sidebar-collapsed .lts-sidebar .brand-text {
     display: inline;
   }
@@ -428,7 +428,7 @@
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Bigger touch targets in the drawer */
+
   .lts-sidebar .nav-link {
     padding-top: 0.7rem;
     padding-bottom: 0.7rem;

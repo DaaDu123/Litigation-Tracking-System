@@ -8,27 +8,27 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LTSBackend.Features.Dashboard.Controllers;
 
-/// <summary>
-/// Every role gets its OWN dashboard, routed strictly off the caller's own
-/// JWT role claim - nobody can request another role's dashboard shape
-/// (Roles SRS: "no one can use or view another role's dashboard").
-/// SuperAdmin gets a platform-wide, firm/audit-only view; every other role
-/// gets a firm-scoped case/hearing/deadline view (further narrowed to
-/// "assigned only" for AssociateLawyer/Moharrir/InternParalegal).
-/// </summary>
+
+
+
+
+
+
+
+
 [Route("api/[controller]")]
 [ApiController]
 [HasPermission("ViewDashboard")]
 public class DashboardController(IMediator _mediator, ICurrentUserService _currentUser, ILogger<DashboardController> _logger) : ControllerBase
 {
-    // =====================================================
-    // GET DASHBOARD STATS — requires "ViewDashboard" permission
-    // Returns the statistics for whichever dashboard matches the caller's
-    // OWN role — never a role picked by the request. SuperAdmin gets the
-    // platform-wide (firm/audit) view; every other role gets the firm's
-    // case/hearing/deadline view (further narrowed to "assigned only" for
-    // AssociateLawyer/Moharrir/InternParalegal inside GetFirmDashboardQuery).
-    // =====================================================
+
+
+
+
+
+
+
+
     [HttpGet]
     public async Task<IActionResult> GetStats()
     {

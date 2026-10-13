@@ -4,17 +4,17 @@
 
 namespace LTSBackend.Migrations
 {
-    /// <inheritdoc />
+
     public partial class RemoveTecEntity : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "Teachers");
         }
 
-        /// <inheritdoc />
+
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(

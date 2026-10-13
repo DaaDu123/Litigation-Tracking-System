@@ -16,11 +16,11 @@ namespace LTSBackend.Features.LoginHistory.Controllers;
 [Authorize]
 public class LoginHistoryController(IMediator mediator) : ControllerBase
 {
-    // =====================================================
-    // GET ALL LOGIN HISTORY — requires "ViewLoginHistory" permission
-    // Returns a paged, filterable (search, date range, status) list of
-    // login attempts across the firm, for the security-monitoring screen.
-    // =====================================================
+
+
+
+
+
     [HttpGet]
     [HasPermission("ViewLoginHistory")]
     public async Task<IActionResult> GetAll(
@@ -35,12 +35,12 @@ public class LoginHistoryController(IMediator mediator) : ControllerBase
         return Ok(ApiResponse<PagedResult<LoginHistoryDTO>>.SuccessResponse(result, "Login history fetched successfully."));
     }
 
-    // =====================================================
-    // GET MY LOGIN HISTORY — Any authenticated user
-    // Returns the currently logged-in user's own login history, for their
-    // personal security/profile screen. The user ID is read from their own
-    // JWT claim, so this can never return another user's history.
-    // =====================================================
+
+
+
+
+
+
     [HttpGet("my")]
     public async Task<IActionResult> MyHistory()
     {

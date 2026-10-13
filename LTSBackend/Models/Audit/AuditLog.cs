@@ -14,7 +14,7 @@ public class AuditLog
     [MaxLength(50)]
     public string? IPAddress { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    // Foreign Key & Navigation Property (Lazy-loaded if needed)
+
     [ForeignKey(nameof(UserID))]
     public Models.Security.User? User { get; set; }
     public string? TableName { get; set; }

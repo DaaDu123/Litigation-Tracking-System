@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Courts.Commands.UpdateCourt;
 
 public class UpdateCourtValidator : AbstractValidator<UpdateCourtCommand>
 {
-    // Requires a valid CourtID plus the same name/type/jurisdiction/address
-    // rules as CreateCourtValidator.
+
+
     public UpdateCourtValidator()
     {
         RuleFor(x => x.CourtID)

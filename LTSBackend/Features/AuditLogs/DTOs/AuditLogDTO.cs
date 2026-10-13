@@ -1,7 +1,7 @@
 ﻿namespace LTSBackend.Features.AuditLogs.DTOs;
-/// <summary>
-/// DTO for audit log entry in list responses.
-/// </summary>
+
+
+
 public class AuditLogDTO
 {
     public int LogID { get; set; }

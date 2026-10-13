@@ -12,13 +12,13 @@ namespace LTSBackend.Features.Profile.Commands.CompleteFirmUserProfile;
 public class CompleteFirmUserProfileCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<CompleteFirmUserProfileCommandHandler> _logger) : IRequestHandler<CompleteFirmUserProfileCommand, ProfileCompletionResultDTO>
 {
-    // =====================================================
-    // HANDLE — mandatory Firm User profile completion, required before
-    // the "browse Firm Admins / send a request" functionality (enforced
-    // by ProfileCompletionBehavior, not duplicated here). Same
-    // normalize-then-uniqueness-check pattern as
-    // CompleteFirmAdminProfileCommandHandler for Phone/CNIC.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<ProfileCompletionResultDTO> Handle(CompleteFirmUserProfileCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

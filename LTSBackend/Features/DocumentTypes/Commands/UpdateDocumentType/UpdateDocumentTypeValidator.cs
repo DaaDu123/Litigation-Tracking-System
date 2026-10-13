@@ -4,8 +4,8 @@ namespace LTSBackend.Features.DocumentTypes.Commands.UpdateDocumentType;
 
 public class UpdateDocumentTypeValidator : AbstractValidator<UpdateDocumentTypeCommand>
 {
-    // Requires a valid DocumentTypeID plus the same name/description rules
-    // as CreateDocumentTypeValidator.
+
+
     public UpdateDocumentTypeValidator()
     {
         RuleFor(x => x.DocumentTypeID).GreaterThan(0).WithMessage("Valid document type ID is required.");

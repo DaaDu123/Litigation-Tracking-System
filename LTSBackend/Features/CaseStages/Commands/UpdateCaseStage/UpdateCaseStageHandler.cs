@@ -8,13 +8,13 @@ namespace LTSBackend.Features.CaseStages.Commands.UpdateCaseStage;
 
 public sealed class UpdateCaseStageHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<UpdateCaseStageHandler> _logger) : IRequestHandler<UpdateCaseStageCommand, bool>
 {
-    // =====================================================
-    // HANDLE — edits an existing case stage
-    // Ownership check: a FirmAdmin may only edit their OWN firm's custom
-    // case stage — never a global one or another firm's (returns
-    // NotFound rather than Forbidden, so its existence isn't disclosed).
-    // Also re-checks name uniqueness before saving.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(UpdateCaseStageCommand request, CancellationToken cancellationToken)
     {
         request = request with { StageName = request.StageName.Trim(), Description = request.Description?.Trim() };

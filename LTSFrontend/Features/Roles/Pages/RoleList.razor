@@ -183,8 +183,7 @@
     private RoleFormModal _formModal = default!;
     private ConfirmDialog _confirmDialog = default!;
 
-    // Mirrors LTSBackend's ProtectedRoles list in UpdateRoleHandler/DeleteRoleHandler -
-    // SuperAdmin and FirmAdmin cannot be edited or deleted through this UI.
+
     private static readonly string[] ProtectedRoleNames = { "SuperAdmin", "FirmAdmin" };
 
     protected override async Task OnInitializedAsync() => await LoadAsync();

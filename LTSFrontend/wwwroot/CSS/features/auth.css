@@ -327,9 +327,9 @@
   }
 }
 
-/* ==========================================================================
-   Responsive — auth forms
-   ========================================================================== */
+
+
+
 .auth-form-card {
   min-width: 0;
 }
@@ -358,7 +358,7 @@
     font-size: 1.2rem;
   }
 
-  /* touch-friendly inputs, avoid iOS zoom-on-focus */
+
   .auth-form-card .form-control,
   .auth-form-card .form-select {
     font-size: 1rem;

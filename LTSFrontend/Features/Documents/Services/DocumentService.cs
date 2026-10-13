@@ -7,7 +7,7 @@ namespace LTSFrontend.Features.Documents.Services
 {
     public class DocumentService : IDocumentService
     {
-        // Mirrors the 15MB limit enforced by DocumentsController.UploadDocument.
+
         private const long MaxFileSizeBytes = 15 * 1024 * 1024;
 
         private readonly ApiClient _api;

@@ -4,10 +4,10 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateHearing
 {
     public class UpdateHearingValidator : AbstractValidator<UpdateHearingCommand>
     {
-        // Requires a valid HearingID, a hearing date, a judge name, and a
-        // hearing purpose. Unlike CreateHearingValidator, an already-scheduled
-        // hearing's date is not re-checked against "today" here, since an
-        // update may legitimately be recording a completed hearing's outcome.
+
+
+
+
         public UpdateHearingValidator()
         {
             RuleFor(x => x.Hearing).NotNull();

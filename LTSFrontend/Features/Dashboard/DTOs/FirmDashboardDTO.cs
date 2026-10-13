@@ -1,10 +1,10 @@
 namespace LTSFrontend.Features.Dashboard.DTOs
 {
-    /// <summary>
-    /// Mirrors LTSBackend.Features.Dashboard.DTOs.FirmDashboardDTO - used by every
-    /// non-SuperAdmin role. "Scope" is "FirmWide" (FirmAdmin/Partner) or
-    /// "AssignedOnly" (AssociateLawyer/Moharrir/InternParalegal).
-    /// </summary>
+
+
+
+
+
     public class FirmDashboardDTO
     {
         public string Scope { get; set; } = "AssignedOnly";

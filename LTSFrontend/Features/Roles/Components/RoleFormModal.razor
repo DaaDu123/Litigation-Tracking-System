@@ -1,8 +1,8 @@
-@* Create / Edit modal for Roles. Handles the role's name, description, and
-   its full permission set in one save, matching LTSBackend's
-   CreateRoleCommand / UpdateRoleCommand (both replace the whole permission
-   list in a single call). Opened imperatively from RoleList.razor via @ref:
-     _formModal.OpenForCreateAsync() / OpenForEditAsync(role); *@
+
+
+
+
+
 @using LTSFrontend.Features.Permissions.Components
 @using LTSFrontend.Features.Permissions.DTOs
 @using LTSFrontend.Features.Permissions.Services
@@ -99,7 +99,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
     private bool _isOpen;
     private bool _isSaving;

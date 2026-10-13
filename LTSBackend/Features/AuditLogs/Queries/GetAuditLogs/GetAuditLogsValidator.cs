@@ -3,8 +3,8 @@ namespace LTSBackend.Features.AuditLogs.Queries.GetAuditLogs;
 
 public class GetAuditLogsValidator : AbstractValidator<GetAuditLogsQuery>
 {
-    // Requires sane pagination and, if both a FromDate and ToDate are
-    // supplied, that FromDate isn't after ToDate.
+
+
     public GetAuditLogsValidator()
     {
         RuleFor(x => x.PageNumber)

@@ -27,8 +27,8 @@ public static class ApplicationServicesExtensions
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IVirusScanService, ClamAvVirusScanService>();
 
-        // Per-document permission overrides - drives the Moharrir "blind
-        // upload" restriction (write-only until a Partner/FirmAdmin grants view/download).
+
+
         services.AddScoped<IDocumentPermissionService, DocumentPermissionService>();
 
         services.AddScoped<IAuditService, AuditService>();

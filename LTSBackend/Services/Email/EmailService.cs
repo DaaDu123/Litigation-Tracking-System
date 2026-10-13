@@ -50,10 +50,10 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
             var email = new MimeMessage();
             email.From.Add(new MailboxAddress(senderName, senderEmail));
 
-            // Replying in the inbox goes straight to the visitor, not back to us.
+
             email.ReplyTo.Add(new MailboxAddress(fromName, fromEmail));
 
-            // Delivered to the firm's own support inbox (the configured sender).
+
             email.To.Add(new MailboxAddress(senderName, senderEmail));
 
             email.Subject = $"LTS Website Contact - {fromName}";
@@ -70,7 +70,7 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send contact form email from {Email}", fromEmail);
-            throw; // Re-throw - unlike the acknowledgement email, this one must reach a human.
+            throw;
         }
     }
 
@@ -113,7 +113,7 @@ public class EmailService(IConfiguration _configuration, ILogger<EmailService> _
                 toEmail
             );
 
-            throw; // Re-throw to let caller handle
+            throw;
         }
     }
 }

@@ -1,6 +1,6 @@
-@* Modal for rejecting a user join request with an optional reason.
-   Usage: <RejectUserJoinRequestModal @ref="_rejectModal" OnConfirmed="HandleRejectConfirmedAsync" />
-          _rejectModal.Open(request); *@
+
+
+
 @using LTSFrontend.Features.UserJoinRequests.DTOs
 
 <div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="Close"></div>

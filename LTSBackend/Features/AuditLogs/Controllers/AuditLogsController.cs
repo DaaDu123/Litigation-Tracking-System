@@ -21,13 +21,13 @@ public class AuditLogsController : ControllerBase
         _logger = logger;
     }
 
-    // =====================================================
-    // GET ALL AUDIT LOGS — requires "ViewAuditLogs" permission
-    // Returns a paged, filterable list of audit-log entries (search text,
-    // action type, date range) so admins/auditors can review who did what
-    // and when. Pagination keeps the response size bounded for firms with
-    // a long audit history.
-    // =====================================================
+
+
+
+
+
+
+
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] string? action, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {

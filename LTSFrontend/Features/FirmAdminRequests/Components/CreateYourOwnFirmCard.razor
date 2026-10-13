@@ -50,7 +50,7 @@
     protected override async Task OnInitializedAsync()
     {
         Status.OnChange += HandleStatusChanged;
-        // Always fetch fresh: a Super Admin may have approved/rejected since the last visit.
+
         await Status.RefreshAsync();
     }
 

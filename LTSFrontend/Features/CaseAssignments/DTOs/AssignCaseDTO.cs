@@ -1,9 +1,9 @@
 namespace LTSFrontend.Features.CaseAssignments.DTOs
 {
-    /// <summary>
-    /// Form model for assigning a lawyer/counsel to a case. Also holds a static
-    /// list of valid AssignmentType values (must match backend AssignCaseValidator).
-    /// </summary>
+
+
+
+
     public class AssignCaseDTO
     {
         public long CaseID { get; set; }

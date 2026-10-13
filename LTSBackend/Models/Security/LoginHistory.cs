@@ -28,7 +28,7 @@ public class LoginHistory
     public bool IsLoggedOut { get; set; } = false;
 
 
-    // Foreign Key & Navigation Property
+
     [ForeignKey(nameof(UserID))]
     public User User { get; set; } = null!;
 }

@@ -11,7 +11,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
     {
         try
         {
-            // 1. Load the user with role + firm status.
+
             var user = await _context.Users
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -25,7 +25,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 return false;
             }
 
-            // 2. Reject deactivated, soft-deleted, or blocked-firm accounts.
+
             if (user.IsDeleted || !user.IsActive)
             {
                 _logger.LogWarning("Document access denied - account inactive or deleted: {UserId}", userId);
@@ -39,18 +39,18 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
             }
 
             var role = user.GetRole();
-            // 3. Super Admin has NO document access.
+
             if (role == UserRole.SuperAdmin)
             {
                 _logger.LogWarning("Document access denied - SuperAdmin has no document access by design: {UserId}", userId);
                 return false;
             }
 
-            // 4. Multi-tenant isolation (CRITICAL): a user must never access
-            // a document belonging to another firm's case, no matter what
-            // role they hold. This is checked unconditionally, before any
-            // role-specific rule runs, so no branch below can accidentally
-            // bypass it.
+
+
+
+
+
             if (documentId > 0)
             {
                 var docInfo = await _context.Documents
@@ -66,7 +66,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                     return false;
                 }
 
-         
+
                 bool canSeeDrafts = role == UserRole.FirmAdmin || role == UserRole.Partner;
                 if (docInfo.IsDraft && docInfo.UploadedBy != userId && !canSeeDrafts && action is "View" or "Download")
                 {
@@ -75,15 +75,15 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 }
             }
 
-            // 5. FirmAdmin and Partner have full access (View/Download/
-            // Upload/Delete) within their own firm (enforced above).
+
+
             if (role == UserRole.FirmAdmin || role == UserRole.Partner)
             {
                 _logger.LogDebug("Role {Role} has full document access (own firm only)", role);
                 return true;
             }
 
-            // 6. AssociateLawyer -> read/write on assigned cases only.
+
             if (role == UserRole.AssociateLawyer)
             {
                 bool actionAllowed = action is "View" or "Download" or "Upload";
@@ -94,7 +94,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 return isAssigned;
             }
 
-            // 7. Intern/Paralegal -> read-only on assigned cases only.
+
             if (role == UserRole.InternParalegal)
             {
                 bool actionAllowed = action is "View" or "Download";
@@ -102,7 +102,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 return await IsUserAssignedToDocumentCaseAsync(userId, documentId, cancellationToken);
             }
 
-            // 8. Moharrir -> restricted (blind upload) or elevated mode.
+
             if (role == UserRole.Moharrir)
             {
                 return await HandleMohallirAccessAsync(userId, documentId, action, cancellationToken);
@@ -143,15 +143,15 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
 
             var role = user.GetRole();
 
-            // Super Admin cannot upload to any case - documents are
-            // firm-internal, out of scope for the platform owner.
+
+
             if (role == UserRole.SuperAdmin)
             {
                 _logger.LogWarning("Upload denied - SuperAdmin has no document access by design: {UserId}", userId);
                 return false;
             }
 
-            // Multi-tenant isolation: the case must belong to the user's own firm.
+
             var caseFirmId = await _context.Cases
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -165,18 +165,18 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 return false;
             }
 
-            // FirmAdmin/Partner: full upload access within their own firm.
+
             if (role == UserRole.FirmAdmin || role == UserRole.Partner)
                 return true;
 
-            // Moharrir: "blind upload" is always allowed regardless of
-            // elevated/restricted mode - matches HandleMohallirAccessAsync's
-            // existing Upload rule.
+
+
+
             if (role == UserRole.Moharrir)
                 return true;
 
-            // AssociateLawyer and InternParalegal: upload only to a case
-            // they are actually assigned to (per SRS role responsibilities).
+
+
             if (role == UserRole.AssociateLawyer || role == UserRole.InternParalegal)
             {
                 var now = DateTime.UtcNow;
@@ -213,18 +213,18 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
             .AnyAsync(cancellationToken);
     }
 
-    // Resolves Moharrir access (restricted vs elevated) for a single document,
-    // checking per-document permission grants in priority order:
-    // 1. User-specific grant (DocumentPermissions.UserID) - highest priority,
-    //    lets an admin elevate/restrict one specific Moharrir individually.
-    // 2. Role-based grant (DocumentPermissions.RoleID) - applies to every
-    //    user sharing that role.
-    // 3. Fallback - the role-level elevated/restricted default, driven by
-    //    the "ViewDocumentsIfPermitted" permission.
+
+
+
+
+
+
+
+
     private async Task<bool> HandleMohallirAccessAsync(int userId, long documentId, string action, CancellationToken cancellationToken)
     {
-        // Upload is always allowed for Moharrir, restricted or elevated -
-        // this is exactly the "blind upload" capability the SRS requires.
+
+
         if (action == "Upload")
         {
             _logger.LogDebug("Moharrir {UserId} - Upload allowed by default", userId);
@@ -240,7 +240,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 return false;
             }
 
-            // 8a. Check the user-specific grant first (highest priority).
+
             var userPermission = await _context.DocumentPermissions
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -255,7 +255,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
                 return userAllowed;
             }
 
-            // 8b. Otherwise check the role-based grant.
+
             var user = await _context.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.UserID == userId, cancellationToken);
 
             if (user?.RoleID != null)
@@ -275,8 +275,8 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
             }
         }
 
-        // 8c. Fallback: no explicit per-document row -> role-level default
-        // (restricted = write-only, elevated = view+download+upload).
+
+
         bool isElevated = await HasMohallirElevatedAccessAsync(userId, cancellationToken);
         if (isElevated && (action == "View" || action == "Download"))
         {
@@ -361,14 +361,14 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
         }
     }
 
-    // Resolves the Moharrir-specific access level (WriteOnly vs ReadWrite).
+
     private async Task<DocumentAccessLevel> GetMohallirAccessLevelAsync(int userId, CancellationToken cancellationToken)
     {
         bool isElevated = await HasMohallirElevatedAccessAsync(userId, cancellationToken);
         return isElevated ? DocumentAccessLevel.ReadWrite : DocumentAccessLevel.WriteOnly;
     }
 
-    // Creates or updates a role-wide document permission grant.
+
     public async Task GrantDocumentPermissionAsync(long documentId, int roleId, bool canView, bool canDownload, bool canUpload, CancellationToken cancellationToken = default)
     {
         try
@@ -448,7 +448,7 @@ public class DocumentPermissionService(AppDbContext _context, ILogger<DocumentPe
         }
     }
 
-    // Removes a role-wide document permission grant, if one exists.
+
     public async Task RevokeDocumentPermissionAsync(long documentId, int roleId, CancellationToken cancellationToken = default)
     {
         try

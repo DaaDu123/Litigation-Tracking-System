@@ -1,7 +1,7 @@
-@* Bell icon + dropdown for the top nav. Polls unread count periodically
-   and reloads the recent list whenever the dropdown is opened, so users
-   see hearing/deadline/assignment reminders (SRS §5.10.2/5.10.8
-   "Notifications Panel") without needing a dedicated page. *@
+
+
+
+
 @using LTSFrontend.Features.Notifications.DTOs
 @using LTSFrontend.Features.Notifications.Services
 @implements IAsyncDisposable
@@ -81,9 +81,9 @@
             await RefreshUnreadCountAsync();
         }
 
-        // Poll every 60s so the badge stays roughly current even if the
-        // user never opens the dropdown (background ReminderService on
-        // the backend generates new rows every few hours).
+
+
+
         _pollTimer = new Timer(async _ => await InvokeAsync(RefreshUnreadCountAsync), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
     }
 
@@ -110,8 +110,8 @@
         }
         catch
         {
-            // Silent - badge just won't update this cycle; a page-level
-            // action elsewhere will surface real connectivity errors.
+
+
         }
     }
 
@@ -150,7 +150,7 @@
             }
             catch
             {
-                // Best-effort - a stale IsRead flag self-corrects next poll.
+
             }
         }
 
@@ -209,7 +209,7 @@
         }
         catch
         {
-            // Best-effort dismiss - worst case it reappears next open.
+
         }
     }
 
@@ -228,7 +228,7 @@
         }
         catch
         {
-            // Best-effort - next open/poll will reconcile.
+
         }
     }
 

@@ -31,15 +31,15 @@
 }
 else
 {
-    @*
-        _stats comes from FirmDashboardDTO: FirmWide scope (FirmAdmin/Partner)
-        or AssignedOnly scope (AssociateLawyer/Moharrir/InternParalegal) - the
-        backend decides which based on the signed-in user's own role, so this
-        one page renders correctly for either without the frontend needing to
-        know which. TotalFirmUsers is null under AssignedOnly scope (a lawyer's
-        dashboard has no business showing firm headcount), so that KPI hides
-        itself in that case.
-    *@
+
+
+
+
+
+
+
+
+
     <div class="lts-stat-grid">
         <KpiCard Title="Total Cases" Value="@_totalCases.ToString()" Icon="bi-briefcase" Accent="#1b4fd6" IsLoading="_isLoading" Href="/cases" />
         <KpiCard Title="High Priority" Value="@_highPriorityCount.ToString()" Icon="bi-exclamation-triangle" Accent="#dc2626" IsLoading="_isLoading" Href="/cases" />
@@ -94,10 +94,10 @@ else
         try
         {
             var statsTask = DashboardService.GetFirmStatsAsync();
-            // NOTE: no dedicated case-aggregate endpoint exists yet, so we pull a
-            // generous page (visibility is already firm/role-scoped server-side)
-            // and compute the breakdown client-side. Good enough for a dashboard
-            // snapshot; revisit if firms grow large case volumes.
+
+
+
+
             var casesTask = CaseService.GetAllAsync(pageSize: 100);
             await Task.WhenAll(statsTask, casesTask);
 

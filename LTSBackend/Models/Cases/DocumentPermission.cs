@@ -13,7 +13,7 @@ public class DocumentPermission
     [Required]
     public long DocumentID { get; set; }
 
-    // 🔴 MODIFIED: Role-based OR User-based permissions
+
     public int? RoleID { get; set; }
     public int? UserID { get; set; }
 

@@ -7,10 +7,10 @@ namespace LTSBackend.Services.BackgroundServices;
 
 public class ReminderService(IServiceScopeFactory scopeFactory, ILogger<ReminderService> logger) : BackgroundService
 {
-    // The sweep now runs once a day at a fixed wall-clock time (UTC) instead
-    // of every few hours, so reminder emails go out at a predictable time
-    // every morning rather than drifting depending on when the app started.
-    private static readonly TimeSpan ScheduledRunTimeUtc = TimeSpan.FromHours(8); // 8:00 AM UTC
+
+
+
+    private static readonly TimeSpan ScheduledRunTimeUtc = TimeSpan.FromHours(8);
 
     private const string DeadlineAlertType = "DeadlineAlert";
     private const string HearingReminderType = "HearingReminder";
@@ -44,13 +44,13 @@ public class ReminderService(IServiceScopeFactory scopeFactory, ILogger<Reminder
         }
     }
 
-    /// <summary>
-    /// Calculates how long to wait before the next scheduled sweep so that it
-    /// always lands at <paramref name="scheduledTimeUtc"/> (UTC) — today if
-    /// that time hasn't passed yet, otherwise tomorrow at the same time.
-    /// Kept as an internal static method so it can be unit tested without
-    /// spinning up the hosted service.
-    /// </summary>
+
+
+
+
+
+
+
     internal static TimeSpan GetDelayUntilNextRun(DateTime nowUtc, TimeSpan scheduledTimeUtc)
     {
         var todayRun = nowUtc.Date.Add(scheduledTimeUtc);
@@ -64,7 +64,7 @@ public class ReminderService(IServiceScopeFactory scopeFactory, ILogger<Reminder
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var today = DateTime.UtcNow.Date;
 
-        // Resolve NotificationType IDs (seeded rows)
+
         var deadlineTypeId = await context.NotificationTypes
             .Where(t => t.TypeName == DeadlineAlertType)
             .Select(t => (int?)t.NotificationTypeID)
@@ -81,15 +81,15 @@ public class ReminderService(IServiceScopeFactory scopeFactory, ILogger<Reminder
             return;
         }
 
-        // DEADLINE REMINDERS
-        // Each deadline lets the user pick how many days beforehand they want
-        // to be warned (Deadline.ReminderDays, set when the deadline is
-        // created/updated). That custom window is respected here — but as a
-        // safety net, a reminder is ALWAYS guaranteed once 7 days (one week)
-        // or less remain, even if the user configured a shorter custom
-        // window (e.g. 2 days). So a deadline qualifies if EITHER:
-        //   a) today falls inside the user's own ReminderDays window, or
-        //   b) one week or less remains until the due date (guaranteed floor)
+
+
+
+
+
+
+
+
+
         var dueDeadlines = await context.Deadlines
             .Where(d => !d.Completed &&
                         d.DueDate >= today &&
@@ -128,7 +128,7 @@ public class ReminderService(IServiceScopeFactory scopeFactory, ILogger<Reminder
             }
         }
 
-        // HEARING REMINDERS (next 2 days)
+
         var upcomingHearings = await context.Hearings.Where(h => h.HearingDate.Date >= today && h.HearingDate.Date <= today.AddDays(2)).ToListAsync(ct);
 
         foreach (var hearing in upcomingHearings)

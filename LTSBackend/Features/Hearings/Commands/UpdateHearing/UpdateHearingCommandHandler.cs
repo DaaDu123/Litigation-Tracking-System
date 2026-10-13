@@ -22,11 +22,11 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateHearing
             _permissionService = permissionService;
         }
 
-        // =====================================================
-        // HANDLE — edits an existing hearing's details
-        // Same visibility rule as Create: firm isolation plus either full
-        // case-directory visibility or actual assignment to the case.
-        // =====================================================
+
+
+
+
+
         public async Task<bool> Handle(UpdateHearingCommand request, CancellationToken cancellationToken)
         {
             var hearing = await _context.Hearings
@@ -36,9 +36,9 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateHearing
             if (hearing == null || (hearing.Case.FirmID != _currentUser.FirmID))
                 throw new NotFoundException("Hearing not found");
 
-            // SECURITY FIX (IDOR): controller allows RoleNames.AllLawyers
-            // (includes AssociateLawyer/Moharrir), who must be scoped to
-            // their assigned cases only.
+
+
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);
@@ -50,7 +50,7 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateHearing
                 }
             }
 
-            // Note: entity has "Purpose"/"Outcome" (not HearingPurpose/HearingOutcome), and NO ModifiedDate field
+
             hearing.HearingDate = request.Hearing.HearingDate;
             hearing.CourtRoom = request.Hearing.CourtRoom;
             hearing.JudgeName = request.Hearing.JudgeName;

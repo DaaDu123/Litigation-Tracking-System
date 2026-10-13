@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Case Status. Maps 1:1
-    /// onto LTSBackend's CreateCaseStatusCommand / UpdateCaseStatusCommand,
-    /// with validation mirroring CreateCaseStatusValidator.
-    /// </summary>
+
+
+
+
+
     public class CaseStatusFormDTO
     {
-        /// <summary>Set only when editing an existing status; null on create.</summary>
+
         public int? StatusID { get; set; }
 
         [Required(ErrorMessage = "Status name is required.")]

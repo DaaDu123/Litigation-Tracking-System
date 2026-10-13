@@ -4,10 +4,10 @@ namespace LTSBackend.Features.Cases.Commands.UpdateCase;
 
 public class UpdateCaseValidator : AbstractValidator<UpdateCaseCommand>
 {
-    // Every field is an optional partial update, so each rule only runs
-    // when that field was actually supplied. Enforces length caps, a
-    // High/Medium/Low Priority, positive IDs for Court/Category/Legal
-    // Officer, and non-negative money amounts.
+
+
+
+
     public UpdateCaseValidator()
     {
         RuleFor(x => x.CaseID)

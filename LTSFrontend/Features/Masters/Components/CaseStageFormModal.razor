@@ -1,5 +1,5 @@
-@* Create / Edit modal for the Case Stage master. Opened imperatively from
-   CaseStages.razor via @ref: _formModal.OpenForCreate() / OpenForEdit(stage). *@
+
+
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject ICaseStageService CaseStageService
@@ -85,7 +85,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
     private bool _isOpen;
     private bool _isSaving;

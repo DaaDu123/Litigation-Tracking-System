@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Cases.Queries.GetAllCases;
 
 public class GetAllCasesValidator : AbstractValidator<GetAllCasesQuery>
 {
-    // Requires sane pagination (PageNumber > 0, PageSize 1-100) and, if
-    // supplied, a High/Medium/Low Priority filter.
+
+
     public GetAllCasesValidator()
     {
         RuleFor(x => x.PageNumber)

@@ -13,7 +13,7 @@ public class CaseParty
     public long CaseID { get; set; }
 
     [Required, MaxLength(20)]
-    public string PartyType { get; set; } = string.Empty; // Plaintiff, Defendant, Petitioner, etc.
+    public string PartyType { get; set; } = string.Empty;
 
     [Required, MaxLength(255)]
     public string PartyName { get; set; } = string.Empty;

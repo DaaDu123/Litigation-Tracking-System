@@ -1,4 +1,4 @@
-/* ---------- Hero section (auth pages) ---------- */
+
 
 .auth-hero-section {
   flex: 1;
@@ -92,8 +92,8 @@
   justify-content: center;
 }
 
-/* Dark navy auth card (overrides the plain white .auth-form-card look
-   specifically inside the marketing hero layout). */
+
+
 
 .auth-hero-right .auth-form-card {
   position: relative;
@@ -274,12 +274,12 @@
   color: var(--lts-text);
 }
 
-/* ==========================================================================
-   Responsive — login / register hero
-   XL  : two columns, generous padding
-   LG  : two columns, tighter
-   <LG : form first, feature cards below (rules above), single column
-   ========================================================================== */
+
+
+
+
+
+
 .auth-hero-section {
   padding: clamp(1.5rem, 1rem + 2.5vw, 3.5rem) var(--lts-page-pad-x);
   gap: clamp(1.5rem, 1rem + 2vw, 2.5rem);
@@ -345,7 +345,7 @@
   }
 }
 
-/* Shared Login/Register panel: fixed outer dimensions, scrollable form area. */
+
 .auth-hero-right .auth-form-card {
   box-sizing: border-box;
   display: flex;

@@ -2,12 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Auth.DTOs
 {
-    /// <summary>
-    /// Mirrors LTSBackend.Features.Auth.Register.RegisterCommand -
-    /// Firm User self-registration is Email + Password only now. Full
-    /// name, phone, CNIC, and firm membership are all collected/chosen
-    /// later (profile completion, then a join request from the dashboard).
-    /// </summary>
+
+
+
+
+
+
     public class RegisterRequest : IValidatableObject
     {
         [Required(ErrorMessage = "Email is required.")]

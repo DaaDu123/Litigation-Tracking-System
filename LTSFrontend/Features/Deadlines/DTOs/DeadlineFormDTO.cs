@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Deadlines.DTOs
 {
-    /// <summary>Shared form model for creating/updating a deadline. DeadlineID stays 0 when creating.</summary>
+
     public class DeadlineFormDTO
     {
         public long DeadlineID { get; set; }

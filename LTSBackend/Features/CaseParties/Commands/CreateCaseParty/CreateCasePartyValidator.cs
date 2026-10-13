@@ -9,9 +9,9 @@ namespace LTSBackend.Features.CaseParties.Commands.CreateCaseParty
             "Plaintiff", "Defendant", "Petitioner", "Respondent", "Applicant", "Respondent Department"
         };
 
-        // Requires a valid CaseID, a recognised PartyType (Plaintiff, Defendant,
-        // Petitioner, Respondent, Applicant, or Respondent Department), a
-        // non-empty party name, and a well-formed email if one is supplied.
+
+
+
         public CreateCasePartyValidator()
         {
             RuleFor(x => x.Party).NotNull();

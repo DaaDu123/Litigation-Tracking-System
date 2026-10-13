@@ -30,12 +30,12 @@ namespace LTSBackend.Features.Hearings.Controllers
             _mediator = mediator;
         }
 
-        // =====================================================
-        // CREATE HEARING — Lawyer roles
-        // Schedules a new hearing against a case (date, court, purpose,
-        // etc.). Past-date scheduling is rejected by CreateHearingValidator
-        // before this ever reaches the handler.
-        // =====================================================
+
+
+
+
+
+
         [HttpPost]
         [Authorize(Roles = RoleNames.AllLawyers)]
         [ProducesResponseType(typeof(ApiResponse<long>), 201)]
@@ -48,10 +48,10 @@ namespace LTSBackend.Features.Hearings.Controllers
                 new ApiResponse<long> { Success = true, Data = hearingId, Message = "Hearing created successfully" });
         }
 
-        // =====================================================
-        // GET HEARING BY ID — Any firm user
-        // Fetches a single hearing's full details.
-        // =====================================================
+
+
+
+
         [HttpGet("{id}")]
         [Authorize(Roles = RoleNames.AllFirmUsers)]
         [ProducesResponseType(typeof(ApiResponse<HearingDetailDTO>), 200)]
@@ -63,12 +63,12 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<HearingDetailDTO> { Success = true, Data = result });
         }
 
-        // =====================================================
-        // GET UPCOMING HEARINGS — Any firm user
-        // Returns a paged list of future hearings across the caller's
-        // visible cases, optionally filtered by case or court, for the
-        // "upcoming hearings" dashboard widget.
-        // =====================================================
+
+
+
+
+
+
         [HttpGet("upcoming")]
         [Authorize(Roles = RoleNames.AllFirmUsers)]
         [ProducesResponseType(typeof(ApiResponse<PagedHearingResult<HearingDetailDTO>>), 200)]
@@ -89,11 +89,11 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<PagedHearingResult<HearingDetailDTO>> { Success = true, Data = result });
         }
 
-        // =====================================================
-        // GET CASE HEARINGS — Any firm user
-        // Returns a paged list of every hearing (past and future) recorded
-        // against a specific case.
-        // =====================================================
+
+
+
+
+
         [HttpGet("case/{caseId}")]
         [Authorize(Roles = RoleNames.AllFirmUsers)]
         [ProducesResponseType(typeof(ApiResponse<PagedHearingResult<HearingDetailDTO>>), 200)]
@@ -112,11 +112,11 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<PagedHearingResult<HearingDetailDTO>> { Success = true, Data = result });
         }
 
-        // =====================================================
-        // UPDATE HEARING — Lawyer roles
-        // Edits an existing hearing's date, court, purpose, outcome, or
-        // next-hearing date.
-        // =====================================================
+
+
+
+
+
         [HttpPut("{id}")]
         [Authorize(Roles = RoleNames.AllLawyers)]
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
@@ -129,12 +129,12 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<bool> { Success = result, Data = result, Message = "Hearing updated successfully" });
         }
 
-        // =====================================================
-        // DELETE HEARING — Partner and above
-        // Permanently removes a hearing record. Restricted to
-        // Partner-and-above since deleting hearing history is higher-risk
-        // than creating/updating one.
-        // =====================================================
+
+
+
+
+
+
         [HttpDelete("{id}")]
         [Authorize(Roles = RoleNames.PartnerAndAbove)]
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
@@ -146,15 +146,15 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<bool> { Success = result, Data = result, Message = "Hearing deleted successfully" });
         }
 
-        // HEARING ATTENDANCE
-        // SRS Reference: Complete Database Schema - HearingAttendance table
-        // Fixes Critical Issue: "Hearing Attendance Tracking" had model but no API
 
-        // =====================================================
-        // RECORD ATTENDANCE — Any firm user
-        // Logs who was present/absent at a given hearing (attendance role,
-        // present flag, arrival/departure time, remarks).
-        // =====================================================
+
+
+
+
+
+
+
+
         [HttpPost("{hearingId}/attendance")]
         [Authorize(Roles = RoleNames.AllFirmUsers)]
         [ProducesResponseType(typeof(ApiResponse<long>), 201)]
@@ -166,10 +166,10 @@ namespace LTSBackend.Features.Hearings.Controllers
                 new ApiResponse<long> { Success = true, Data = attendanceId, Message = "Attendance recorded successfully" });
         }
 
-        // =====================================================
-        // GET HEARING ATTENDANCE — Any firm user
-        // Lists every attendance record logged for a given hearing.
-        // =====================================================
+
+
+
+
         [HttpGet("{hearingId}/attendance")]
         [Authorize(Roles = RoleNames.AllFirmUsers)]
         [ProducesResponseType(typeof(ApiResponse<List<HearingAttendanceDTO>>), 200)]
@@ -179,11 +179,11 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<List<HearingAttendanceDTO>> { Success = true, Data = result });
         }
 
-        // =====================================================
-        // UPDATE ATTENDANCE — Any firm user
-        // Edits an existing attendance record (e.g. correcting present
-        // flag or arrival time).
-        // =====================================================
+
+
+
+
+
         [HttpPut("{hearingId}/attendance/{attendanceId}")]
         [Authorize(Roles = RoleNames.AllFirmUsers)]
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
@@ -194,10 +194,10 @@ namespace LTSBackend.Features.Hearings.Controllers
             return Ok(new ApiResponse<bool> { Success = result, Data = result, Message = "Attendance updated successfully" });
         }
 
-        // =====================================================
-        // DELETE ATTENDANCE — Partner and above
-        // Permanently removes an attendance record.
-        // =====================================================
+
+
+
+
         [HttpDelete("{hearingId}/attendance/{attendanceId}")]
         [Authorize(Roles = RoleNames.PartnerAndAbove)]
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]

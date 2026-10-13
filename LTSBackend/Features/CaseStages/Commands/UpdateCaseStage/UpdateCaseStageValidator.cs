@@ -4,8 +4,8 @@ namespace LTSBackend.Features.CaseStages.Commands.UpdateCaseStage;
 
 public class UpdateCaseStageValidator : AbstractValidator<UpdateCaseStageCommand>
 {
-    // Requires a valid StageID plus the same name/description rules as
-    // CreateCaseStageValidator.
+
+
     public UpdateCaseStageValidator()
     {
         RuleFor(x => x.StageID).GreaterThan(0).WithMessage("Valid stage ID is required.");

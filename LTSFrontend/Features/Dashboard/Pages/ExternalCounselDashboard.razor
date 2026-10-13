@@ -69,8 +69,8 @@ else
         _errorMessage = null;
         try
         {
-            // GetAllCases already returns only cases this user is actively
-            // assigned to (server-side scoping) - i.e. what they're allowed to see.
+
+
             var paged = await CaseService.GetAllAsync(pageSize: 100);
             _cases = paged.Items;
             _totalCases = paged.TotalRecords;

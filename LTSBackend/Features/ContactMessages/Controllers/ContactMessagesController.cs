@@ -11,14 +11,14 @@ namespace LTSBackend.Features.ContactMessages.Controllers;
 [ApiController]
 public class ContactMessagesController(IMediator _mediator, ILogger<ContactMessagesController> _logger) : ControllerBase
 {
-    // =====================================================
-    // SUBMIT CONTACT MESSAGE — Anonymous
-    // Public "Contact Us" form on the marketing site. Delivers the message
-    // straight to the firm's support inbox by email (no database record) -
-    // see SubmitContactMessageCommandHandler for the actual send.
-    // SECURITY: rate limited ("auth-moderate", see Program.cs) since this
-    // is an anonymous, self-service endpoint.
-    // =====================================================
+
+
+
+
+
+
+
+
     [HttpPost]
     [AllowAnonymous]
     [EnableRateLimiting("auth-moderate")]

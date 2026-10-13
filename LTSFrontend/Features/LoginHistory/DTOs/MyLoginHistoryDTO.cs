@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.LoginHistory.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.LoginHistory.DTOs.MyLoginHistoryDTO</summary>
+
     public class MyLoginHistoryDTO
     {
         public int LoginID { get; set; }

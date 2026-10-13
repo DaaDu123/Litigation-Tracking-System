@@ -3,8 +3,8 @@ namespace LTSBackend.Features.Roles.Commands.CreateRole;
 
 public class CreateRoleValidator : AbstractValidator<CreateRoleCommand>
 {
-    // Requires a role name (letters/numbers/spaces/hyphens/underscores
-    // only) and at least one PermissionID.
+
+
     public CreateRoleValidator()
     {
         RuleFor(x => x.RoleName)

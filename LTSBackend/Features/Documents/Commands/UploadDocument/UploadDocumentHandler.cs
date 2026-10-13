@@ -14,22 +14,22 @@ namespace LTSBackend.Features.Documents.Commands.UploadDocument;
 public class UploadDocumentHandler(AppDbContext _context, IFileService _fileService, IDocumentPermissionService _permissionService, IAuditService _auditService,
     ICurrentUserService _currentUser, ILogger<UploadDocumentHandler> _logger) : IRequestHandler<UploadDocumentCommand, UploadDocumentResult>
 {
-    // =====================================================
-    // HANDLE — uploads a file and applies role-based document permissions
-    // Validates the user, the CanUserUploadToCaseAsync permission, the
-    // case (firm-scoped), and the document type, then saves the file to
-    // secure disk storage and records the Document row. An Intern's
-    // upload is marked IsDraft = true (pending approval). Then grants
-    // per-role DocumentPermissions: a Restricted-mode Moharrir gets NO
-    // view/download grant at all ("blind upload" — write-only), while
-    // everyone else gets a role-appropriate view/download grant.
-    //
-    // FAILURE SAFETY: the file is written first, then the Document row,
-    // permission grant and audit line run in ONE transaction. If anything
-    // after the file write fails, the transaction rolls back (no half-saved
-    // document without permissions) AND the just-written file is deleted, so
-    // no orphan file is left on disk and the client can simply retry.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<UploadDocumentResult> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Document upload started for case {CaseId} by user {UserId}", request.CaseID, request.UserID);
@@ -74,9 +74,9 @@ public class UploadDocumentHandler(AppDbContext _context, IFileService _fileServ
         string filePath;
         try
         {
-            // Tenant/case-isolated storage: Firm/{FirmID}/Case/{CaseID}/Documents/.
-            // caseRecord.FirmID was already confirmed to match the caller's own
-            // firm above, so this can never write into another firm's folder.
+
+
+
             filePath = await _fileService.SaveCaseDocumentAsync(request.File, caseRecord.FirmID, request.CaseID);
             _logger.LogInformation("File saved to secure disk storage: {FilePath}", filePath);
         }
@@ -98,7 +98,7 @@ public class UploadDocumentHandler(AppDbContext _context, IFileService _fileServ
             var strategy = _context.Database.CreateExecutionStrategy();
             long documentId = await strategy.ExecuteAsync(async () =>
             {
-                // A retried attempt must not see entities left tracked by a failed one.
+
                 _context.ChangeTracker.Clear();
 
                 await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -173,7 +173,7 @@ public class UploadDocumentHandler(AppDbContext _context, IFileService _fileServ
         }
         catch (Exception ex)
         {
-            // DB work failed and was rolled back -> remove the file we just wrote so nothing is orphaned.
+
             _logger.LogError(ex, "Document upload failed after the file was saved; removing orphan file {FilePath}", filePath);
             try
             {

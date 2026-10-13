@@ -8,9 +8,9 @@ namespace LTSBackend.Features.Courts.Queries.GetCourtById;
 
 public sealed class GetCourtByIdHandler(AppDbContext _context, ILogger<GetCourtByIdHandler> _logger) : IRequestHandler<GetCourtByIdQuery, CourtDTO>
 {
-    // =====================================================
-    // HANDLE — fetches a single court by ID
-    // =====================================================
+
+
+
     public async Task<CourtDTO> Handle(GetCourtByIdQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching court: {CourtID}", request.CourtID);

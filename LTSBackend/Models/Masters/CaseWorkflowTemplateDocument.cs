@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LTSBackend.Models.Masters;
 
-/// <summary>A required or optional Document Type of a Case Workflow Template (references the reusable DocumentType master).</summary>
+
 [Table("CaseWorkflowTemplateDocuments")]
 public class CaseWorkflowTemplateDocument
 {

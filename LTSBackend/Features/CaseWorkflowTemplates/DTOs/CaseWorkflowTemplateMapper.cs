@@ -2,7 +2,7 @@ using LTSBackend.Models.Masters;
 
 namespace LTSBackend.Features.CaseWorkflowTemplates.DTOs;
 
-/// <summary>Maps a fully loaded template (Category, DefaultDepartment, InitialStatus, Stages.Stage, Documents.DocumentType) to its DTO.</summary>
+
 public static class CaseWorkflowTemplateMapper
 {
     public static CaseWorkflowTemplateDTO ToDto(CaseWorkflowTemplate t) => new()

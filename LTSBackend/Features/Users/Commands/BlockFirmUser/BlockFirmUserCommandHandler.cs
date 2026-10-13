@@ -12,17 +12,17 @@ namespace LTSBackend.Features.Users.Commands.BlockFirmUser;
 public class BlockFirmUserCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<BlockFirmUserCommandHandler> _logger) : IRequestHandler<BlockFirmUserCommand, bool>
 {
-    // =====================================================
-    // HANDLE — Firm Admin blocks a user in their OWN firm.
-    // Tenant isolation is automatic: the Users query filter already
-    // scopes this lookup to the caller's own FirmID claim, so a request
-    // for a user in a different firm simply comes back NotFound - exactly
-    // like trying to reach another firm's data anywhere else in this
-    // codebase. Cannot block yourself or another FirmAdmin/SuperAdmin.
-    // Immediately invalidates the target's current session (SecurityStamp
-    // + revoke refresh tokens) so the block takes effect right away, not
-    // just on their next login.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
     public async Task<bool> Handle(BlockFirmUserCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

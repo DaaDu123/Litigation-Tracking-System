@@ -4,9 +4,9 @@ namespace LTSBackend.Features.Users.Commands.SetAvailability;
 
 public class SetAvailabilityValidator : AbstractValidator<SetAvailabilityCommand>
 {
-    // Backend validation is mandatory (frontend validation is only a
-    // convenience) - reason and a positive duration are both required
-    // whenever the Firm Admin is going Inactive.
+
+
+
     public SetAvailabilityValidator()
     {
         When(x => !x.IsAvailable, () =>

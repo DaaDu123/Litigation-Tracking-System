@@ -2,7 +2,7 @@
 
 namespace LTSBackend.Features.LoginHistory.DeleteAllOldHistory;
 
-// Keeps the retention window sane: at least a day, at most ~10 years.
+
 public class DeleteOldHistoryValidator : AbstractValidator<DeleteOldHistoryCommand>
 {
     public DeleteOldHistoryValidator()

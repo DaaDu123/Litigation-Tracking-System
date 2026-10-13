@@ -8,11 +8,11 @@ namespace LTSBackend.Features.CaseCategories.Commands.DeleteCaseCategory;
 
 public sealed class DeleteCaseCategoryHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<DeleteCaseCategoryHandler> _logger) : IRequestHandler<DeleteCaseCategoryCommand, bool>
 {
-    // =====================================================
-    // HANDLE — removes a case category the firm no longer needs
-    // Same ownership check as Update (own firm's custom case category only),
-    // plus an in-use check: cannot delete while cases still reference it.
-    // =====================================================
+
+
+
+
+
     public async Task<bool> Handle(DeleteCaseCategoryCommand request, CancellationToken cancellationToken)
     {
         var category = await _context.CaseCategories.FirstOrDefaultAsync(x => x.CategoryID == request.CategoryID, cancellationToken);
@@ -22,7 +22,7 @@ public sealed class DeleteCaseCategoryHandler(AppDbContext _context, ICurrentUse
             throw new NotFoundException("Case category not found.");
         }
 
-        // Ownership check: a FirmAdmin may delete only their OWN firm's custom category - never a global one.
+
         if (category.FirmID != _currentUser.FirmID)
         {
             _logger.LogWarning("Delete denied: user {UserId} attempted to delete a global/other-firm category {CategoryID}", _currentUser.UserID, request.CategoryID);
@@ -39,7 +39,7 @@ public sealed class DeleteCaseCategoryHandler(AppDbContext _context, ICurrentUse
             });
         }
 
-        // Workflow templates reference the category with NO ACTION: block with a clear message instead of a raw FK error.
+
         if (await _context.CaseWorkflowTemplates.AnyAsync(x => x.CategoryID == request.CategoryID, cancellationToken))
         {
             throw new ValidationException(new() { "Cannot delete category. A workflow template is configured for it. Delete that template first, or deactivate the category instead." });

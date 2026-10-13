@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Http;
 
 namespace LTSBackend.Services.CurrentUser;
 
-/// <summary>
-/// Reads the caller's identity straight off their JWT claims for the
-/// current HTTP request. Every property below is a live read of the
-/// ClaimsPrincipal, not a cached/queried value — so it always reflects
-/// whatever the current request's token actually says.
-/// </summary>
+
+
+
+
+
+
 public class CurrentUserService : ICurrentUserService
 {
     private readonly ClaimsPrincipal? _user;

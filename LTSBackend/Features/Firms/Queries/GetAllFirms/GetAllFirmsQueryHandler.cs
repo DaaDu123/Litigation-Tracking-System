@@ -7,11 +7,11 @@ namespace LTSBackend.Features.Firms.Queries.GetAllFirms;
 
 public class GetAllFirmsQueryHandler(AppDbContext _context) : IRequestHandler<GetAllFirmsQuery, List<FirmDTO>>
 {
-    // =====================================================
-    // HANDLE — lists every non-deleted firm workspace on the platform
-    // Includes each firm's live user/case counts for the SuperAdmin
-    // console.
-    // =====================================================
+
+
+
+
+
     public async Task<List<FirmDTO>> Handle(GetAllFirmsQuery request, CancellationToken cancellationToken)
     {
         return await _context.Firms

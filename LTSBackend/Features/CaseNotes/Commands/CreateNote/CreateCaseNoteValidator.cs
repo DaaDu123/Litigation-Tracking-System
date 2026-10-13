@@ -6,8 +6,8 @@ namespace LTSBackend.Features.CaseNotes.Commands.CreateNote
     {
         private static readonly string[] ValidTypes = { "Internal", "Confidential", "General" };
 
-        // Requires a valid CaseID, a recognised NoteType (Internal, Confidential,
-        // or General), and non-empty note text (max 4000 chars).
+
+
         public CreateCaseNoteValidator()
         {
             RuleFor(x => x.Note).NotNull();

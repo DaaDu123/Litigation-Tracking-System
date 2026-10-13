@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Create/Update payload for a Court. CourtID is null on create.
-    /// Mirrors CreateCourtCommand / UpdateCourtCommand on the backend.
-    /// </summary>
+
+
+
+
     public class SaveCourtDTO
     {
         public int? CourtID { get; set; }

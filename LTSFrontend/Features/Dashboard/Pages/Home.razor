@@ -21,14 +21,6 @@
 }
 
 @code {
-    // Maps each backend UserRole to its dashboard page (see LTSBackend.Comman.Enum.UserRole
-    // doc comments for what each role actually does):
-    //   SuperAdmin       -> Admin Dashboard            (system-wide management)
-    //   FirmAdmin        -> Management Dashboard       (firm-wide oversight)
-    //   Partner          -> Supervisor Dashboard       (supervises case teams)
-    //   AssociateLawyer  -> Lawyer Dashboard            (day-to-day case work)
-    //   Moharrir         -> Legal Officer Dashboard     (court diary / clerical)
-    //   InternParalegal  -> External Counsel Dashboard  (restricted, read-only)
     private static readonly Dictionary<string, string> RoleDashboardRoutes = new(StringComparer.OrdinalIgnoreCase)
     {
         ["SuperAdmin"] = "/dashboard/admin",

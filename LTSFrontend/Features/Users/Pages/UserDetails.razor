@@ -98,15 +98,15 @@ else
     private bool _notFound;
     private ChangeRoleModal _roleModal = default!;
 
-    /// <summary>Gates the "Change Role" button - the only lever a Firm
-    /// Admin has over another user from this page (see UserTable.razor:
-    /// a Firm Admin can change role and lifecycle status, but never
-    /// another person's name, contact info, or profile photo - that stays
-    /// self-service via "My Profile"). FirmAdmin-only - Partner can VIEW
-    /// this page (see the page's own [Authorize(Roles =
-    /// "FirmAdmin,Partner")] above) but has no manage access to users.
-    /// Also excludes the workspace's own FirmAdmin and the acting user
-    /// themselves, mirroring UserTable.razor's rule.</summary>
+
+
+
+
+
+
+
+
+
     private bool CanChangeRole =>
         Session.Role is "FirmAdmin" &&
         _user is { RoleName: not "FirmAdmin" } &&

@@ -6,7 +6,7 @@ namespace LTSFrontend.Features.Users.Services
 {
     public class UserService : IUserService
     {
-        private const long MaxImageBytes = 5 * 1024 * 1024; // 5 MB, mirrors backend rule
+        private const long MaxImageBytes = 5 * 1024 * 1024;
         private readonly ApiClient _api;
 
         public UserService(ApiClient api)

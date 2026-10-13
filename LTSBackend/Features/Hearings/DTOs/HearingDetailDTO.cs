@@ -19,6 +19,6 @@ namespace LTSBackend.Features.Hearings.DTOs
         public string? CreatedByUser { get; set; }
         public DateTime CreatedDate { get; set; }
         public int? DaysRemaining { get; set; }
-        public string HearingPriority { get; set; } = "Normal"; // Critical, High, Medium, Normal
+        public string HearingPriority { get; set; } = "Normal";
     }
 }

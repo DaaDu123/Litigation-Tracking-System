@@ -5,15 +5,15 @@ namespace LTSBackend.Features.Users.Commands.CreateUser;
 
 public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
 {
-    // Requires name/email/password (standard complexity rules)/a defined
-    // RoleID; phone/department are optional but format/length-checked.
-    // ProfileImage, if supplied, must be under 5MB, a JPG/JPEG/PNG/WebP
-    // file, AND have a byte signature matching that extension (blocks a
-    // renamed/mislabeled file).
+
+
+
+
+
     public CreateUserCommandValidator()
     {
-        // Full Name is a required field in the Add User form — the
-        // backend no longer guesses/derives it.
+
+
         RuleFor(x => x.FullName)
             .NotEmpty()
             .WithMessage("Full name is required")
@@ -53,9 +53,9 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
             .MaximumLength(100)
             .WithMessage("Department cannot exceed 100 characters");
 
-        // Optional on create — omitted means "default to Intern/Paralegal"
-        // (handled in CreateUserCommandHandler). If a role IS supplied it
-        // must still be a real, valid role ID.
+
+
+
         RuleFor(x => x.RoleID)
             .GreaterThan(0)
             .WithMessage("Valid role is required")
@@ -69,7 +69,7 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
                 if (file == null)
                     return true;
 
-                return file.Length <= 5 * 1024 * 1024; // 5MB max
+                return file.Length <= 5 * 1024 * 1024;
             })
             .WithMessage("Profile image cannot exceed 5 MB")
             .Must(file =>
@@ -81,9 +81,9 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
                 return allowed.Contains(Path.GetExtension(file.FileName).ToLowerInvariant());
             })
             .WithMessage("Only JPG, JPEG, PNG, and WebP formats are allowed")
-            // SECURITY: same content-signature check as case document
-            // uploads (see UploadDocumentValidator) - rejects a file whose
-            // actual bytes don't match its claimed image extension.
+
+
+
             .Must(file =>
             {
                 if (file == null)

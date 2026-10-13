@@ -8,9 +8,9 @@ namespace LTSBackend.Features.CaseStages.Queries.GetCaseStageById;
 
 public sealed class GetCaseStageByIdHandler(AppDbContext _context, ILogger<GetCaseStageByIdHandler> _logger) : IRequestHandler<GetCaseStageByIdQuery, CaseStageDTO>
 {
-    // =====================================================
-    // HANDLE — fetches a single case stage by ID
-    // =====================================================
+
+
+
     public async Task<CaseStageDTO> Handle(GetCaseStageByIdQuery request, CancellationToken cancellationToken)
     {
         var stage = await _context.CaseStages.AsNoTracking().FirstOrDefaultAsync(x => x.StageID == request.StageID, cancellationToken);

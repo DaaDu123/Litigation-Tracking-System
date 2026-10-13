@@ -4,14 +4,14 @@ using LTSBackend.Models.Masters;
 
 namespace LTSBackend.Models.Cases;
 
-/// <summary>
-/// One line of a Case's document checklist (required or optional),
-/// generated from the Case Workflow Template at creation. It only says
-/// "this case expects a document of this type" - actual uploaded files
-/// stay in Documents (CaseID + DocumentTypeID). Whether a line is
-/// fulfilled is derived from the Documents table, never stored, so it can
-/// never drift out of sync.
-/// </summary>
+
+
+
+
+
+
+
+
 [Table("CaseDocumentRequirements")]
 public class CaseDocumentRequirement
 {

@@ -13,13 +13,13 @@ namespace LTSBackend.Features.Users.Commands.RemoveFirmUser;
 public class RemoveFirmUserCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<RemoveFirmUserCommandHandler> _logger) : IRequestHandler<RemoveFirmUserCommand, bool>
 {
-    // =====================================================
-    // HANDLE — detaches a user from the firm entirely (distinct from
-    // Block: FirmID is cleared, freeing the user to request a different
-    // firm - or, per business rule, this same firm again later). Reason
-    // is mandatory and shown to the removed user, plus kept in
-    // FirmMembershipEvents/AuditLogs for history.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(RemoveFirmUserCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)
@@ -59,12 +59,12 @@ public class RemoveFirmUserCommandHandler(AppDbContext _context, ICurrentUserSer
             PerformedAtUtc = DateTime.UtcNow
         });
 
-        // In-app notification so the removed user sees the reason next
-        // time they log in - never exposes anything beyond the reason
-        // the Firm Admin gave.
+
+
+
         _context.Notifications.Add(new Notification
         {
-            NotificationTypeID = 9, // "FirmMembershipChange" - seeded in AppDbContext.SeedNotificationTypes
+            NotificationTypeID = 9,
             UserID = user.UserID,
             Subject = "You have been removed from this firm",
             Message = $"Your Firm Admin removed your membership. Reason: {request.Reason}",

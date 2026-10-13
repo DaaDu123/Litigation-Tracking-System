@@ -4,11 +4,11 @@ namespace LTSBackend.Features.Deadlines.Commands.CreateDeadline
 {
     public class CreateDeadlineValidator : AbstractValidator<CreateDeadlineCommand>
     {
-        // Requires a valid CaseID, a deadline type, and a Due Date that is
-        // today or later (never in the past). ReminderDays (how many days
-        // beforehand the user wants to be warned) must be 0-90 — see
-        // ReminderService for how this is actually used, including its
-        // guaranteed one-week floor.
+
+
+
+
+
         public CreateDeadlineValidator()
         {
             RuleFor(x => x.Deadline).NotNull();

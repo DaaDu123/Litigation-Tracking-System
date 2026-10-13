@@ -11,7 +11,7 @@ public class CaseWorkflowTemplateDTO
     public string InitialStatusName { get; set; } = string.Empty;
     public bool IsActive { get; set; }
 
-    /// <summary>True when the template is global (FirmID null) - only SuperAdmin can change it.</summary>
+
     public bool IsGlobal { get; set; }
 
     public List<WorkflowStageItemDTO> Stages { get; set; } = [];

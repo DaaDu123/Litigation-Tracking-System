@@ -10,20 +10,20 @@ namespace LTSBackend.Features.Documents.Commands.DeleteDocument;
 
 public class DeleteDocumentHandler(AppDbContext _context, IFileService _fileService, IAuditService _auditService,ICurrentUserService _currentUser, ILogger<DeleteDocumentHandler> _logger) : IRequestHandler<DeleteDocumentCommand, bool>
 {
-    // =====================================================
-    // HANDLE — hard-deletes a document, its permissions, and its file
-    // Removes DocumentPermissions rows first (FK-safe order), then the DB
-    // row, then the file on secure disk storage — a failed file delete is
-    // logged but doesn't fail the request, since the DB record is already
-    // gone. Writes an audit log entry. Not reversible.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(DeleteDocumentCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Document delete attempt - ID: {DocumentId}, User: {UserId}", request.DocumentID, request.UserID);
 
-        // Include Case so we have its FirmID for the storage-layer ownership check below.
-        // (Document itself is also tenant-filtered by EF Core's HasQueryFilter on
-        // Case.FirmID == RequestFirmId, so this Include also re-confirms that filter fired.)
+
+
+
         var document = await _context.Documents.Include(x => x.Case).FirstOrDefaultAsync(x => x.DocumentID == request.DocumentID, cancellationToken);
 
         if (document == null)
@@ -32,12 +32,12 @@ public class DeleteDocumentHandler(AppDbContext _context, IFileService _fileServ
             throw new NotFoundException($"Document {request.DocumentID} not found");
         }
 
-        // Defense-in-depth: re-confirm the document's own case belongs to the
-        // caller's firm even though the EF query filter already enforces this,
-        // before we ever remove the row or the file on disk. SuperAdmin is
-        // platform-level (FirmID is null on their own account) and is
-        // intentionally exempt, same as the EF Core tenant query filter's
-        // BypassTenantFilter rule.
+
+
+
+
+
+
         if (document.Case == null || (!_currentUser.IsSuperAdmin && document.Case.FirmID != _currentUser.FirmID))
         {
             _logger.LogWarning("Delete denied: document {DocumentId} does not belong to the caller's firm", request.DocumentID);

@@ -8,12 +8,12 @@ namespace LTSBackend.Features.Dashboard.Queries.GetSuperAdminDashboard;
 
 public class GetSuperAdminDashboardHandler(AppDbContext _context, ILogger<GetSuperAdminDashboardHandler> _logger) : IRequestHandler<GetSuperAdminDashboardQuery, SuperAdminDashboardDTO>
 {
-    // =====================================================
-    // HANDLE — platform-wide statistics for the SuperAdmin dashboard
-    // Returns firm counts, audit activity, and other platform-owner-level
-    // metrics — never case/hearing/document data, which is firm-internal
-    // business outside the SuperAdmin's scope.
-    // =====================================================
+
+
+
+
+
+
     public async Task<SuperAdminDashboardDTO> Handle(GetSuperAdminDashboardQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching SuperAdmin dashboard statistics");

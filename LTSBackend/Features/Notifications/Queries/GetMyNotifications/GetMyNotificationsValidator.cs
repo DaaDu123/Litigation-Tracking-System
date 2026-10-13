@@ -4,7 +4,7 @@ namespace LTSBackend.Features.Notifications.Queries.GetMyNotifications;
 
 public class GetMyNotificationsValidator : AbstractValidator<GetMyNotificationsQuery>
 {
-    // Requires sane pagination (PageNumber > 0, PageSize 1-100).
+
     public GetMyNotificationsValidator()
     {
         RuleFor(x => x.PageNumber)

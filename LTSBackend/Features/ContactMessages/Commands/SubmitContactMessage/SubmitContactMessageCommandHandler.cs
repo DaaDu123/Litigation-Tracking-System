@@ -5,15 +5,15 @@ namespace LTSBackend.Features.ContactMessages.Commands.SubmitContactMessage;
 
 public class SubmitContactMessageCommandHandler(IEmailService _emailService, ILogger<SubmitContactMessageCommandHandler> _logger) : IRequestHandler<SubmitContactMessageCommand, bool>
 {
-    // =====================================================
-    // HANDLE — anonymous "Contact Us" submission from the public website.
-    // 1) Delivers the message to the firm's support inbox over SMTP (Gmail,
-    //    same relay used for OTP/notification emails) with Reply-To set to
-    //    the visitor, so replying in the inbox goes straight back to them.
-    // 2) Best-effort acknowledgement email back to the visitor confirming
-    //    receipt - failure here does not fail the whole request, since the
-    //    important part (step 1) already succeeded.
-    // =====================================================
+
+
+
+
+
+
+
+
+
     public async Task<bool> Handle(SubmitContactMessageCommand request, CancellationToken cancellationToken)
     {
         var name = request.Name.Trim();

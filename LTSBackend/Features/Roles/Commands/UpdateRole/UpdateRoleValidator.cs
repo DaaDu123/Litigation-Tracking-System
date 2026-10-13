@@ -3,8 +3,8 @@ namespace LTSBackend.Features.Roles.Commands.UpdateRole;
 
 public class UpdateRoleValidator : AbstractValidator<UpdateRoleCommand>
 {
-    // Requires a valid RoleID plus the same name/permission rules as
-    // CreateRoleValidator.
+
+
     public UpdateRoleValidator()
     {
         RuleFor(x => x.RoleID)

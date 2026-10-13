@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.FirmAdminRequests.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.FirmAdminRequests.DTOs.FirmAdminRequestDTO</summary>
+
     public class FirmAdminRequestDTO
     {
         public int RequestID { get; set; }

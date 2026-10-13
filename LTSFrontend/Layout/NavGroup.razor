@@ -23,7 +23,7 @@
 @code {
     private readonly string _panelId = $"nav-group-{Guid.NewGuid():N}";
 
-    /// <summary>Bootstrap-icons class of the group header, e.g. "bi-briefcase".</summary>
+
     [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
 
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
@@ -31,7 +31,7 @@
     [Parameter] public bool Expanded { get; set; }
     [Parameter] public EventCallback<bool> ExpandedChanged { get; set; }
 
-    /// <summary>True when the current route is inside this group - gives the header a subtle "you are here" style.</summary>
+
     [Parameter] public bool IsCurrent { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }

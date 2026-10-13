@@ -12,10 +12,10 @@ namespace LTSBackend.Features.Users.Commands.UnblockFirmUser;
 public class UnblockFirmUserCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<UnblockFirmUserCommandHandler> _logger) : IRequestHandler<UnblockFirmUserCommand, bool>
 {
-    // =====================================================
-    // HANDLE — restores a Blocked user's access. Tenant-scoped
-    // automatically via the Users query filter, same as Block.
-    // =====================================================
+
+
+
+
     public async Task<bool> Handle(UnblockFirmUserCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

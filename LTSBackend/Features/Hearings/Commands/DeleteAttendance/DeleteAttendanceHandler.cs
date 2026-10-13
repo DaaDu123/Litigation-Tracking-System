@@ -11,10 +11,10 @@ namespace LTSBackend.Features.Hearings.Commands.DeleteAttendance
     public class DeleteAttendanceHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<DeleteAttendanceCommand, bool>
     {
-        // =====================================================
-        // HANDLE — permanently removes an attendance record
-        // Firm-scoped lookup before deleting; writes an audit log entry.
-        // =====================================================
+
+
+
+
         public async Task<bool> Handle(DeleteAttendanceCommand request, CancellationToken cancellationToken)
         {
             var attendance = await _context.HearingAttendances

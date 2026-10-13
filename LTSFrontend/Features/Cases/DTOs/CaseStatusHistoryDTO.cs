@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Cases.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Cases.DTOs.CaseStatusHistoryDTO</summary>
+
     public class CaseStatusHistoryDTO
     {
         public long HistoryID { get; set; }

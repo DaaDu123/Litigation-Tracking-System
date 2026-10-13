@@ -4,16 +4,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LTSBackend.Services.BackgroundServices;
 
-/// <summary>
-/// Sweeps every few minutes for users whose Inactive window has expired
-/// and flips them back to Active. This is a backstop, not the only
-/// mechanism - AvailabilityEvaluator already treats an expired window as
-/// Active on every read (query/handler), so a user is never seen as
-/// "stuck inactive" even if this sweep is delayed or briefly down; this
-/// service just makes the stored IsAvailable/InactiveUntilUtc columns
-/// eventually consistent with that same rule, and records the
-/// auto-reactivation as a FirmMembershipEvent for the audit trail.
-/// </summary>
+
+
+
+
+
+
+
+
+
+
 public class FirmAdminAvailabilityReactivationService(IServiceScopeFactory scopeFactory, ILogger<FirmAdminAvailabilityReactivationService> logger) : BackgroundService
 {
     private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(5);
@@ -50,7 +50,7 @@ public class FirmAdminAvailabilityReactivationService(IServiceScopeFactory scope
         var now = DateTime.UtcNow;
 
         var expired = await context.Users
-            .IgnoreQueryFilters() // background job - not scoped to any one caller's firm
+            .IgnoreQueryFilters()
             .Where(x => !x.IsAvailable && x.InactiveUntilUtc != null && x.InactiveUntilUtc <= now && !x.IsDeleted)
             .ToListAsync(ct);
 

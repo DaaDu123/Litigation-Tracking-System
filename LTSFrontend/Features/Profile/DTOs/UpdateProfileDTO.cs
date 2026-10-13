@@ -2,8 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Profile.DTOs
 {
-    /// <summary>Client-side form model for "My Profile". Mirrors LTSBackend's
-    /// UpdateMyProfileCommand / UpdateMyProfileValidator.</summary>
+
+
     public class UpdateProfileDTO
     {
         [Required(ErrorMessage = "Full name is required.")]

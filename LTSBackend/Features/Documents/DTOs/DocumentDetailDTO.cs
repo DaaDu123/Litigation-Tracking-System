@@ -20,7 +20,7 @@ namespace LTSBackend.Features.Documents.DTOs
 
         public string FormattedFileSize => FormatFileSize(FileSize);
 
-        // Converts a raw byte count into a human-readable size string (KB/MB/GB).
+
         private static string FormatFileSize(long bytes)
         {
             return bytes switch

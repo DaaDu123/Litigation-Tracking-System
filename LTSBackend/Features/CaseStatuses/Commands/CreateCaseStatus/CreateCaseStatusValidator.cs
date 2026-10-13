@@ -4,8 +4,8 @@ namespace LTSBackend.Features.CaseStatuses.Commands.CreateCaseStatus;
 
 public class CreateCaseStatusValidator : AbstractValidator<CreateCaseStatusCommand>
 {
-    // Requires a status name, a non-negative sort SequenceNo, and a
-    // well-formed hex ColorCode (e.g. #FF0000) for the status pill/badge UI.
+
+
     public CreateCaseStatusValidator()
     {
         RuleFor(x => x.StatusName)

@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Profile.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Profile.DTOs.ProfileCompletionResultDTO</summary>
+
     public class ProfileCompletionResultDTO
     {
         public int UserID { get; set; }

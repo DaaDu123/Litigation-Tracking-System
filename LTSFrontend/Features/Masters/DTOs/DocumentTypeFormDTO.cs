@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Document Type. Maps 1:1
-    /// onto LTSBackend's CreateDocumentTypeCommand / UpdateDocumentTypeCommand,
-    /// with validation mirroring CreateDocumentTypeValidator.
-    /// </summary>
+
+
+
+
+
     public class DocumentTypeFormDTO
     {
-        /// <summary>Set only when editing an existing document type; null on create.</summary>
+
         public int? DocumentTypeID { get; set; }
 
         [Required(ErrorMessage = "Type name is required.")]

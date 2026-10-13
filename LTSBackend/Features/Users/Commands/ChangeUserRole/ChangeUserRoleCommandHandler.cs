@@ -11,23 +11,23 @@ namespace LTSBackend.Features.Users.Commands.ChangeUserRole;
 public class ChangeUserRoleCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<ChangeUserRoleCommandHandler> _logger) : IRequestHandler<ChangeUserRoleCommand, bool>
 {
-    // =====================================================
-    // HANDLE — Firm Admin changes a firm user's role among
-    // Partner / AssociateLawyer / Moharrir / InternParalegal. Firm-scoped
-    // automatically via the Users tenant query filter (a FirmAdmin from
-    // Firm A cannot even load a Firm B user, let alone change their
-    // role). Reuses RoleHierarchy.CanAssignRole - the same rule that
-    // stops a FirmAdmin creating another FirmAdmin also stops this from
-    // ever assigning FirmAdmin/SuperAdmin. Also refuses to touch a target
-    // who is themselves FirmAdmin/SuperAdmin, matching
-    // BlockFirmUserCommandHandler/RemoveFirmUserCommandHandler.
-    // Immediately invalidates the target's current session (SecurityStamp
-    // + revoke refresh tokens) so the new role takes effect right away,
-    // not just on their next login — this is now the ONLY way a role
-    // changes (there is no more general "Update User" endpoint), so it
-    // has to carry the same session-invalidation guarantee that endpoint
-    // used to.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<bool> Handle(ChangeUserRoleCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

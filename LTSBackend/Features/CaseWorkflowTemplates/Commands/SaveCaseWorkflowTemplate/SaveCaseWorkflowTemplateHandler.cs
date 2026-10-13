@@ -10,25 +10,25 @@ namespace LTSBackend.Features.CaseWorkflowTemplates.Commands.SaveCaseWorkflowTem
 
 public sealed class SaveCaseWorkflowTemplateHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService, ILogger<SaveCaseWorkflowTemplateHandler> _logger) : IRequestHandler<SaveCaseWorkflowTemplateCommand, int>
 {
-    // =====================================================
-    // HANDLE — creates or replaces the caller's workflow template for a category
-    // Scope: a FirmAdmin/Partner saves their OWN firm's template
-    // (FirmID = their firm); SuperAdmin (no firm) saves the global one.
-    // Every referenced master (category, department, status, stages,
-    // document types) must be active and visible to the caller - the
-    // global tenant query filters on each master guarantee a firm can never
-    // reference another firm's data. Existing stage/document lines are
-    // replaced, never duplicated. Cases that were already created are not
-    // affected (they hold their own copies).
-    //
-    // TRANSACTIONAL: validation runs first (read-only), then the whole
-    // replace (delete old lines -> insert new lines -> bump Version -> audit)
-    // runs in ONE transaction wrapped in CreateExecutionStrategy
-    // (EnableRetryOnFailure compatible). Any failure rolls everything back, so
-    // a template is never left half-deleted or half-saved, and the
-    // ChangeTracker is cleared before a retry so nothing is applied twice.
-    // A global (SuperAdmin) template may only reference GLOBAL masters.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<int> Handle(SaveCaseWorkflowTemplateCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Saving workflow template for category {CategoryID}", request.CategoryID);
@@ -37,9 +37,9 @@ public sealed class SaveCaseWorkflowTemplateHandler(AppDbContext _context, ICurr
         bool globalScope = firmId == null;
         var errors = new List<string>();
 
-        // NOTE: every lookup below is automatically scoped to global + own firm by the master HasQueryFilters.
-        // A global template (SuperAdmin) must additionally reference global masters only, otherwise every firm
-        // would inherit a template pointing at one firm's private master.
+
+
+
         var category = await _context.CaseCategories.AsNoTracking().FirstOrDefaultAsync(x => x.CategoryID == request.CategoryID && x.IsActive && (!globalScope || x.FirmID == null), cancellationToken);
         if (category == null) errors.Add("Case Category not found or inactive.");
 
@@ -70,7 +70,7 @@ public sealed class SaveCaseWorkflowTemplateHandler(AppDbContext _context, ICurr
         {
             return await strategy.ExecuteAsync(async () =>
             {
-                // A retried attempt must start from a clean tracker (the failed attempt may have left tracked/deleted entries).
+
                 _context.ChangeTracker.Clear();
 
                 await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -96,8 +96,8 @@ public sealed class SaveCaseWorkflowTemplateHandler(AppDbContext _context, ICurr
                     }
                     else
                     {
-                        // Remove the old lines and flush them FIRST (inside the transaction) so the unique
-                        // (Template, Stage/Sequence/DocumentType) indexes can never collide with the new lines.
+
+
                         _context.CaseWorkflowTemplateStages.RemoveRange(template!.Stages);
                         _context.CaseWorkflowTemplateDocuments.RemoveRange(template.Documents);
                         await _context.SaveChangesAsync(cancellationToken);
@@ -148,7 +148,7 @@ public sealed class SaveCaseWorkflowTemplateHandler(AppDbContext _context, ICurr
         }
         catch (DbUpdateException ex)
         {
-            // Two admins saving the same category at once: the unique (FirmID, CategoryID) index rejects the loser.
+
             _logger.LogWarning(ex, "Workflow template save conflict for category {CategoryID}", request.CategoryID);
             throw new ValidationException(["The workflow template for this category was changed by someone else at the same time. Reload and try again."]);
         }

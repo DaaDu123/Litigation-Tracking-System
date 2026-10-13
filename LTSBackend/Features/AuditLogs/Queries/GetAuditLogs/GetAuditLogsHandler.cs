@@ -9,17 +9,17 @@ namespace LTSBackend.Features.AuditLogs.Queries.GetAuditLogs;
 
 public class GetAuditLogsHandler (AppDbContext _context, ICurrentUserService _currentUser, ILogger<GetAuditLogsHandler> _logger) : IRequestHandler<GetAuditLogsQuery, PagedResult<AuditLogDTO>>
 {
- 
 
-    // =====================================================
-    // HANDLE — paged, filterable (search/action/date range) audit log list
-    // Tenant-scoped explicitly here (AuditLog has no FirmID column of its
-    // own, so scoping goes through the related User's FirmID) in addition
-    // to relying on any global query filter, as defence in depth — a
-    // FirmAdmin/Auditor must only ever see their own firm's audit trail;
-    // SuperAdmin sees every firm's, matching the system-wide audit log
-    // required by the SRS.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
     public async Task<PagedResult<AuditLogDTO>> Handle(GetAuditLogsQuery request,CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching audit logs - Page: {PageNumber}, Size: {PageSize}",request.PageNumber,request.PageSize);
@@ -29,17 +29,17 @@ public class GetAuditLogsHandler (AppDbContext _context, ICurrentUserService _cu
             .Include(x => x.User)
             .AsQueryable();
 
-        // CRITICAL FIX (cross-tenant data leak): AuditLog has no FirmID
-        // column, and this query previously applied no tenant scoping at
-        // all - relying entirely on AppDbContext's global query filter,
-        // which itself did not exist for this entity until this same
-        // review pass. Explicit scoping here as well (defense in depth,
-        // matching this codebase's convention elsewhere) so this can never
-        // regress even if a future change reads via IgnoreQueryFilters().
+
+
+
+
+
+
+
         if (!_currentUser.IsSuperAdmin)
             query = query.Where(x => x.User != null && x.User.FirmID == _currentUser.FirmID);
 
-        // 1. Search by user name or email
+
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim();
@@ -49,7 +49,7 @@ public class GetAuditLogsHandler (AppDbContext _context, ICurrentUserService _cu
             _logger.LogInformation("Applied search filter: {Search}", search);
         }
 
-        // 2. Filter by action
+
         if (!string.IsNullOrWhiteSpace(request.Action))
         {
             query = query.Where(x =>x.Action == request.Action.Trim());
@@ -57,7 +57,7 @@ public class GetAuditLogsHandler (AppDbContext _context, ICurrentUserService _cu
             _logger.LogInformation("Applied action filter: {Action}", request.Action);
         }
 
-        // 3. Filter by date range
+
         if (request.FromDate.HasValue)
         {
             query = query.Where(x =>x.Timestamp >= request.FromDate.Value);
@@ -72,10 +72,10 @@ public class GetAuditLogsHandler (AppDbContext _context, ICurrentUserService _cu
             _logger.LogInformation("Applied to date filter: {ToDate}", request.ToDate);
         }
 
-        // 4. Get total record count
+
         var total = await query.CountAsync(cancellationToken);
 
-        // 5. Apply pagination and ordering
+
         var items = await query
             .OrderByDescending(x => x.Timestamp)
             .Skip((request.PageNumber - 1) * request.PageSize)

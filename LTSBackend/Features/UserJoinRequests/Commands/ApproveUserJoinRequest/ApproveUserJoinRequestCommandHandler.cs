@@ -13,25 +13,25 @@ namespace LTSBackend.Features.UserJoinRequests.Commands.ApproveUserJoinRequest;
 public class ApproveUserJoinRequestCommandHandler(AppDbContext _context, IEmailService _emailService, IAuditService _auditService,
     ILogger<ApproveUserJoinRequestCommandHandler> _logger) : IRequestHandler<ApproveUserJoinRequestCommand, int>
 {
-    // =====================================================
-    // HANDLE — accepts a pending join request.
-    //
-    // New flow (joinRequest.UserID is set): the requester already has a
-    // real, profile-completed account with no firm yet. Approving simply
-    // attaches them to this firm - FirmID set, role forced to
-    // InternParalegal (business rule: accepted users always start as
-    // Intern/Paralegal regardless of anything requested), membership
-    // state set to Active.
-    //
-    // Legacy flow (joinRequest.UserID is null, from before this field
-    // existed): falls back to the original behavior of creating a brand
-    // new User row from the snapshot captured at submission time.
-    //
-    // Note: _context.UserJoinRequests already carries a tenant query
-    // filter (see AppDbContext.OnModelCreating) scoped to the acting
-    // FirmAdmin's own FirmID claim, so a FirmAdmin can never even load
-    // (let alone approve) a request aimed at a different firm.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<int> Handle(ApproveUserJoinRequestCommand request, CancellationToken cancellationToken)
     {
         var joinRequest = await _context.UserJoinRequests.FirstOrDefaultAsync(x => x.RequestID == request.RequestID, cancellationToken);
@@ -60,9 +60,9 @@ public class ApproveUserJoinRequestCommandHandler(AppDbContext _context, IEmailS
                 if (user.FirmID.HasValue)
                     throw new ValidationException(["This user already belongs to a firm."]);
 
-                // Business rule: default role is always Intern/Paralegal on
-                // acceptance, regardless of anything the requester picked.
-                // The Firm Admin can change it afterward via ChangeFirmUserRole.
+
+
+
                 user.RoleID = (int)UserRole.InternParalegal;
                 user.FirmID = joinRequest.FirmID;
                 user.MembershipStatus = MembershipStatuses.Active;
@@ -74,7 +74,7 @@ public class ApproveUserJoinRequestCommandHandler(AppDbContext _context, IEmailS
             }
             else
             {
-                // Legacy path - request predates the UserID link.
+
                 if (string.IsNullOrWhiteSpace(joinRequest.Email) || string.IsNullOrWhiteSpace(joinRequest.PasswordHash))
                     throw new ValidationException(["This legacy request is missing required account details and cannot be approved. Reject it and ask the requester to register again."]);
 

@@ -16,6 +16,6 @@ public class CourtDTO
 
     public DateTime CreatedDate { get; set; }
 
-    /// <summary>True = system-wide record shared across all firms (FirmID is null). Only SuperAdmin can edit/deactivate/delete these.</summary>
+
     public bool IsGlobal { get; set; }
 }

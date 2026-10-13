@@ -21,15 +21,15 @@ namespace LTSBackend.Features.Documents.Controllers;
 [Authorize]
 public class DocumentsController(IMediator _mediator, ILogger<DocumentsController> _logger) : ControllerBase
 {
-    // =====================================================
-    // UPLOAD DOCUMENT — CanViewDocuments roles, InternParalegal, FirmAdmin and above
-    // Uploads a file (max 15MB) against a case. Restricted-mode Moharrir
-    // "blind upload" (write-only, View/Download disabled after success)
-    // and Intern draft-only rules are enforced downstream in the handler,
-    // not here — this endpoint just validates the file is present/sized
-    // correctly and forwards the acting user's own ID (from their JWT
-    // claim) so those rules can be applied.
-    // =====================================================
+
+
+
+
+
+
+
+
+
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     [Authorize(Roles = RoleNames.CanViewDocuments + "," + RoleNames.InternParalegal + "," + RoleNames.FirmAdminAndAbove)]
@@ -106,13 +106,13 @@ public class DocumentsController(IMediator _mediator, ILogger<DocumentsControlle
         }
     }
 
-    // =====================================================
-    // GET CASE DOCUMENTS — Any authenticated user (visibility enforced in handler)
-    // Lists the latest-version documents on a case that the CURRENT user
-    // is allowed to view — a Restricted-mode Moharrir, for instance, won't
-    // see files they aren't permitted to view/download. Filtering happens
-    // per-document inside GetCaseDocumentsQueryHandler.
-    // =====================================================
+
+
+
+
+
+
+
     [HttpGet("case/{caseId}")]
     public async Task<IActionResult> GetCaseDocuments(long caseId)
     {
@@ -126,13 +126,13 @@ public class DocumentsController(IMediator _mediator, ILogger<DocumentsControlle
         return Ok(ApiResponse<List<DocumentDetailDTO>>.SuccessResponse(result, "Case documents fetched"));
     }
 
-    // =====================================================
-    // DOWNLOAD DOCUMENT — Any authenticated user (permission enforced in handler)
-    // Streams a document's raw file bytes back to the caller, but only if
-    // DownloadDocumentCommand's permission check passes for this specific
-    // user/document (e.g. a Restricted-mode Moharrir is blocked here even
-    // if they can see the document in the list).
-    // =====================================================
+
+
+
+
+
+
+
     [HttpGet("download/{documentId}")]
     public async Task<IActionResult> DownloadDocument(long documentId)
     {
@@ -168,12 +168,12 @@ public class DocumentsController(IMediator _mediator, ILogger<DocumentsControlle
         }
     }
 
-    // =====================================================
-    // GET DOCUMENT METADATA — Any authenticated user (permission enforced in handler)
-    // Returns a single document's metadata (name, type, version, uploader,
-    // upload date, etc.) — not the file bytes themselves — provided the
-    // caller has view permission on it.
-    // =====================================================
+
+
+
+
+
+
     [HttpGet("{documentId}")]
     public async Task<IActionResult> GetDocument(long documentId)
     {
@@ -214,12 +214,12 @@ public class DocumentsController(IMediator _mediator, ILogger<DocumentsControlle
         }
     }
 
-    // =====================================================
-    // APPROVE DOCUMENT — Partner and above
-    // Publishes a pending draft document (e.g. one uploaded by an Intern
-    // in draft-only mode) so it becomes a normal, visible document on the
-    // case.
-    // =====================================================
+
+
+
+
+
+
     [HttpPost("{documentId}/approve")]
     [Authorize(Roles = RoleNames.PartnerAndAbove)]
     public async Task<IActionResult> ApproveDocument(long documentId)
@@ -256,11 +256,11 @@ public class DocumentsController(IMediator _mediator, ILogger<DocumentsControlle
         }
     }
 
-    // =====================================================
-    // DELETE DOCUMENT — Partner and above
-    // Hard-deletes a document record, its stored file, and its
-    // DocumentPermissions rows. Not reversible.
-    // =====================================================
+
+
+
+
+
     [HttpDelete("{documentId}")]
     [Authorize(Roles = RoleNames.PartnerAndAbove)]
     public async Task<IActionResult> DeleteDocument(long documentId)

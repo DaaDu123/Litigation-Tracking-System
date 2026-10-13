@@ -10,13 +10,13 @@ namespace LTSBackend.Features.UserJoinRequests.Queries.GetMyJoinRequest;
 public class GetMyJoinRequestQueryHandler(AppDbContext _context, ICurrentUserService _currentUser)
     : IRequestHandler<GetMyJoinRequestQuery, UserJoinRequestDTO?>
 {
-    // =====================================================
-    // HANDLE — the caller's own most recent join request, ignoring the
-    // firm-scoped tenant filter (the requester has no FirmID claim yet,
-    // so the normal filter would hide everything) and instead filtering
-    // strictly by UserID == the caller, which is the actual security
-    // boundary here.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<UserJoinRequestDTO?> Handle(GetMyJoinRequestQuery request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

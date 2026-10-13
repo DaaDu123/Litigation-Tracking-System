@@ -7,10 +7,10 @@ namespace LTSBackend.Features.Notifications.Commands.MarkAllAsRead;
 
 public class MarkAllAsReadHandler(AppDbContext _context, ICurrentUserService _currentUser) : IRequestHandler<MarkAllAsReadCommand, int>
 {
-    // =====================================================
-    // HANDLE — marks every one of the caller's unread notifications as read
-    // Scoped to the caller's own UserID only; returns the count marked.
-    // =====================================================
+
+
+
+
     public async Task<int> Handle(MarkAllAsReadCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.UserID.HasValue)

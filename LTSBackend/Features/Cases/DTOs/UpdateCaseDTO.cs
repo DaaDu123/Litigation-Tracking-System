@@ -36,6 +36,6 @@ public class UpdateCaseDTO
 
     public bool? IsArchived { get; set; }
 
-    /// <summary>Optional: change the responsible department (must be an active department visible to the firm).</summary>
+
     public int? ResponsibleDepartmentID { get; set; }
 }

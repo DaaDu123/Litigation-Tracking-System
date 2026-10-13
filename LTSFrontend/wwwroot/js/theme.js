@@ -1,6 +1,6 @@
-// Lightweight theme persistence for LTS. Applied ASAP (inline in <head>)
-// to avoid a light/dark flash, and exposed to Blazor via JS interop so
-// MainLayout's toggle button can read/write it after the circuit connects.
+
+
+
 window.ltsTheme = {
     STORAGE_KEY: 'lts-theme',
 

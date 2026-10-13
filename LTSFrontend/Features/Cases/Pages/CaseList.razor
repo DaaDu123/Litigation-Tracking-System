@@ -225,8 +225,6 @@
     private bool _hasError;
     private string? _errorMessage;
 
-    // Seeded from CaseFilterState so a person who opens a case and comes
-    // back lands on the same search/filter/page instead of starting over.
     private string _searchTerm = string.Empty;
     private int _courtFilter = 0;
     private int _statusFilter = 0;
@@ -258,8 +256,6 @@
         await LoadAsync();
     }
 
-    // Mirrors the current filter/page selections back into the scoped
-    // CaseFilterState so they survive navigating to a case and back.
     private void PersistFilterState()
     {
         FilterState.SearchTerm = _searchTerm;
@@ -280,7 +276,6 @@
         }
         catch (Exception)
         {
-            // Filters are a convenience - if lookups fail to load, the list itself still works.
         }
     }
 
@@ -355,7 +350,6 @@
         await LoadAsync();
     }
 
-    // Normal delete = ARCHIVE (soft delete): reversible, nothing is removed.
     private async Task HandleDeleteAsync(CaseDTO c)
     {
         var confirmed = await _confirmDialog.ShowAsync(

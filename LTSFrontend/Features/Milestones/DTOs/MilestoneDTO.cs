@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Milestones.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Milestones.DTOs.MilestoneDetailDTO</summary>
+
     public class MilestoneDTO
     {
         public long MilestoneID { get; set; }

@@ -9,13 +9,13 @@ namespace LTSBackend.Features.Cases.Commands.ArchiveCase;
 
 public sealed class ArchiveCaseHandler(AppDbContext _context, IAuditService _auditService, ICurrentUserService _currentUser, ILogger<ArchiveCaseHandler> _logger) : IRequestHandler<ArchiveCaseCommand, bool>
 {
-    // =====================================================
-    // HANDLE — normal "delete" of a case = archive (soft delete)
-    // Nothing is removed: documents, files, parties, hearings, workflow and
-    // history all stay, so the case can be restored. Firm-scoped lookup.
-    // The state change and its audit line are saved in one SaveChanges
-    // (single implicit transaction).
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(ArchiveCaseCommand request, CancellationToken cancellationToken)
     {
         int userId = _currentUser.UserID ?? throw new UnauthorizedException("Unable to determine the current user's identity.");

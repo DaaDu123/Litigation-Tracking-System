@@ -21,7 +21,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         public FirmRequestEligibility? Current { get; private set; }
         public bool IsLoading { get; private set; }
 
-        /// <summary>True when the status calls failed; the UI then offers the form and lets the API be the judge.</summary>
+
         public bool LoadFailed { get; private set; }
 
         public event Action? OnChange;
@@ -69,7 +69,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
             }
             catch (Exception)
             {
-                // Non-fatal: the backend enforces the mutual restriction on submit anyway.
+
             }
 
             try
@@ -78,7 +78,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
             }
             catch (Exception)
             {
-                // Non-fatal: the backend enforces the one-target rule on submit anyway.
+
             }
 
             Current = FirmAdminRequestRules.Evaluate(mine, superAdminStatus, joinStatus);

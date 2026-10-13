@@ -15,9 +15,9 @@ public class CaseDTO
     public string StatusName { get; set; } = string.Empty;
     public int StageID { get; set; }
     public string StageName { get; set; } = string.Empty;
-    // Nullable: ResponsibleDepartment / LegalOfficer are optional FKs on the Case entity.
-    // Kept alongside the *Name fields (below) so the Edit Case form can pre-select the
-    // correct dropdown option instead of only being able to display read-only text.
+
+
+
     public int? DepartmentID { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
     public int? LegalOfficerID { get; set; }

@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Departments.Commands.CreateDepartment;
 
 public class CreateDepartmentValidator : AbstractValidator<CreateDepartmentCommand>
 {
-    // Requires a department name; DepartmentCode, if supplied, must be
-    // alphanumeric (plus hyphen/underscore) and length-capped.
+
+
     public CreateDepartmentValidator()
     {
         RuleFor(x => x.DepartmentName)

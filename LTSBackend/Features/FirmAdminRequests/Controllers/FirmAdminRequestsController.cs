@@ -20,14 +20,14 @@ namespace LTSBackend.Features.FirmAdminRequests.Controllers;
 [ApiController]
 public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminRequestsController> _logger) : ControllerBase
 {
-    // =====================================================
-    // SUBMIT FIRM ADMIN REQUEST — Anonymous
-    // Lets someone request that a new firm workspace + FirmAdmin account
-    // be created for their firm. Goes into a pending queue for a
-    // SuperAdmin to review — does not create anything by itself.
-    // SECURITY: rate limited ("auth-moderate", see Program.cs) since this
-    // is an anonymous, self-service endpoint.
-    // =====================================================
+
+
+
+
+
+
+
+
     [HttpPost]
     [AllowAnonymous]
     [EnableRateLimiting("auth-moderate")]
@@ -38,14 +38,14 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<int>.SuccessResponse(requestId, "Your request has been submitted. A Super Admin will review it and you'll be notified by email."));
     }
 
-    // =====================================================
-    // SUBMIT FIRM ADMIN REQUEST FROM ACCOUNT — Authenticated
-    // "Create Firm" from an already-registered user's own dashboard
-    // sidebar. No email/password collected here - the request is linked
-    // straight to the caller's existing account, so approval later
-    // promotes that SAME account instead of creating a duplicate one.
-    // Does NOT require the user to register again with the same email.
-    // =====================================================
+
+
+
+
+
+
+
+
     [HttpPost("from-account")]
     [Authorize]
     public async Task<IActionResult> SubmitFromAccount()
@@ -54,13 +54,13 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<int>.SuccessResponse(requestId, "Your request has been submitted. A Super Admin will review it and you'll be notified by email."));
     }
 
-    // =====================================================
-    // GET MY FIRM ADMIN REQUEST — Authenticated
-    // The caller's own latest "Create Firm" request (any status),
-    // submitted from their account, for the sidebar modal's
-    // pending/rejected state. Returns null (200, no data) if they've
-    // never submitted one this way.
-    // =====================================================
+
+
+
+
+
+
+
     [HttpGet("mine")]
     [Authorize]
     public async Task<IActionResult> GetMine()
@@ -69,12 +69,12 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<FirmAdminRequestDTO?>.SuccessResponse(result, "Your latest request"));
     }
 
-    // =====================================================
-    // CANCEL MY FIRM ADMIN REQUEST — Authenticated
-    // Lets the requester withdraw their OWN still-pending "Create Firm"
-    // request (the one sent to the Super Admin), freeing their single
-    // access-request slot so they can request a Firm Admin instead.
-    // =====================================================
+
+
+
+
+
+
     [HttpPut("{id}/cancel")]
     [Authorize]
     public async Task<IActionResult> Cancel(int id)
@@ -83,11 +83,11 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Request cancelled. You can now request a Firm Admin or send a new request."));
     }
 
-    // =====================================================
-    // GET ALL FIRM ADMIN REQUESTS — SuperAdmin only
-    // Lists pending/approved/rejected firm-admin requests (optionally
-    // filtered by status) so a SuperAdmin can review the queue.
-    // =====================================================
+
+
+
+
+
     [HttpGet]
     [Authorize(Roles = RoleNames.SuperAdminOnly)]
     public async Task<IActionResult> GetAll([FromQuery] string? status)
@@ -96,11 +96,11 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<List<FirmAdminRequestDTO>>.SuccessResponse(requests, "Firm Admin requests fetched"));
     }
 
-    // =====================================================
-    // APPROVE FIRM ADMIN REQUEST — SuperAdmin only
-    // Accepts a pending request: provisions the new firm workspace and
-    // creates its first FirmAdmin account in one step.
-    // =====================================================
+
+
+
+
+
     [HttpPut("{id}/approve")]
     [Authorize(Roles = RoleNames.SuperAdminOnly)]
     public async Task<IActionResult> Approve(int id)
@@ -113,11 +113,11 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<int>.SuccessResponse(firmId, "Request approved - firm workspace and admin account created."));
     }
 
-    // =====================================================
-    // REJECT FIRM ADMIN REQUEST — SuperAdmin only
-    // Declines a pending request, optionally with a reason, without
-    // creating a firm workspace.
-    // =====================================================
+
+
+
+
+
     [HttpPut("{id}/reject")]
     [Authorize(Roles = RoleNames.SuperAdminOnly)]
     public async Task<IActionResult> Reject(int id, [FromBody] RejectFirmAdminRequestBody? body)
@@ -130,12 +130,12 @@ public class FirmAdminRequestsController(IMediator _mediator, ILogger<FirmAdminR
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Request rejected."));
     }
 
-    // =====================================================
-    // GET ACTING USER ID — internal helper, not an endpoint
-    // Reads the caller's own UserID from their JWT claim so Approve/Reject
-    // can stamp who acted, without ever trusting a user ID from the
-    // request body.
-    // =====================================================
+
+
+
+
+
+
     private int? GetActingUserId()
     {
         var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);

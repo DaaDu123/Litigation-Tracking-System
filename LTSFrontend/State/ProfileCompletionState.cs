@@ -3,13 +3,13 @@ using LTSFrontend.Features.Profile.Services;
 
 namespace LTSFrontend.State
 {
-    /// <summary>
-    /// Scoped cache of the current user's own profile-completion status, so
-    /// ProfileCompletionGate doesn't refetch on every navigation within the
-    /// same circuit. Call MarkCompleted() right after a successful
-    /// CompleteFirmAdminProfile/CompleteFirmUserProfile call instead of a
-    /// full RefreshAsync() round-trip.
-    /// </summary>
+
+
+
+
+
+
+
     public class ProfileCompletionState(IProfileService _profileService)
     {
         public ProfileDTO? Profile { get; private set; }
@@ -42,7 +42,7 @@ namespace LTSFrontend.State
             }
         }
 
-        /// <summary>Call on logout so the next login doesn't see a stale cached profile.</summary>
+
         public void Reset()
         {
             Profile = null;

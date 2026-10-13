@@ -8,12 +8,12 @@ namespace LTSBackend.Features.Users.Queries.GetBlockedFirmUsers;
 
 public class GetBlockedFirmUsersQueryHandler(AppDbContext _context) : IRequestHandler<GetBlockedFirmUsersQuery, List<BlockedFirmUserDTO>>
 {
-    // =====================================================
-    // HANDLE — lists Blocked users in the caller's own firm. Firm-scoped
-    // automatically via the Users tenant query filter. Blocked users keep
-    // their FirmID (only Removed clears it), which is exactly what makes
-    // them visible here for the Firm Admin to review/unblock.
-    // =====================================================
+
+
+
+
+
+
     public async Task<List<BlockedFirmUserDTO>> Handle(GetBlockedFirmUsersQuery request, CancellationToken cancellationToken)
     {
         var blocked = await _context.Users.AsNoTracking()

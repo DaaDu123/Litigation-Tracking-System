@@ -8,9 +8,9 @@ namespace LTSBackend.Features.DocumentTypes.Queries.GetDocumentTypeById;
 
 public sealed class GetDocumentTypeByIdHandler(AppDbContext _context, ILogger<GetDocumentTypeByIdHandler> _logger) : IRequestHandler<GetDocumentTypeByIdQuery, DocumentTypeDTO>
 {
-    // =====================================================
-    // HANDLE — fetches a single document type by ID
-    // =====================================================
+
+
+
     public async Task<DocumentTypeDTO> Handle(GetDocumentTypeByIdQuery request, CancellationToken cancellationToken)
     {
         var type = await _context.DocumentTypes.AsNoTracking().FirstOrDefaultAsync(x => x.DocumentTypeID == request.DocumentTypeID, cancellationToken);

@@ -1,28 +1,28 @@
-@* Generic, reusable data table matching the lts-table design system used across
-    list pages (see RoleList.razor). Handles loading (skeleton rows), error,
-    empty, and populated states; the caller supplies columns as markup via
-    <Columns> and owns pagination/filtering of the item list itself.
 
-    Usage:
-      <DataTable TItem="UserDTO" Items="PagedUsers" IsLoading="_isLoading"
-                 HasError="_hasError" ErrorMessage="_errorMessage" OnRetry="LoadAsync"
-                 EmptyTitle="No users yet" EmptyDescription="Add your first user to get started."
-                 SkeletonColumnCount="5">
-          <HeaderContent>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th class="text-end">Actions</th>
-          </HeaderContent>
-          <RowTemplate Context="user">
-              <td>@user.FullName</td>
-              <td>@user.Email</td>
-              <td>@user.RoleName</td>
-              <td><StatusBadge IsActive="user.IsActive" /></td>
-              <td class="text-end">...</td>
-          </RowTemplate>
-      </DataTable> *@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @typeparam TItem
 
 <div class="lts-table-wrap">
@@ -93,13 +93,13 @@
 </div>
 
 @code {
-    /// <summary>The already-filtered/paged items to render, one row each.</summary>
+
     [Parameter, EditorRequired] public IEnumerable<TItem>? Items { get; set; }
 
-    /// <summary>Header row cells (a set of &lt;th&gt; elements).</summary>
+
     [Parameter, EditorRequired] public RenderFragment HeaderContent { get; set; } = default!;
 
-    /// <summary>Body row cells (a set of &lt;td&gt; elements) for a single item.</summary>
+
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
 
     [Parameter] public bool IsLoading { get; set; }
@@ -113,14 +113,14 @@
     [Parameter] public string? EmptyDescription { get; set; }
     [Parameter] public RenderFragment? EmptyActionContent { get; set; }
 
-    /// <summary>Number of columns to show as skeleton placeholders while loading.</summary>
+
     [Parameter] public int SkeletonColumnCount { get; set; } = 4;
     [Parameter] public int SkeletonRowCount { get; set; } = 4;
 
-    /// <summary>Optional row key selector so Blazor can diff rows efficiently; defaults to the item itself.</summary>
+
     [Parameter] public Func<TItem, object>? RowKey { get; set; }
 
-    // Vary skeleton widths slightly so loading rows don't look like a solid block.
+
     private static int SkeletonWidthFor(int columnIndex) => (columnIndex % 3) switch
     {
         0 => 70,

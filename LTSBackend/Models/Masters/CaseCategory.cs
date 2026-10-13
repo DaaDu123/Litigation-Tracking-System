@@ -10,12 +10,12 @@ public class CaseCategory
     [Key]
     public int CategoryID { get; set; }
 
-    /// <summary>
-    /// NULL = system-wide global category (SuperAdmin-managed, visible to
-    /// every firm - all existing seeded rows are this). Non-null = a
-    /// firm's own custom category, visible/editable only by that firm.
-    /// Same pattern as Court.FirmID / Department.FirmID.
-    /// </summary>
+
+
+
+
+
+
     public int? FirmID { get; set; }
 
     [ForeignKey(nameof(FirmID))]

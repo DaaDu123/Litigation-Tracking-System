@@ -11,10 +11,10 @@ namespace LTSBackend.Features.Deadlines.Commands.DeleteDeadline
     public class DeleteDeadlineHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<DeleteDeadlineCommand, bool>
     {
-        // =====================================================
-        // HANDLE — permanently removes a deadline
-        // Firm-scoped lookup before deleting; writes an audit log entry.
-        // =====================================================
+
+
+
+
         public async Task<bool> Handle(DeleteDeadlineCommand request, CancellationToken cancellationToken)
         {
             var deadline = await _context.Deadlines.Include(d => d.Case).FirstOrDefaultAsync(d => d.DeadlineID == request.DeadlineID, cancellationToken);

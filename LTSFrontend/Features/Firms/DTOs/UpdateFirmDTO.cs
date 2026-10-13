@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Firms.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Firms.Commands.UpdateFirm.UpdateFirmCommand</summary>
+
     public class UpdateFirmDTO
     {
         public int FirmID { get; set; }

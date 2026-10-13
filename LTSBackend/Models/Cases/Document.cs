@@ -34,18 +34,18 @@ public class Document
     [MaxLength(255)]
     public string? Remarks { get; set; }
 
-    // DRAFT WORKFLOW (SRS - Intern/Paralegal role):
-    // "All uploaded work remains in Draft until approved by Partner or
-    // Firm Admin." IsDraft is set true automatically for InternParalegal
-    // uploads (see UploadDocumentHandler) and cleared by the dedicated
-    // Approve endpoint (ApproveDocumentHandler), which only Partner/
-    // FirmAdmin can call. Uploads by every other role are never drafts
-    // (published immediately), matching the SRS which only imposes this
-    // gate on Intern/Paralegal work.
+
+
+
+
+
+
+
+
     public bool IsDraft { get; set; } = false;
 
-    // No [ForeignKey]/navigation property here, matching the existing
-    // UploadedBy column (a plain int, not modeled as a relationship).
+
+
     public int? ApprovedBy { get; set; }
     public DateTime? ApprovedDate { get; set; }
 

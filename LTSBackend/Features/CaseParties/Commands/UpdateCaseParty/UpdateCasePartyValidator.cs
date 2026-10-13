@@ -9,8 +9,8 @@ namespace LTSBackend.Features.CaseParties.Commands.UpdateCaseParty
             "Plaintiff", "Defendant", "Petitioner", "Respondent", "Applicant", "Respondent Department"
         };
 
-        // Requires a valid PartyID plus the same PartyType/name/email rules as
-        // CreateCasePartyValidator.
+
+
         public UpdateCasePartyValidator()
         {
             RuleFor(x => x.Party).NotNull();

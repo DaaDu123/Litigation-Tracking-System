@@ -85,7 +85,7 @@ h1:focus {
   box-sizing: border-box;
 }
 
-/* ---------- Responsive foundations ---------- */
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -102,8 +102,8 @@ video {
   max-width: 100%;
 }
 
-/* Long unbroken strings (emails, case numbers, file names) must wrap rather
-   than force horizontal scroll. */
+
+
 .lts-content-body h1,
 .lts-content-body h2,
 .lts-content-body h3,
@@ -113,12 +113,12 @@ video {
   overflow-wrap: anywhere;
 }
 
-/* Bootstrap alerts used inside forms/modals */
+
 .alert {
   overflow-wrap: anywhere;
 }
 
-/* Scroll-lock the page behind the mobile navigation drawer. */
+
 body:has(.mobile-nav-open) {
   overflow: hidden;
 }

@@ -1,4 +1,4 @@
-# Build stage
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -8,7 +8,7 @@ RUN dotnet restore "LTSBackend.csproj"
 COPY . .
 RUN dotnet publish "LTSBackend.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Runtime stage
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 

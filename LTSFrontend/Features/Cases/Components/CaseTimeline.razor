@@ -1,11 +1,11 @@
-@* Read-only, chronological "story so far" for a case - merges Milestones,
-   Hearings, Notes, and Status Changes (the sources that already carry a
-   date + who did it) into a single feed, newest first. Used as the
-   "Timeline" tab on CaseDetails.razor, alongside the dedicated
-   Milestones/Hearings/Notes tabs that let you actually manage each of
-   those individually. Status changes have no dedicated tab of their own
-   (FR-05: "maintain case status history") - this feed is the only place
-   they're visible in the UI. *@
+
+
+
+
+
+
+
+
 @using LTSFrontend.Features.CaseNotes.DTOs
 @using LTSFrontend.Features.CaseNotes.Services
 @using LTSFrontend.Features.Cases.Services
@@ -91,8 +91,6 @@ else
         _errorMessage = null;
         try
         {
-            // Fire all four off in parallel - independent reads, no reason
-            // to wait on them one at a time.
             var milestonesTask = MilestoneService.GetByCaseAsync(CaseId);
             var hearingsTask = HearingService.GetByCaseAsync(CaseId, pageNumber: 1, pageSize: 100);
             var notesTask = CaseNoteService.GetByCaseAsync(CaseId);

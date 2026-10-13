@@ -1,6 +1,6 @@
-@* Topbar widget: for a FirmAdmin, shows/sets their own availability;
-   for any other firm role, shows their FirmAdmin's current availability
-   (read-only). Renders nothing for SuperAdmin or a role-less user. *@
+
+
+
 @using LTSFrontend.State
 @using LTSFrontend.Features.Users.DTOs
 @using LTSFrontend.Features.Users.Services
@@ -66,7 +66,7 @@ else if (IsFirmRole)
         }
         catch
         {
-            // Non-critical widget - fail silently rather than blocking the topbar.
+
         }
     }
 

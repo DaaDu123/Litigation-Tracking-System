@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Milestones.DTOs
 {
-    /// <summary>Shared form model for creating/updating a milestone. MilestoneID stays 0 when creating.</summary>
+
     public class MilestoneFormDTO
     {
         public long MilestoneID { get; set; }

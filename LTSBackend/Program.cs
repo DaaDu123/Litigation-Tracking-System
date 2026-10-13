@@ -2,8 +2,8 @@ using LTSBackend.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Each Add* call below is one self-contained concern, in Extensions/ - see
-// that folder for what each one actually configures.
+
+
 builder
     .AddAppLogging()
     .AddAppDatabase()
@@ -23,9 +23,9 @@ builder.Services
 
 var app = builder.Build();
 
-// In Docker, SQL Server may start after the API container. Wait for SQL Server,
-// create the application database if needed, and apply EF Core migrations before
-// hosted background services start querying the database.
+
+
+
 await app.MigrateAppDatabaseAsync();
 
 app.UseAppMiddlewarePipeline();

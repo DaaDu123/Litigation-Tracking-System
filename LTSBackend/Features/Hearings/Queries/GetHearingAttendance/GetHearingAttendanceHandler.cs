@@ -9,15 +9,15 @@ namespace LTSBackend.Features.Hearings.Queries.GetHearingAttendance
 {
     public class GetHearingAttendanceHandler(AppDbContext _context, ICurrentUserService _currentUser, IPermissionService _permissionService) : IRequestHandler<GetHearingAttendanceQuery, List<HearingAttendanceDTO>>
     {
-        // =====================================================
-        // HANDLE — lists a hearing's attendance records, scoped by assignment
-        // Same assignment-or-full-visibility rule as
-        // RecordAttendanceHandler (empty list, not an error, if denied),
-        // plus firm isolation.
-        // =====================================================
+
+
+
+
+
+
         public async Task<List<HearingAttendanceDTO>> Handle(GetHearingAttendanceQuery request, CancellationToken cancellationToken)
         {
-            // SECURITY FIX (IDOR): see RecordAttendanceHandler for rationale.
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

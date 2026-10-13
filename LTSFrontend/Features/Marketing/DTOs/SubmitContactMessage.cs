@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Marketing.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.ContactMessages.Commands.SubmitContactMessage.SubmitContactMessageCommand</summary>
+
     public class SubmitContactMessage
     {
         [Required(ErrorMessage = "Please enter your name.")]

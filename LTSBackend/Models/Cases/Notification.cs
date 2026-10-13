@@ -23,9 +23,9 @@ public class Notification
     public bool IsSent { get; set; } = false;
     public DateTime? SentDate { get; set; }
     [MaxLength(20)]
-    public string Priority { get; set; } = "Medium";   // Low | Medium | High | Critical
+    public string Priority { get; set; } = "Medium";
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-    // Foreign Keys & Navigation
+
     [ForeignKey(nameof(NotificationTypeID))]
     public NotificationType? NotificationType { get; set; }
     [ForeignKey(nameof(UserID))]

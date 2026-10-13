@@ -5,7 +5,7 @@
   padding: 1.25rem;
 }
 
-/* ---------- Cards / surfaces ---------- */
+
 
 .lts-card {
   background: var(--lts-surface);
@@ -88,7 +88,7 @@
   inset: 0;
 }
 
-/* ---------- Grid / card view ---------- */
+
 
 .lts-grid-view {
   display: grid;
@@ -153,9 +153,9 @@
   }
 }
 
-/* ==========================================================================
-   Responsive — cards, KPI tiles, entity cards
-   ========================================================================== */
+
+
+
 .lts-stat-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr));
 }
@@ -216,7 +216,7 @@
   }
 }
 
-/* Phones: two compact tiles per row when they carry short numbers */
+
 @media (max-width: 575.98px) {
   .lts-card .d-flex.justify-content-between,
   .lts-card .d-flex.align-items-center.justify-content-between {

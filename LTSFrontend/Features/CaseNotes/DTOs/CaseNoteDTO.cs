@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.CaseNotes.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.CaseNotes.DTOs.CaseNoteDetailDTO</summary>
+
     public class CaseNoteDTO
     {
         public long NoteID { get; set; }

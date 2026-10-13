@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.CaseParties.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.CaseParties.DTOs.CasePartyDetailDTO</summary>
+
     public class CasePartyDTO
     {
         public long PartyID { get; set; }

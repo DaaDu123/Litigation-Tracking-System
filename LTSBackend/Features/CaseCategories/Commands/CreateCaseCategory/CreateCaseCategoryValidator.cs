@@ -4,8 +4,8 @@ namespace LTSBackend.Features.CaseCategories.Commands.CreateCaseCategory;
 
 public class CreateCaseCategoryValidator : AbstractValidator<CreateCaseCategoryCommand>
 {
-    // Requires a category name (max 150 chars) and an optional description
-    // (max 255 chars).
+
+
     public CreateCaseCategoryValidator()
     {
         RuleFor(x => x.CategoryName)

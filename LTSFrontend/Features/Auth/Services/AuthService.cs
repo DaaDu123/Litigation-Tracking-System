@@ -14,8 +14,8 @@ namespace LTSFrontend.Features.Auth.Services
 
         public async Task<RegisterResponseDTO> RegisterAsync(RegisterRequest request)
         {
-            // ConfirmPassword is a client-only field (used for validation);
-            // the backend RegisterCommand is Email + Password only now.
+
+
             var payload = new
             {
                 request.Email,
@@ -46,10 +46,10 @@ namespace LTSFrontend.Features.Auth.Services
 
         public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
         {
-            // ConfirmNewPassword is a client-only field used for the match
-            // check in ChangePasswordRequest.Validate(); the backend
-            // ChangePasswordCommand only has OldPassword/NewPassword (UserID
-            // is populated server-side from the JWT, never sent by us).
+
+
+
+
             var payload = new
             {
                 request.OldPassword,
@@ -87,7 +87,7 @@ namespace LTSFrontend.Features.Auth.Services
             }
             catch
             {
-                // Best-effort logout fallback
+
             }
         }
     }

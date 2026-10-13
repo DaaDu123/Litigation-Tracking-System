@@ -234,8 +234,7 @@
     private List<DepartmentDTO> _departments = new();
     private List<UserDTO> _legalOfficers = new();
 
-    // Set when the case has a generated workflow: the stage dropdown then lists only THIS case's stages
-    // and the category is locked (the backend enforces both).
+
     private bool _hasWorkflow;
     private int _departmentId;
 
@@ -265,8 +264,8 @@
             {
                 _form = UpdateCaseDTO.FromCaseDetails(CaseId, _original);
                 _isArchived = _original.IsArchived;
-                // Make sure the current values are selectable even if the active-only
-                // lookups above happened to exclude them (e.g. a now-inactive court).
+
+
                 EnsureOptionPresent(_courts, _original.CourtID, _original.CourtName);
                 EnsureCategoryPresent(_original.CategoryID, _original.CategoryName);
                 EnsureStagePresent(_original.StageID, _original.StageName);

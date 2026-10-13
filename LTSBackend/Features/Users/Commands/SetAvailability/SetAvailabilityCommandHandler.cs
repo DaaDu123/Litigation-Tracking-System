@@ -11,16 +11,16 @@ namespace LTSBackend.Features.Users.Commands.SetAvailability;
 public class SetAvailabilityCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<SetAvailabilityCommandHandler> _logger) : IRequestHandler<SetAvailabilityCommand, bool>
 {
-    // =====================================================
-    // HANDLE — Firm Admin sets their own Active/Inactive availability.
-    // Stores an absolute InactiveUntilUtc timestamp (computed server-side
-    // from UtcNow + the given Days/Hours/Minutes) rather than relying on
-    // the raw duration fields at read time, per spec. Every downstream
-    // read (GetFirmAdminAvailabilityQuery, the Firm Users directory,
-    // GetJoinableFirms) goes through AvailabilityEvaluator, so an expired
-    // window is treated as Active immediately even before the background
-    // sweep (FirmAdminAvailabilityReactivationService) runs.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
     public async Task<bool> Handle(SetAvailabilityCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

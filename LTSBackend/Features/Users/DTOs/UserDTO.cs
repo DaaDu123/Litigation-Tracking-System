@@ -28,7 +28,7 @@ public class UserDTO
 
     public string MembershipStatus { get; set; } = "Active";
 
-    /// <summary>Only meaningful for a FirmAdmin row - see AvailabilityEvaluator.</summary>
+
     public bool IsAvailable { get; set; } = true;
 
     public DateTime? InactiveUntilUtc { get; set; }

@@ -1,4 +1,4 @@
-/* ---------- Modal (custom, used for ConfirmDialog + form modals) ---------- */
+
 
 .lts-modal-backdrop {
   position: fixed;
@@ -185,11 +185,11 @@
   }
 }
 
-/* ==========================================================================
-   Responsive — modals
-   MD+ : centred dialog
-   XS  : full-width bottom sheet, buttons stack, body scrolls
-   ========================================================================== */
+
+
+
+
+
 .lts-modal-wrap {
   padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem
     max(1rem, env(safe-area-inset-bottom, 0px));
@@ -270,9 +270,9 @@
   }
 }
 
-/* The modal can be hosted inside a visibility:hidden ancestor (the closed
-   mobile nav drawer hosts the Create-Firm modal). Make an open modal visible
-   regardless. */
+
+
+
 .lts-modal-backdrop.show,
 .lts-modal-wrap.show {
   visibility: visible;

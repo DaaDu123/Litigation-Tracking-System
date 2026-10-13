@@ -8,16 +8,16 @@ namespace LTSBackend.Features.DocumentTypes.Queries.GetDocumentTypeOptions;
 public sealed class GetDocumentTypeOptionsHandler(AppDbContext _context, ILogger<GetDocumentTypeOptionsHandler> _logger)
     : IRequestHandler<GetDocumentTypeOptionsQuery, List<DocumentTypeOptionDTO>>
 {
-    // =====================================================
-    // HANDLE — lists active document types as {ID, Name} pairs only
-    // Same tenant visibility (global + caller's own firm) as the full
-    // GetAllDocumentTypesHandler, enforced by the EF Core HasQueryFilter
-    // on DocumentType, not by this handler. The difference from
-    // GetAllDocumentTypesHandler is purely the response shape (no
-    // Description/IsActive/IsGlobal) and the controller-level role gate
-    // that lets AssociateLawyer/Moharrir/InternParalegal call this one but
-    // not the full master-data endpoint.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
     public async Task<List<DocumentTypeOptionDTO>> Handle(GetDocumentTypeOptionsQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching document type dropdown options");

@@ -10,10 +10,10 @@ public class DocumentType
     [Key]
     public int DocumentTypeID { get; set; }
 
-    /// <summary>
-    /// Same FirmID scoping pattern as Court/Department/CaseCategory - NULL
-    /// = system-wide global document type, non-null = a firm's own custom type.
-    /// </summary>
+
+
+
+
     public int? FirmID { get; set; }
 
     [ForeignKey(nameof(FirmID))]

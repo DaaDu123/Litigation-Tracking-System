@@ -4,7 +4,7 @@ namespace LTSBackend.Features.Cases.Commands.DeleteCase;
 
 public class DeleteCaseValidator : AbstractValidator<DeleteCaseCommand>
 {
-    // Permanent deletion needs a valid CaseID, the typed case number and a reason.
+
     public DeleteCaseValidator()
     {
         RuleFor(x => x.CaseID).GreaterThan(0).WithMessage("Valid Case ID is required");

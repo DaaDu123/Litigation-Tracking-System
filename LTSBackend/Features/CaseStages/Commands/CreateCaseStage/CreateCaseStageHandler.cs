@@ -9,13 +9,13 @@ namespace LTSBackend.Features.CaseStages.Commands.CreateCaseStage;
 
 public sealed class CreateCaseStageHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<CreateCaseStageHandler> _logger) : IRequestHandler<CreateCaseStageCommand, int>
 {
-    // =====================================================
-    // HANDLE — creates a new case stage
-    // Trims input, checks the name is unique among what the caller can
-    // see (global stages + their own firm's), then saves it. FirmID is
-    // set to the caller's own firm for a FirmAdmin, or left null (global,
-    // visible to every firm) for a SuperAdmin.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<int> Handle(CreateCaseStageCommand request, CancellationToken cancellationToken)
     {
         request = request with { StageName = request.StageName.Trim(), Description = request.Description?.Trim() };

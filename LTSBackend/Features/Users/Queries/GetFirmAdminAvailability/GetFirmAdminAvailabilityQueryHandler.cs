@@ -12,13 +12,13 @@ namespace LTSBackend.Features.Users.Queries.GetFirmAdminAvailability;
 public class GetFirmAdminAvailabilityQueryHandler(AppDbContext _context, ICurrentUserService _currentUser)
     : IRequestHandler<GetFirmAdminAvailabilityQuery, FirmAdminAvailabilityDTO>
 {
-    // =====================================================
-    // HANDLE — the caller's own firm's FirmAdmin availability, evaluated
-    // lazily through AvailabilityEvaluator so an expired window reads as
-    // Active immediately, even before the background sweep runs.
-    // The Users tenant query filter already restricts this to the
-    // caller's own firm - no manual FirmID check needed.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<FirmAdminAvailabilityDTO> Handle(GetFirmAdminAvailabilityQuery request, CancellationToken cancellationToken)
     {
         if (_currentUser.FirmID is null)

@@ -8,13 +8,13 @@ namespace LTSBackend.Features.CaseCategories.Commands.UpdateCaseCategory;
 
 public sealed class UpdateCaseCategoryHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<UpdateCaseCategoryHandler> _logger) : IRequestHandler<UpdateCaseCategoryCommand, bool>
 {
-    // =====================================================
-    // HANDLE — edits an existing case category
-    // Ownership check: a FirmAdmin may only edit their OWN firm's custom
-    // case category — never a global one or another firm's (returns
-    // NotFound rather than Forbidden, so its existence isn't disclosed).
-    // Also re-checks name uniqueness before saving.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(UpdateCaseCategoryCommand request, CancellationToken cancellationToken)
     {
         request = request with { CategoryName = request.CategoryName.Trim(), Description = request.Description?.Trim() };
@@ -26,7 +26,7 @@ public sealed class UpdateCaseCategoryHandler(AppDbContext _context, ICurrentUse
             throw new NotFoundException("Case category not found.");
         }
 
-        // Ownership check: a FirmAdmin may edit only their OWN firm's custom category - never a global one.
+
         if (category.FirmID != _currentUser.FirmID)
         {
             _logger.LogWarning("Update denied: user {UserId} attempted to edit a global/other-firm category {CategoryID}", _currentUser.UserID, request.CategoryID);

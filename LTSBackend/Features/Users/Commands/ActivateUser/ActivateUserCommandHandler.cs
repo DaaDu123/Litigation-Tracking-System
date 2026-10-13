@@ -7,12 +7,12 @@ namespace LTSBackend.Features.Users.Commands.ActivateUser;
 
 public class ActivateUserCommandHandler(AppDbContext _context, ILogger<ActivateUserCommandHandler> _logger) : IRequestHandler<ActivateUserCommand, bool>
 {
-    // =====================================================
-    // HANDLE — reverses Deactivate, re-enabling a user to log in again
-    // Refuses if the user was permanently deleted (not reversible — must
-    // be re-added as a new user), or is already active. Same hierarchy +
-    // own-firm scoping rule as DeleteUserCommandHandler.
-    // =====================================================
+
+
+
+
+
+
     public async Task<bool> Handle(ActivateUserCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Activating user: {UserId}", request.UserID);
@@ -37,7 +37,7 @@ public class ActivateUserCommandHandler(AppDbContext _context, ILogger<ActivateU
             throw new ValidationException(["User account is already active."]);
         }
 
-        // Hierarchy + multi-tenancy checks, same rule as Deactivate
+
         var actingUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserID == request.ActingUserID, cancellationToken);
         var targetRole = user.GetRole();
         var actingRole = actingUser?.GetRole();

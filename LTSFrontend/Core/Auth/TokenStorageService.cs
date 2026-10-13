@@ -44,7 +44,7 @@ namespace LTSFrontend.Core.Auth
                 _logger.LogWarning(ex,
                     "[TokenStorage] GetSessionAsync FAILED (exception) - treating as no stored session. " +
                     "If this fires on every single refresh, JS interop or Data Protection is the culprit, not timing.");
-                try { await ClearSessionAsync(); } catch { /* best-effort */ }
+                try { await ClearSessionAsync(); } catch {                   }
                 return null;
             }
         }
@@ -57,7 +57,7 @@ namespace LTSFrontend.Core.Auth
             }
             catch
             {
-                // JS interop not available - ignore.
+
             }
         }
     }

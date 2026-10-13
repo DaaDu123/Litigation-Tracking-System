@@ -9,10 +9,10 @@ namespace LTSBackend.Features.Cases.Commands.RestoreCase;
 
 public sealed class RestoreCaseHandler(AppDbContext _context, IAuditService _auditService, ICurrentUserService _currentUser, ILogger<RestoreCaseHandler> _logger) : IRequestHandler<RestoreCaseCommand, bool>
 {
-    // =====================================================
-    // HANDLE — restores an archived case (firm-scoped), clears the archive
-    // markers and writes an audit line.
-    // =====================================================
+
+
+
+
     public async Task<bool> Handle(RestoreCaseCommand request, CancellationToken cancellationToken)
     {
         int userId = _currentUser.UserID ?? throw new UnauthorizedException("Unable to determine the current user's identity.");

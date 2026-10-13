@@ -16,22 +16,22 @@ using System.Security.Claims;
 
 namespace LTSBackend.Features.Firms.Controllers;
 
-/// <summary>
-/// Super Admin only - provisioning, blocking, removing and exporting
-/// firm (law firm) workspaces. This is the multi-tenancy management
-/// surface described in the Roles SRS §1 / §4.I.
-/// </summary>
+
+
+
+
+
 [Route("api/[controller]")]
 [ApiController]
 [Authorize(Roles = RoleNames.SuperAdminOnly)]
 public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logger) : ControllerBase
 {
-    // =====================================================
-    // CREATE FIRM — SuperAdmin only
-    // Provisions a brand-new, isolated firm workspace (tenant). This is
-    // the platform-level entry point that lets a new law firm start using
-    // LTS.
-    // =====================================================
+
+
+
+
+
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateFirmCommand command)
     {
@@ -45,11 +45,11 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
             ApiResponse<int>.SuccessResponse(id, "Firm workspace successfully created"));
     }
 
-    // =====================================================
-    // GET ALL FIRMS — SuperAdmin only
-    // Lists every firm workspace on the platform, for the SuperAdmin
-    // console.
-    // =====================================================
+
+
+
+
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -57,10 +57,10 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return Ok(ApiResponse<List<FirmDTO>>.SuccessResponse(firms, "Firms successfully fetched"));
     }
 
-    // =====================================================
-    // GET FIRM BY ID — SuperAdmin only
-    // Fetches a single firm workspace's details.
-    // =====================================================
+
+
+
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -71,11 +71,11 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return Ok(ApiResponse<FirmDTO>.SuccessResponse(firm, "Firm successfully fetched"));
     }
 
-    // =====================================================
-    // UPDATE FIRM — SuperAdmin only
-    // Edits a firm workspace's own details (name, contact info, etc.).
-    // Route id and body FirmID must match.
-    // =====================================================
+
+
+
+
+
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateFirmCommand command)
     {
@@ -86,12 +86,12 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Firm successfully updated"));
     }
 
-    // =====================================================
-    // BLOCK FIRM — SuperAdmin only
-    // Suspends an entire firm's workspace, immediately preventing every
-    // one of that firm's users from logging in (existing sessions/tokens
-    // are also rejected going forward), without deleting any data.
-    // =====================================================
+
+
+
+
+
+
     [HttpPut("{id}/block")]
     public async Task<IActionResult> Block(int id, [FromBody] BlockFirmRequest? body)
     {
@@ -103,11 +103,11 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Firm blocked - all users will be unable to log in."));
     }
 
-    // =====================================================
-    // UNBLOCK FIRM — SuperAdmin only
-    // Reverses Block: restores the firm's ability to log in and use the
-    // system.
-    // =====================================================
+
+
+
+
+
     [HttpPut("{id}/unblock")]
     public async Task<IActionResult> Unblock(int id)
     {
@@ -115,12 +115,12 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Firm unblocked"));
     }
 
-    // =====================================================
-    // DELETE FIRM — SuperAdmin only
-    // Permanently removes a firm workspace. Intended to be used after the
-    // firm's data has already been exported (see Export below), per the
-    // firm-offboarding flow in the SRS.
-    // =====================================================
+
+
+
+
+
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -132,12 +132,12 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Firm removed"));
     }
 
-    // =====================================================
-    // EXPORT FIRM DATA — SuperAdmin only
-    // Downloads a zip of the firm's users/cases/parties as CSV, so the
-    // firm's data can be handed back to them before their workspace is
-    // blocked/removed.
-    // =====================================================
+
+
+
+
+
+
     [HttpGet("{id}/export")]
     public async Task<IActionResult> Export(int id)
     {
@@ -146,12 +146,12 @@ public class FirmsController(IMediator _mediator, ILogger<FirmsController> _logg
         return File(bytes, "application/zip", $"firm-{id}-export-{DateTime.UtcNow:yyyyMMdd}.zip");
     }
 
-    // =====================================================
-    // GET ACTING USER ID — internal helper, not an endpoint
-    // Reads the caller's own UserID from their JWT claim so
-    // Create/Block/Delete/Export can record who acted, without ever
-    // trusting a user ID from the request body.
-    // =====================================================
+
+
+
+
+
+
     private int? GetActingUserId()
     {
         var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);

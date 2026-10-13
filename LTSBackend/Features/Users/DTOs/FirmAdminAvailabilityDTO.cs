@@ -1,10 +1,10 @@
 namespace LTSBackend.Features.Users.DTOs;
 
-/// <summary>
-/// Deliberately omits anything beyond what a Firm User is meant to see
-/// (no email, no CNIC) - just enough to render "Status: Inactive /
-/// Reason: ... / Available Again: ...".
-/// </summary>
+
+
+
+
+
 public class FirmAdminAvailabilityDTO
 {
     public int FirmAdminUserID { get; set; }

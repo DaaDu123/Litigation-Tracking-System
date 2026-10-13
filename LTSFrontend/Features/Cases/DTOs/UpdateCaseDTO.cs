@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Cases.DTOs
 {
-    /// <summary>Client-side form model for Edit Case. Mirrors LTSBackend.Features.Cases.DTOs.UpdateCaseDTO.</summary>
+
     public class UpdateCaseDTO
     {
         [Required]

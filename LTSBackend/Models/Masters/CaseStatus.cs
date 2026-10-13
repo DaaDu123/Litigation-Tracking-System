@@ -10,10 +10,10 @@ public class CaseStatus
     [Key]
     public int StatusID { get; set; }
 
-    /// <summary>
-    /// Same FirmID scoping pattern as Court/Department/CaseCategory - NULL
-    /// = system-wide global status, non-null = a firm's own custom status.
-    /// </summary>
+
+
+
+
     public int? FirmID { get; set; }
 
     [ForeignKey(nameof(FirmID))]

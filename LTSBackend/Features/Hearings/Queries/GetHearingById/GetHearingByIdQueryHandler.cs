@@ -25,12 +25,12 @@ namespace LTSBackend.Features.Hearings.Queries.GetHearingById
             _permissionService = permissionService;
         }
 
-        // =====================================================
-        // HANDLE — fetches a single hearing's full detail
-        // Firm isolation plus the same assignment check as
-        // GetCaseHearingsQueryHandler. Computes DaysRemaining and a
-        // Critical/High/Medium/Normal HearingPriority label for display.
-        // =====================================================
+
+
+
+
+
+
         public async Task<HearingDetailDTO> Handle(GetHearingByIdQuery request, CancellationToken cancellationToken)
         {
             var hearing = await _context.Hearings
@@ -42,7 +42,7 @@ namespace LTSBackend.Features.Hearings.Queries.GetHearingById
             if (hearing == null || (hearing.Case.FirmID != _currentUser.FirmID))
                 throw new NotFoundException("Hearing not found");
 
-            // SECURITY FIX (IDOR): see GetCaseHearingsQueryHandler for rationale.
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

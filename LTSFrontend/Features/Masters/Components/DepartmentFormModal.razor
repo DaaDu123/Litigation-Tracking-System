@@ -1,5 +1,5 @@
-@* Create / Edit modal for the Department master. Opened imperatively from
-   Departments.razor via @ref: _formModal.OpenForCreate() / OpenForEdit(dept). *@
+
+
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject IDepartmentService DepartmentService
@@ -96,7 +96,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
     private bool _isOpen;
     private bool _isSaving;

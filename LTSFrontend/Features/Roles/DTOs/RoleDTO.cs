@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Roles.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Roles.DTOs.RoleDTO</summary>
+
     public class RoleDTO
     {
         public int RoleID { get; set; }

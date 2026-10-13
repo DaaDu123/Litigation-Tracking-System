@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.CaseAssignments.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.CaseAssignments.DTOs.CaseAssignmentDetailDTO</summary>
+
     public class CaseAssignmentDTO
     {
         public long AssignmentID { get; set; }

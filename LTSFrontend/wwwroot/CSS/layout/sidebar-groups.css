@@ -1,4 +1,4 @@
-/* The toggle is a <button>, so neutralise native button chrome. */
+
 .lts-sidebar .nav-group-toggle {
   width: 100%;
   border: 0;
@@ -19,7 +19,7 @@
   min-width: 0;
 }
 
-/* Chevron rotates when the group is open. */
+
 .lts-sidebar .nav-group-toggle .nav-group-chevron {
   margin-left: auto;
   width: auto;
@@ -37,7 +37,7 @@
   color: #fff;
 }
 
-/* A child route is active: soft highlight on the header (the child itself gets the full .active style). */
+
 .lts-sidebar .nav-group.has-current > .nav-item > .nav-group-toggle {
   color: #fff;
   font-weight: 600;
@@ -47,11 +47,11 @@
   color: var(--lts-blue-light);
 }
 
-/* ---------- Children panel (animated open/close without JS) ---------- */
+
 .lts-sidebar .nav-group-children {
   display: grid;
   grid-template-rows: 0fr;
-  visibility: hidden; /* closed children must not be focusable */
+  visibility: hidden;
   transition:
     grid-template-rows 0.22s ease,
     visibility 0s linear 0.22s;
@@ -65,8 +65,8 @@
     visibility 0s;
 }
 
-/* overflow:hidden is needed for the animation; the negative margin / matching padding keeps
-   the active-item bar (drawn 0.65rem left of each link) from being clipped. */
+
+
 .lts-sidebar .nav-group-children-inner {
   min-height: 0;
   overflow: hidden;
@@ -74,7 +74,7 @@
   padding: 0 0.65rem;
 }
 
-/* Thin guide line connecting the children to their header. */
+
 .lts-sidebar .nav-group-children-inner {
   position: relative;
 }
@@ -90,7 +90,7 @@
   pointer-events: none;
 }
 
-/* Long labels wrap instead of being cut off. */
+
 .lts-sidebar .nav-group .nav-item-sub .nav-link {
   line-height: 1.25;
 }
@@ -100,7 +100,7 @@
   overflow-wrap: anywhere;
 }
 
-/* ---------- Desktop icon-rail (sidebar collapsed): show the child icons, hide chevron ---------- */
+
 @media (min-width: 992px) {
   .sidebar-collapsed .lts-sidebar .nav-group-children {
     grid-template-rows: 1fr;

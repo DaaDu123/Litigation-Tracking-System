@@ -51,8 +51,8 @@
 }
 
 :root {
-  /* Reuses the app's own blue accent (already used across the dashboard)
-       instead of introducing a separate yellow/gold accent. */
+
+
   --lts-gold: var(--lts-blue);
   --lts-gold-dark: #163fac;
   --lts-gold-light: var(--lts-blue-light);
@@ -62,19 +62,19 @@
   --lts-gold-dark: var(--lts-blue-light);
 }
 
-/* ==========================================================================
-   Responsive scale (documentation + layout tokens)
-   Breakpoints follow Bootstrap 5 so utility classes (d-md-none, col-lg-6 ...)
-   and our own media queries always agree:
-     XS  < 576px          phones
-     SM  >= 576px         large phones / small tablets
-     MD  >= 768px         tablets
-     LG  >= 992px         laptops
-     XL  >= 1200px        desktops
-     XXL >= 1400px        large desktops
-   CSS custom properties cannot be used inside @media conditions, so the
-   numbers are repeated literally in each file's "Responsive" section.
-   ========================================================================== */
+
+
+
+
+
+
+
+
+
+
+
+
+
 :root {
   --lts-sidebar-w: 250px;
   --lts-sidebar-w-collapsed: 76px;

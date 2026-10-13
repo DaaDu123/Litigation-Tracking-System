@@ -6,9 +6,9 @@ namespace LTSBackend.Features.Roles.Queries.GetAllRoles;
 
 public class GetAllRolesHandler(AppDbContext _context, ILogger<GetAllRolesHandler> _logger) : IRequestHandler<GetAllRolesQuery, List<RoleDTO>>
 {
-    // =====================================================
-    // HANDLE — lists every role on the platform with its granted permissions
-    // =====================================================
+
+
+
     public async Task<List<RoleDTO>> Handle(GetAllRolesQuery request,CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching all roles");

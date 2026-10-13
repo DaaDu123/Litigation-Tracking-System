@@ -8,10 +8,10 @@ namespace LTSBackend.Features.CaseWorkflowTemplates.Queries.GetCaseWorkflowTempl
 
 public sealed class GetCaseWorkflowTemplateByCategoryHandler(AppDbContext _context, ICurrentUserService _currentUser) : IRequestHandler<GetCaseWorkflowTemplateByCategoryQuery, CaseWorkflowTemplateDTO?>
 {
-    // =====================================================
-    // HANDLE — powers the "Workflow Preview" on the New Case wizard.
-    // A firm's own template for the category wins over the global one.
-    // =====================================================
+
+
+
+
     public async Task<CaseWorkflowTemplateDTO?> Handle(GetCaseWorkflowTemplateByCategoryQuery request, CancellationToken cancellationToken)
     {
         var templates = await _context.CaseWorkflowTemplates.AsNoTracking()

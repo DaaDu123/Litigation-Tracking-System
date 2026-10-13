@@ -1,5 +1,5 @@
-@* Create / Edit modal for the Case Status master. Opened imperatively from
-   CaseStatuses.razor via @ref: _formModal.OpenForCreate() / OpenForEdit(status). *@
+
+
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject ICaseStatusService CaseStatusService
@@ -107,7 +107,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
     private bool _isOpen;
     private bool _isSaving;

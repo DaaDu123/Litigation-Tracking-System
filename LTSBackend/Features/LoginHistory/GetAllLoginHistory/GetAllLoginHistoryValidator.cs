@@ -5,8 +5,8 @@ namespace LTSBackend.Features.LoginHistory.Queries.GetAllLoginHistory;
 
 public class GetAllLoginHistoryValidator : AbstractValidator<GetAllLoginHistoryQuery>
 {
-    // Requires sane pagination and, if both a FromDate and ToDate are
-    // supplied, that FromDate isn't after ToDate.
+
+
     public GetAllLoginHistoryValidator()
     {
         RuleFor(x => x.PageNumber)

@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Department. Maps 1:1
-    /// onto LTSBackend's CreateDepartmentCommand / UpdateDepartmentCommand,
-    /// with validation mirroring CreateDepartmentValidator.
-    /// </summary>
+
+
+
+
+
     public class DepartmentFormDTO
     {
-        /// <summary>Set only when editing an existing department; null on create.</summary>
+
         public int? DepartmentID { get; set; }
 
         [Required(ErrorMessage = "Department name is required.")]

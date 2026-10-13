@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Cases.DTOs
 {
-    /// <summary>Client-side form model for Create Case. Mirrors LTSBackend.Features.Cases.DTOs.CreateCaseDTO / CreateCaseValidator.</summary>
+
     public class CreateCaseDTO
     {
         [Required(ErrorMessage = "Case Number is required")]
@@ -15,11 +15,11 @@ namespace LTSFrontend.Features.Cases.DTOs
 
         public string? CaseDescription { get; set; }
 
-        /// <summary>Court picked from the firm's configured courts (required). Courts are created once in Master Data and reused.</summary>
+
         [Range(1, int.MaxValue, ErrorMessage = "Court is required")]
         public int CourtID { get; set; }
 
-        /// <summary>Case Category / Case Type (required). Its workflow template drives department, status, stages and documents.</summary>
+
         [Range(1, int.MaxValue, ErrorMessage = "Case Category is required")]
         public int CategoryID { get; set; }
 
@@ -50,7 +50,7 @@ namespace LTSFrontend.Features.Cases.DTOs
 
         public string? FinancialImplication { get; set; }
 
-        /// <summary>Defaults from the category template; the user may change it. 0 = none.</summary>
+
         public int ResponsibleDepartmentID { get; set; }
 
         [Range(1, int.MaxValue, ErrorMessage = "Legal Officer is required")]

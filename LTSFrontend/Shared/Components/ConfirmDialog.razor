@@ -1,9 +1,9 @@
-@* Reusable confirmation modal for destructive/important actions (delete, deactivate...).
-   Usage:
-     <ConfirmDialog @ref="_confirmDialog" />
-     ...
-     bool ok = await _confirmDialog.ShowAsync("Delete court?", "This cannot be undone.", "Delete", "danger");
-     if (ok) { ... } *@
+
+
+
+
+
+
 
 <div class="lts-modal-backdrop @(_isOpen ? "show" : "")" @onclick="() => Resolve(false)"></div>
 <div class="lts-modal-wrap @(_isOpen ? "show" : "")" role="dialog" aria-modal="true">

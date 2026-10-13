@@ -5,10 +5,10 @@ namespace LTSBackend.Extensions;
 
 public static class MiddlewarePipelineExtensions
 {
-    // Kept as a single method, not split further - the whole point of this
-    // block is that the call order matters (exception handling first,
-    // auth before rate limiting before authorization, etc.), so scattering
-    // it across files would make that ordering harder to see, not easier.
+
+
+
+
     public static WebApplication UseAppMiddlewarePipeline(this WebApplication app)
     {
         app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -31,8 +31,8 @@ public static class MiddlewarePipelineExtensions
         app.UseHttpsRedirection();
         app.UseStaticFiles();
 
-        // If production uploads live on a persistent mounted volume, serve that
-        // volume's uploads at the same /uploads URL stored in the database.
+
+
         var configuredPublicRoot = app.Configuration["FileStorage:PublicRoot"];
         if (!string.IsNullOrWhiteSpace(configuredPublicRoot))
         {
@@ -61,9 +61,9 @@ public static class MiddlewarePipelineExtensions
 
         app.UseAuthentication();
 
-        // Runs after authentication (so partitioning could later move to
-        // per-user, not just per-IP) and before authorization (so a
-        // rate-limited request never reaches a handler).
+
+
+
         app.UseRateLimiter();
         app.UseAuthorization();
 

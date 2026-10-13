@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.CaseParties.DTOs
 {
-    /// <summary>Shared form model for creating/updating a case party. PartyID stays 0 when creating.</summary>
+
     public class CasePartyFormDTO
     {
         public long PartyID { get; set; }

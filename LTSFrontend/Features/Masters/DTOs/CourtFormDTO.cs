@@ -2,15 +2,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>
-    /// Client-side form model for creating/updating a Court. Maps 1:1 onto
-    /// LTSBackend's CreateCourtCommand / UpdateCourtCommand records, with
-    /// validation rules mirroring CreateCourtValidator / UpdateCourtValidator
-    /// so the person gets instant feedback before the round-trip to the API.
-    /// </summary>
+
+
+
+
+
+
     public class CourtFormDTO
     {
-        /// <summary>Set only when editing an existing court; null on create.</summary>
+
         public int? CourtID { get; set; }
 
         [Required(ErrorMessage = "Court name is required.")]

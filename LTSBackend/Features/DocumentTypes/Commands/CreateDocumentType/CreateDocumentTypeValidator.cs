@@ -4,8 +4,8 @@ namespace LTSBackend.Features.DocumentTypes.Commands.CreateDocumentType;
 
 public class CreateDocumentTypeValidator : AbstractValidator<CreateDocumentTypeCommand>
 {
-    // Requires a type name (max 160 chars) and an optional description
-    // (max 500 chars).
+
+
     public CreateDocumentTypeValidator()
     {
         RuleFor(x => x.TypeName)

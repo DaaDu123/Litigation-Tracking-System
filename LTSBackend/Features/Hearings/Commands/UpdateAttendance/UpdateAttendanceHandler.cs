@@ -13,10 +13,10 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateAttendance
         IPermissionService _permissionService,
         IHttpContextAccessor _httpContextAccessor) : IRequestHandler<UpdateAttendanceCommand, bool>
     {
-        // =====================================================
-        // HANDLE — edits an existing attendance record
-        // Same visibility rule as RecordAttendanceHandler.
-        // =====================================================
+
+
+
+
         public async Task<bool> Handle(UpdateAttendanceCommand request, CancellationToken cancellationToken)
         {
             var attendance = await _context.HearingAttendances
@@ -26,7 +26,7 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateAttendance
             if (attendance == null || (attendance.Hearing.Case.FirmID != _currentUser.FirmID))
                 throw new NotFoundException($"Attendance ID {request.AttendanceId} not found");
 
-            // SECURITY FIX (IDOR): see RecordAttendanceHandler for rationale.
+
             if (_currentUser.UserID.HasValue)
             {
                 bool hasFullVisibility = await _permissionService.HasFullCaseDirectoryVisibilityAsync(_currentUser.UserID.Value, cancellationToken);

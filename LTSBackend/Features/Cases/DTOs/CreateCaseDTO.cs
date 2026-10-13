@@ -14,11 +14,11 @@ public class CreateCaseDTO
 
     public string? CaseDescription { get; set; }
 
-    /// <summary>The Court picked from the firm's configured courts (required). Courts are created once in Master Data, never from a case.</summary>
+
     [Range(1, int.MaxValue, ErrorMessage = "Court is required")]
     public int CourtID { get; set; }
 
-    /// <summary>The Case Category / Case Type (required). Its workflow template drives status, stages, department and document checklist.</summary>
+
     [Range(1, int.MaxValue, ErrorMessage = "Case Category is required")]
     public int CategoryID { get; set; }
 
@@ -47,7 +47,7 @@ public class CreateCaseDTO
 
     public string? FinancialImplication { get; set; }
 
-    /// <summary>Optional override. Leave null to use the category template's default department.</summary>
+
     public int? ResponsibleDepartmentID { get; set; }
 
     [Required(ErrorMessage = "Legal Officer is required")]

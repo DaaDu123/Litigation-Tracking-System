@@ -1,11 +1,11 @@
 namespace LTSFrontend.State
 {
-    /// <summary>
-    /// Scoped (one per user circuit) pub/sub service that powers the
-    /// app-wide toast notification stack. Any page/service can call
-    /// Success/Error/Warning/Info; ToastNotification.razor (mounted once
-    /// in MainLayout) subscribes to OnChange and renders the stack.
-    /// </summary>
+
+
+
+
+
+
     public class ToastService
     {
         private readonly List<ToastMessage> _toasts = new();

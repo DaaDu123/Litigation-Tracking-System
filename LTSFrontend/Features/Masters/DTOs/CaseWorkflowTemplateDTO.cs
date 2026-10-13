@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Masters.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.CaseWorkflowTemplates.DTOs.CaseWorkflowTemplateDTO</summary>
+
     public class CaseWorkflowTemplateDTO
     {
         public int TemplateID { get; set; }
@@ -12,7 +12,7 @@ namespace LTSFrontend.Features.Masters.DTOs
         public string InitialStatusName { get; set; } = string.Empty;
         public bool IsActive { get; set; }
 
-        /// <summary>True = global template shared by every firm (SuperAdmin-managed).</summary>
+
         public bool IsGlobal { get; set; }
 
         public List<WorkflowStageItemDTO> Stages { get; set; } = new();
@@ -33,7 +33,7 @@ namespace LTSFrontend.Features.Masters.DTOs
         public string TypeName { get; set; } = string.Empty;
     }
 
-    /// <summary>Client-side form model for the Case Workflow Template editor. Mirrors SaveCaseWorkflowTemplateDTO.</summary>
+
     public class CaseWorkflowTemplateFormDTO
     {
         public int CategoryID { get; set; }
@@ -41,7 +41,7 @@ namespace LTSFrontend.Features.Masters.DTOs
         public int DefaultDepartmentID { get; set; }
         public int InitialStatusID { get; set; }
 
-        /// <summary>Ordered stage IDs (first = initial stage).</summary>
+
         public List<int> StageIDs { get; set; } = new();
 
         public HashSet<int> RequiredDocumentTypeIDs { get; set; } = new();

@@ -8,11 +8,11 @@ namespace LTSBackend.Features.CaseStatuses.Commands.DeleteCaseStatus;
 
 public sealed class DeleteCaseStatusHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<DeleteCaseStatusHandler> _logger) : IRequestHandler<DeleteCaseStatusCommand, bool>
 {
-    // =====================================================
-    // HANDLE — removes a case status the firm no longer needs
-    // Same ownership check as Update (own firm's custom case status only),
-    // plus an in-use check: cannot delete while cases still reference it.
-    // =====================================================
+
+
+
+
+
     public async Task<bool> Handle(DeleteCaseStatusCommand request, CancellationToken cancellationToken)
     {
         var status = await _context.CaseStatuses.FirstOrDefaultAsync(x => x.StatusID == request.StatusID, cancellationToken);

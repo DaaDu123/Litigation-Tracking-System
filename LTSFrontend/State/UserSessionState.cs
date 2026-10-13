@@ -1,10 +1,10 @@
 ﻿namespace LTSFrontend.State
 {
-    /// <summary>
-    /// Scoped (one instance per user circuit/session) holder for the
-    /// currently logged-in user's token + basic profile info.
-    /// ApiClient reads AccessToken from here on every API call.
-    /// </summary>
+
+
+
+
+
     public class UserSessionState
     {
         public int UserID { get; private set; }
@@ -37,7 +37,7 @@
             NotifyStateChanged();
         }
 
-        /// <summary>Refreshes just the display name (e.g. after "My Profile" is saved) without touching the token.</summary>
+
         public void UpdateFullName(string fullName)
         {
             FullName = fullName;

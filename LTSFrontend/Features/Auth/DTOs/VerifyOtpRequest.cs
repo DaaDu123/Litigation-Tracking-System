@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Auth.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Auth.VerifyOtp.VerifyOtpCommand / VerifyOtpValidator</summary>
+
     public class VerifyOtpRequest
     {
         [Required(ErrorMessage = "Email is required.")]

@@ -4,9 +4,9 @@ namespace LTSBackend.Features.Firms.Commands.CreateFirm;
 
 public class CreateFirmValidator : AbstractValidator<CreateFirmCommand>
 {
-    // Requires the firm's name and its first FirmAdmin's name/email/
-    // password (standard complexity rules). FirmCode is generated
-    // internally by the handler, never entered by the SuperAdmin.
+
+
+
     public CreateFirmValidator()
     {
         RuleFor(x => x.FirmName).NotEmpty().MaximumLength(150);

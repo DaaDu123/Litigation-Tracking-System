@@ -44,7 +44,7 @@ namespace LTSFrontend.Features.CaseAssignments.Services
                 Remarks = string.IsNullOrWhiteSpace(dto.Remarks) ? null : dto.Remarks.Trim()
             });
 
-        // Backend binds this as [FromBody] string? — send the raw string, not an object.
+
         public Task<bool> EndAsync(long assignmentId, string? remarks) =>
             _api.PutAsync<bool>(ApiEndpoints.CaseAssignments.End(assignmentId), remarks);
     }

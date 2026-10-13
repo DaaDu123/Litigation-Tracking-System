@@ -1,4 +1,4 @@
-/* ---------- Notification bell / dropdown ---------- */
+
 
 .lts-notification-bell {
   position: relative;
@@ -126,11 +126,11 @@
   background: var(--lts-surface);
 }
 
-/* ==========================================================================
-   Responsive — notification dropdown
-   On phones the bell sits mid-bar, so an anchored popover would overflow the
-   viewport. Pin it to the screen edges instead.
-   ========================================================================== */
+
+
+
+
+
 @media (max-width: 575.98px) {
   .lts-notification-bell {
     position: static;

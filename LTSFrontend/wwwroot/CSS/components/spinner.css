@@ -1,4 +1,4 @@
-/* ---------- Spinner ---------- */
+
 
 .lts-spinner {
   display: inline-block;
@@ -32,7 +32,7 @@
   }
 }
 
-/* ---------- Utility ---------- */
+
 
 .spin {
   animation: lts-spin 0.8s linear infinite;

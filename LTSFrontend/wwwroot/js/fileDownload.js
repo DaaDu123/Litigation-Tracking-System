@@ -1,6 +1,6 @@
-// Triggers a browser "Save As" download for a file whose bytes were fetched
-// server-side (Blazor Server has no direct filesystem access in the browser,
-// so we build a Blob from the byte array and click a temporary <a> link).
+
+
+
 window.ltsDownloadFile = (fileName, contentType, base64Data) => {
     const byteChars = atob(base64Data);
     const byteNumbers = new Array(byteChars.length);

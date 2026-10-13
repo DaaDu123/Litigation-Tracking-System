@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Courts.Commands.CreateCourt;
 
 public class CreateCourtValidator : AbstractValidator<CreateCourtCommand>
 {
-    // Requires a court name; type/jurisdiction/address are optional but
-    // length-capped if supplied.
+
+
     public CreateCourtValidator()
     {
         RuleFor(x => x.CourtName)

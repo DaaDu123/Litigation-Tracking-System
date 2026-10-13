@@ -1,10 +1,10 @@
-/* ==========================================================================
-   Feature: Firm Admin requests ("Create Your Own Firm")
-   Styles for the status banner, the Home call-to-action card and the
-   sidebar entry. Used by Features/FirmAdminRequests/Components/*.
-   ========================================================================== */
 
-/* ---------- Status banner (shared by the Home card and the modal) ---------- */
+
+
+
+
+
+
 .lts-request-banner {
   --banner-accent: var(--lts-info);
   --banner-bg: var(--lts-info-bg);
@@ -81,7 +81,7 @@
   --banner-bg: var(--lts-surface-2);
 }
 
-/* ---------- Home call-to-action card ---------- */
+
 .lts-create-firm-card {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -151,7 +151,7 @@
   font-size: 0.88rem;
 }
 
-/* ---------- Sidebar entry ---------- */
+
 .lts-nav-status {
   margin-left: auto;
   flex: 0 0 auto;
@@ -191,7 +191,7 @@
   }
 }
 
-/* ---------- Responsive ---------- */
+
 @media (max-width: 991.98px) {
   .lts-create-firm-card {
     grid-template-columns: minmax(0, 1fr);

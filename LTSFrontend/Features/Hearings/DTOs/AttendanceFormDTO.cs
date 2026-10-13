@@ -1,9 +1,9 @@
 namespace LTSFrontend.Features.Hearings.DTOs
 {
-    /// <summary>
-    /// Shared create/edit form model for one attendance row.
-    /// AttendanceId == 0 means "record new"; otherwise "update existing".
-    /// </summary>
+
+
+
+
     public class AttendanceFormDTO
     {
         public long AttendanceId { get; set; }

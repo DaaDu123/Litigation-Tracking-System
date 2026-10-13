@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Hearings.Commands.UpdateAttendance
 {
     public class UpdateAttendanceValidator : AbstractValidator<UpdateAttendanceCommand>
     {
-        // Requires a valid AttendanceID, and — if both are supplied — a
-        // DepartureTime that isn't earlier than the ArrivalTime.
+
+
         public UpdateAttendanceValidator()
         {
             RuleFor(x => x.AttendanceId).GreaterThan(0);

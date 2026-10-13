@@ -9,13 +9,13 @@ namespace LTSBackend.Features.DocumentTypes.Commands.CreateDocumentType;
 
 public sealed class CreateDocumentTypeHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<CreateDocumentTypeHandler> _logger) : IRequestHandler<CreateDocumentTypeCommand, int>
 {
-    // =====================================================
-    // HANDLE — creates a new document type
-    // Trims input, checks the name is unique among what the caller can
-    // see (global types + their own firm's), then saves it. FirmID is
-    // set to the caller's own firm for a FirmAdmin, or left null (global,
-    // visible to every firm) for a SuperAdmin.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<int> Handle(CreateDocumentTypeCommand request, CancellationToken cancellationToken)
     {
         request = request with { TypeName = request.TypeName.Trim(), Description = request.Description?.Trim() };

@@ -27,10 +27,10 @@
         <button class="public-navbar-theme-btn" type="button" title="Toggle theme" @onclick="ToggleThemeAsync">
             <i class="bi @(_isDarkTheme ? "bi-sun" : "bi-moon-stars")"></i>
         </button>
-        @* Login button sits between the theme toggle and the hamburger
-           (Navigation menu) button, and is hidden entirely on the Login
-           page itself - showing "Login" while already on the login screen
-           is redundant/confusing. *@
+
+
+
+
         @if (!_isLoginPage)
         {
             <a href="/login" class="public-navbar-login-btn">
@@ -66,9 +66,9 @@
     {
         UpdateLoginPageFlag();
 
-        // Re-render whenever the URL changes (including internal nav-link
-        // clicks that don't do a full page reload) so the active link
-        // color updates immediately instead of staying stuck until refresh.
+
+
+
         Navigation.LocationChanged += OnLocationChanged;
     }
 
@@ -91,7 +91,7 @@
             }
             catch
             {
-                // JS interop not ready yet (prerender) - default to light theme.
+
             }
         }
     }

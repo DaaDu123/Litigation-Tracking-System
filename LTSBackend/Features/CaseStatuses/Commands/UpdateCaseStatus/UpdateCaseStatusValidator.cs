@@ -4,8 +4,8 @@ namespace LTSBackend.Features.CaseStatuses.Commands.UpdateCaseStatus;
 
 public class UpdateCaseStatusValidator : AbstractValidator<UpdateCaseStatusCommand>
 {
-    // Requires a valid StatusID plus the same name/sequence/colour rules as
-    // CreateCaseStatusValidator.
+
+
     public UpdateCaseStatusValidator()
     {
         RuleFor(x => x.StatusID).GreaterThan(0).WithMessage("Valid status ID is required.");

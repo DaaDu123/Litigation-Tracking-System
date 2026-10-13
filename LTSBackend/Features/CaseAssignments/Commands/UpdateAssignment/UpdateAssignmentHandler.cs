@@ -10,12 +10,12 @@ namespace LTSBackend.Features.CaseAssignments.Commands.UpdateAssignment
 {
     public class UpdateAssignmentHandler(AppDbContext _context,IAuditService _auditService,ICurrentUserService _currentUser,IHttpContextAccessor _httpContextAccessor) : IRequestHandler<UpdateAssignmentCommand, bool>
     {
-        // =====================================================
-        // HANDLE — edits an existing, still-active case assignment
-        // Verifies the assignment belongs to the caller's own firm and
-        // hasn't already ended, then updates its type/lead-counsel
-        // flag/remarks and writes an audit log entry.
-        // =====================================================
+
+
+
+
+
+
         public async Task<bool> Handle(UpdateAssignmentCommand request, CancellationToken cancellationToken)
         {
             var assignment = await _context.CaseAssignments.Include(a => a.Case).FirstOrDefaultAsync(a => a.AssignmentID == request.Assignment.AssignmentID, cancellationToken);

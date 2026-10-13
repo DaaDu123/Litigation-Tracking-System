@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LTSFrontend.Features.Users.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Users.Commands.SetAvailability.SetAvailabilityCommand</summary>
+
     public class SetAvailabilityRequest : IValidatableObject
     {
         public bool IsAvailable { get; set; } = true;

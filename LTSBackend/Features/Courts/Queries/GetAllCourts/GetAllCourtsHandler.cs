@@ -7,12 +7,12 @@ namespace LTSBackend.Features.Courts.Queries.GetAllCourts;
 
 public sealed class GetAllCourtsHandler(AppDbContext _context, ILogger<GetAllCourtsHandler> _logger) : IRequestHandler<GetAllCourtsQuery, List<CourtDTO>>
 {
-    // =====================================================
-    // HANDLE — lists courts for dropdowns / admin screens
-    // Optionally filtered by search text and by active-only. Visibility
-    // (global + own firm) is enforced by the entity's EF Core
-    // HasQueryFilter, not by this handler.
-    // =====================================================
+
+
+
+
+
+
     public async Task<List<CourtDTO>> Handle(GetAllCourtsQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching all courts (SearchText={SearchText}, ActiveOnly={ActiveOnly})", request.SearchText, request.ActiveOnly);

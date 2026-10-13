@@ -3,9 +3,9 @@ using MediatR;
 
 namespace LTSBackend.Features.Cases.Commands.CreateCase;
 
-// Court and Category must be picked from the firm's existing master data
-// (no more on-the-fly creation). Department is optional: when omitted it
-// defaults from the category's Case Workflow Template.
+
+
+
 public record CreateCaseCommand(
     string CaseNumber,
     string CaseTitle,

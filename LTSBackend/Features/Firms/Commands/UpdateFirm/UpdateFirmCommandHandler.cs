@@ -7,11 +7,11 @@ namespace LTSBackend.Features.Firms.Commands.UpdateFirm;
 
 public class UpdateFirmCommandHandler(AppDbContext _context) : IRequestHandler<UpdateFirmCommand, bool>
 {
-    // =====================================================
-    // HANDLE — edits a firm workspace's own details
-    // Name, address, contact info, and custom domain only — does not
-    // touch block/delete state.
-    // =====================================================
+
+
+
+
+
     public async Task<bool> Handle(UpdateFirmCommand request, CancellationToken cancellationToken)
     {
         var firm = await _context.Firms.FirstOrDefaultAsync(x => x.FirmID == request.FirmID, cancellationToken);

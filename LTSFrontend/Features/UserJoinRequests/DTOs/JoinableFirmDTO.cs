@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.UserJoinRequests.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.UserJoinRequests.DTOs.JoinableFirmDTO</summary>
+
     public class JoinableFirmDTO
     {
         public int FirmID { get; set; }

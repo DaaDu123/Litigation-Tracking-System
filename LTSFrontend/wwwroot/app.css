@@ -58,9 +58,9 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
-/* =========================================================
-   LTS brand palette
-   ========================================================= */
+
+
+
 :root {
     --lts-navy: #10214d;
     --lts-navy-dark: #0a1733;
@@ -71,9 +71,9 @@ h1:focus {
     --lts-text-muted: #6b7280;
 }
 
-/* =========================================================
-   Auth pages (Login / Register / Forgot / Reset / OTP)
-   ========================================================= */
+
+
+
 .auth-shell {
     min-height: 100vh;
     display: flex;
@@ -399,10 +399,10 @@ h1:focus {
     }
 }
 
-/* =========================================================
-   App shell (dashboard sidebar / topbar) - used once user
-   is logged in.
-   ========================================================= */
+
+
+
+
 .lts-app-shell {
     display: flex;
     min-height: 100vh;
@@ -487,10 +487,10 @@ h1:focus {
         transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
     }
 
-        /* Icon and label sit on the same row, centered on the same line -
-           without an explicit line-height/vertical-align the icon glyph and
-           the text baseline can drift out of alignment (icon sitting lower,
-           label sitting higher). */
+
+
+
+
         .lts-sidebar .nav-link i {
             display: inline-flex;
             align-items: center;
@@ -570,10 +570,10 @@ h1:focus {
     padding: 1.25rem;
 }
 
-/* =========================================================
-   LTS Design System v2 - production-grade admin UI
-   Used by Master Data / Court module and reusable everywhere else.
-   ========================================================= */
+
+
+
+
 :root {
     --lts-radius-sm: 0.4rem;
     --lts-radius: 0.65rem;
@@ -629,7 +629,7 @@ h1:focus {
     box-sizing: border-box;
 }
 
-/* ---------- App shell refinements ---------- */
+
 .lts-app-shell {
     transition: background 0.2s ease;
 }
@@ -671,7 +671,7 @@ h1:focus {
     display: none;
 }
 
-/* ---------- Sidebar show/hide handle ---------- */
+
 .lts-sidebar-handle {
     position: sticky;
     top: 1.15rem;
@@ -837,7 +837,7 @@ h1:focus {
             background: var(--lts-surface-2);
         }
 
-/* ---------- Notification bell / dropdown ---------- */
+
 .lts-notification-bell {
     position: relative;
 }
@@ -964,7 +964,7 @@ h1:focus {
     background: var(--lts-surface);
 }
 
-/* ---------- Breadcrumb / page header ---------- */
+
 .lts-breadcrumb {
     display: flex;
     align-items: center;
@@ -1016,7 +1016,7 @@ h1:focus {
     gap: 0.6rem;
 }
 
-/* ---------- Buttons ---------- */
+
 .lts-btn {
     display: inline-flex;
     align-items: center;
@@ -1108,7 +1108,7 @@ h1:focus {
     border-radius: var(--lts-radius-sm);
 }
 
-/* ---------- Cards / surfaces ---------- */
+
 .lts-card {
     background: var(--lts-surface);
     border: 1px solid var(--lts-border-color);
@@ -1184,7 +1184,7 @@ h1:focus {
     inset: 0;
 }
 
-/* ---------- Dashboard: page layout ---------- */
+
 .lts-dashboard-grid {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
@@ -1211,7 +1211,7 @@ h1:focus {
     }
 }
 
-/* ---------- Dashboard: chart widget (pure CSS bar chart, no JS dependency) ---------- */
+
 .lts-chart-widget-title {
     font-size: 0.85rem;
     font-weight: 700;
@@ -1262,7 +1262,7 @@ h1:focus {
     color: var(--lts-text);
 }
 
-/* ---------- Dashboard: recent activity panel ---------- */
+
 .lts-activity-list {
     display: flex;
     flex-direction: column;
@@ -1320,7 +1320,7 @@ h1:focus {
     padding-left: 0.5rem;
 }
 
-/* ---------- Dashboard: quick links ---------- */
+
 .lts-quicklink-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1430,7 +1430,7 @@ h1:focus {
             color: #fff;
         }
 
-/* ---------- Search box ---------- */
+
 .lts-search-box {
     position: relative;
     display: flex;
@@ -1472,13 +1472,13 @@ h1:focus {
     display: inline-flex;
 }
 
-/* ---------- Table ---------- */
+
 .lts-table-wrap {
     background: var(--lts-surface);
     border: 1px solid var(--lts-border-color);
     border-radius: var(--lts-radius);
     box-shadow: var(--lts-shadow-sm);
-    
+
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
@@ -1543,15 +1543,15 @@ h1:focus {
             background: var(--lts-surface-2);
         }
 
-/* ---------- Responsive table -> stacked cards ----------
-   Applies to every ".lts-table" list in the app (Master Data, Users,
-   Cases, Firms, Hearings, Documents, Audit Logs, etc.) so small screens
-   never need to scroll the table sideways to read a row. Each <td> gets
-   its column header mirrored onto a "data-label" attribute automatically
-   by wwwroot/js/responsiveTable.js - no per-page changes needed.
-   Excludes ".lts-matrix-table" (the Permission Matrix): that's a genuine
-   grid where a sticky first column + horizontal scroll is the right
-   pattern, not stacked label/value rows. */
+
+
+
+
+
+
+
+
+
 @media (max-width: 640px) {
     .lts-table:not(.lts-matrix-table) thead {
         display: none;
@@ -1622,7 +1622,7 @@ h1:focus {
     color: var(--lts-info);
 }
 
-/* ---------- Badges ---------- */
+
 .lts-badge {
     display: inline-flex;
     align-items: center;
@@ -1670,14 +1670,14 @@ h1:focus {
     color: var(--lts-primary, var(--lts-info));
 }
 
-/* ---------- Row action dropdown ---------- */
+
 .lts-row-actions {
     display: flex;
     justify-content: flex-end;
     gap: 0.35rem;
 }
 
-/* ---------- Skeleton loaders ---------- */
+
 .lts-skeleton {
     position: relative;
     overflow: hidden;
@@ -1713,7 +1713,7 @@ h1:focus {
     padding: 0.95rem 1.1rem;
 }
 
-/* ---------- Empty / error states ---------- */
+
 .lts-state {
     display: flex;
     flex-direction: column;
@@ -1755,7 +1755,7 @@ h1:focus {
     margin-bottom: 1rem;
 }
 
-/* ---------- Grid / card view ---------- */
+
 .lts-grid-view {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
@@ -1810,7 +1810,7 @@ h1:focus {
     border-top: 1px solid var(--lts-border-color);
 }
 
-/* ---------- Pagination ---------- */
+
 .lts-pagination {
     display: flex;
     align-items: center;
@@ -1865,7 +1865,7 @@ h1:focus {
     padding: 0 0.25rem;
 }
 
-/* ---------- Toasts ---------- */
+
 .lts-toast-stack {
     position: fixed;
     top: 1.25rem;
@@ -1958,7 +1958,7 @@ h1:focus {
     font-size: 0.75rem;
 }
 
-/* ---------- Modal (custom, used for ConfirmDialog + form modals) ---------- */
+
 .lts-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -2133,7 +2133,7 @@ h1:focus {
     padding-top: 0;
 }
 
-/* ---------- Form elements (used inside form modals) ---------- */
+
 .lts-form-group {
     margin-bottom: 1rem;
 }
@@ -2262,7 +2262,7 @@ textarea.lts-form-control {
     box-shadow: 0 0 0 0.15rem rgba(63, 123, 255, 0.35);
 }
 
-/* ---------- Spinner ---------- */
+
 .lts-spinner {
     display: inline-block;
     border-radius: 50%;
@@ -2295,7 +2295,7 @@ textarea.lts-form-control {
     }
 }
 
-/* ---------- Focus-visible accessibility ---------- */
+
 .lts-btn:focus-visible,
 .lts-icon-btn:focus-visible,
 .lts-page-btn:focus-visible,
@@ -2304,7 +2304,7 @@ textarea.lts-form-control {
     outline-offset: 2px;
 }
 
-/* ---------- Master data hub ---------- */
+
 .lts-module-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -2375,7 +2375,7 @@ textarea.lts-form-control {
     color: var(--lts-text-muted);
 }
 
-/* ---------- Responsive ---------- */
+
 @media (max-width: 991.98px) {
     .lts-sidebar {
         position: fixed;
@@ -2435,10 +2435,10 @@ textarea.lts-form-control {
         flex: 1;
     }
 
-    /* Master Data "View Details" modals (Courts, Departments, Case
-       Categories, Case Statuses, Case Stages, Document Types) all use
-       this shared label/value row. The fixed 130px label column left
-       almost no room for the value on small screens - stack instead. */
+
+
+
+
     .lts-detail-row {
         flex-direction: column;
         gap: 0.2rem;
@@ -2448,9 +2448,9 @@ textarea.lts-form-control {
         flex: none;
     }
 
-    /* Modal header title block could overflow a narrow modal for a long
-       name (e.g. a long court/department name) since flex items don't
-       shrink below their content size by default. */
+
+
+
     .lts-modal-header > div:not(.lts-modal-icon) {
         flex: 1;
         min-width: 0;
@@ -2461,8 +2461,8 @@ textarea.lts-form-control {
         overflow-wrap: break-word;
     }
 
-    /* Entity card grid-view header (name + status pill) - same overflow
-       guard for long master-data record names on small screens. */
+
+
     .lts-entity-card-title {
         min-width: 0;
         overflow-wrap: break-word;
@@ -2485,7 +2485,7 @@ textarea.lts-form-control {
     }
 }
 
-/* ---------- Sidebar nav grouping ---------- */
+
 .nav-section-title {
     font-size: 0.66rem;
     text-transform: uppercase;
@@ -2514,7 +2514,7 @@ textarea.lts-form-control {
     padding-left: 0.85rem !important;
 }
 
-/* ---------- Detail list (view modal) ---------- */
+
 .lts-detail-list {
     margin: 0;
 }
@@ -2546,7 +2546,7 @@ textarea.lts-form-control {
         word-break: break-word;
     }
 
-/* ---------- Permission Matrix ---------- */
+
 .lts-matrix-table {
     min-width: 640px;
 }
@@ -2570,13 +2570,13 @@ thead .lts-matrix-sticky-col {
     background: var(--lts-surface-2);
 }
 
-/* ---------- Utility ---------- */
+
 .spin {
     animation: lts-spin 0.8s linear infinite;
     display: inline-block;
 }
 
-/* ===================== Case Details Tabs ===================== */
+
 .lts-tabs {
     display: flex;
     gap: 0.25rem;
@@ -2608,7 +2608,7 @@ thead .lts-matrix-sticky-col {
     border-bottom-color: var(--lts-primary, #1b4fd6);
 }
 
-/* ===================== Document Upload Box ===================== */
+
 .lts-upload-box {
     position: relative;
     border: 2px dashed var(--lts-border-color, var(--lts-border));
@@ -2637,14 +2637,14 @@ thead .lts-matrix-sticky-col {
     cursor: pointer;
 }
 
-/* =========================================================
-   Public site (marketing) — navbar, hero, feature grid, footer
-   Used on Login/Register/Auth pages and standalone public pages
-   (Features, Benefits, Security, Pricing, Contact).
-   ========================================================= */
+
+
+
+
+
 :root {
-    /* Reuses the app's own blue accent (already used across the dashboard)
-       instead of introducing a separate yellow/gold accent. */
+
+
     --lts-gold: var(--lts-blue);
     --lts-gold-dark: #163fac;
     --lts-gold-light: var(--lts-blue-light);
@@ -2661,7 +2661,7 @@ thead .lts-matrix-sticky-col {
     background: #ffffff;
 }
 
-/* ---------- Top navbar ---------- */
+
 .public-navbar {
     display: flex;
     align-items: center;
@@ -2736,10 +2736,10 @@ thead .lts-matrix-sticky-col {
     gap: 0.85rem;
 }
 
-/* Keep the original desktop order (theme -> language -> login) even
-   though the login button now sits earlier in the markup so it can be
-   repositioned between the theme and menu-toggle buttons on small
-   screens (see the max-width: 991px block below). */
+
+
+
+
 .public-navbar-theme-btn {
     order: 1;
 }
@@ -2799,10 +2799,10 @@ thead .lts-matrix-sticky-col {
         position: relative;
     }
 
-    /* Split the actions group so the theme toggle, Login button and the
-       hamburger (Navigation menu) toggle all sit in the same top row, in
-       that order: theme -> login -> menu toggle. The nav-links dropdown
-       itself renders as a floating panel below the row (see .public-navbar-links). */
+
+
+
+
     .public-navbar-actions {
         display: contents;
     }
@@ -2828,10 +2828,10 @@ thead .lts-matrix-sticky-col {
         display: inline-flex;
     }
 
-    /* Navigation menu dropdown - a floating, professional card (matches the
-       site's white/blue theme) instead of an inline row so each link
-       (Features, Benefits, Security, Pricing, Contact) shows on its own
-       row rather than all wrapped onto one line. */
+
+
+
+
     .public-navbar-links {
         display: none;
         position: absolute;
@@ -2882,7 +2882,7 @@ thead .lts-matrix-sticky-col {
     }
 }
 
-/* ---------- Hero section (auth pages) ---------- */
+
 .auth-hero-section {
     flex: 1;
     display: flex;
@@ -2971,8 +2971,8 @@ thead .lts-matrix-sticky-col {
     justify-content: center;
 }
 
-/* Dark navy auth card (overrides the plain white .auth-form-card look
-   specifically inside the marketing hero layout). */
+
+
 .auth-hero-right .auth-form-card {
     position: relative;
     width: 100%;
@@ -3116,10 +3116,10 @@ thead .lts-matrix-sticky-col {
         padding: 2.25rem 1.25rem;
     }
 
-    /* On small screens the login card should be the first thing a person
-       sees, with the four feature cards (Case Management, Hearing &
-       Deadlines, Document Management, Reports & Analytics) below it -
-       the reverse of the source order used on large screens. */
+
+
+
+
     .auth-hero-right {
         order: 1;
     }
@@ -3132,11 +3132,11 @@ thead .lts-matrix-sticky-col {
         margin-top: 2rem;
     }
 
-    /* The "Litigation Tracking System" heading, its gold underline rule,
-       and the 2-3 line lead paragraph above the feature cards are only
-       needed on wide screens where there's room beside the login card -
-       on small screens they're hidden, leaving just the login card
-       followed directly by the 4 feature cards. */
+
+
+
+
+
     .auth-hero-rule,
     .auth-hero-left h1,
     .auth-hero-lead {
@@ -3149,7 +3149,7 @@ thead .lts-matrix-sticky-col {
     }
 }
 
-/* ---------- Footer ---------- */
+
 .public-footer {
     background: linear-gradient(160deg, var(--lts-navy) 0%, var(--lts-navy-dark) 100%);
     color: rgba(255, 255, 255, 0.85);
@@ -3271,10 +3271,10 @@ thead .lts-matrix-sticky-col {
         }
 }
 
-/* =========================================================
-   Public content pages (Features / Benefits / Security /
-   Pricing / Contact) — shared building blocks
-   ========================================================= */
+
+
+
+
 .public-page-hero {
     background:
         radial-gradient(900px 380px at 85% -10%, rgba(27, 79, 214, 0.08), transparent 60%),
@@ -3503,7 +3503,7 @@ thead .lts-matrix-sticky-col {
             color: #fff;
         }
 
-/* Row / two-column layout used on Benefits & Security pages */
+
 .public-split-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3566,7 +3566,7 @@ thead .lts-matrix-sticky-col {
     padding: 2rem;
 }
 
-/* Contact page */
+
 .public-contact-grid {
     display: grid;
     grid-template-columns: 0.9fr 1.1fr;
@@ -3666,7 +3666,7 @@ thead .lts-matrix-sticky-col {
             border-color: var(--lts-gold-dark);
         }
 
-/* Pricing page */
+
 .public-pricing-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -3778,9 +3778,9 @@ thead .lts-matrix-sticky-col {
         opacity: 0.85;
     }
 
-/* =========================================================
-   Public site — dark mode overrides
-   ========================================================= */
+
+
+
 [data-theme="dark"] .public-shell {
     background: var(--lts-bg);
 }
@@ -3899,7 +3899,7 @@ thead .lts-matrix-sticky-col {
     border-top-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Theme toggle button in the public navbar (mirrors .lts-icon-btn) */
+
 .public-navbar-theme-btn {
     display: inline-flex;
     align-items: center;

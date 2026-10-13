@@ -1,5 +1,5 @@
-@* Create / Edit modal for the Case Category master. Opened imperatively from
-   CaseCategories.razor via @ref: _formModal.OpenForCreate() / OpenForEdit(category). *@
+
+
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject ICaseCategoryService CaseCategoryService
@@ -85,7 +85,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
     private bool _isOpen;
     private bool _isSaving;

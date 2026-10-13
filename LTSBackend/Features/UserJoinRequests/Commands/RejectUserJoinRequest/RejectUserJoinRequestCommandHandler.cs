@@ -11,14 +11,14 @@ namespace LTSBackend.Features.UserJoinRequests.Commands.RejectUserJoinRequest;
 public class RejectUserJoinRequestCommandHandler(AppDbContext _context, IEmailService _emailService, IAuditService _auditService,
     ILogger<RejectUserJoinRequestCommandHandler> _logger) : IRequestHandler<RejectUserJoinRequestCommand, bool>
 {
-    // =====================================================
-    // HANDLE — declines a pending join request
-    // Same tenant-scoping note as ApproveUserJoinRequestCommandHandler:
-    // the query filter already prevents a FirmAdmin from reaching a
-    // request aimed at a different firm. Refuses if the request isn't
-    // still Pending. Marks it Rejected with an optional reason, writes
-    // an audit log entry, and emails the requester (best-effort).
-    // =====================================================
+
+
+
+
+
+
+
+
     public async Task<bool> Handle(RejectUserJoinRequestCommand request, CancellationToken cancellationToken)
     {
         var joinRequest = await _context.UserJoinRequests.FirstOrDefaultAsync(x => x.RequestID == request.RequestID, cancellationToken);
@@ -43,9 +43,9 @@ public class RejectUserJoinRequestCommandHandler(AppDbContext _context, IEmailSe
 
         _logger.LogInformation("User join request {RequestId} rejected by {ActingUserId}", joinRequest.RequestID, request.ActingUserID);
 
-        // Best-effort - don't fail the rejection itself if the email send fails.
-        // The user's own account (if UserID-linked) still exists and can
-        // request a different firm right away - rejection never deletes it.
+
+
+
         if (!string.IsNullOrWhiteSpace(joinRequest.Email))
         {
             try

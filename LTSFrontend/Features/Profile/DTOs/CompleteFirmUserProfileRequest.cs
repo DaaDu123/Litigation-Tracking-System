@@ -3,7 +3,7 @@ using LTSFrontend.Shared.Validation;
 
 namespace LTSFrontend.Features.Profile.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Profile.Commands.CompleteFirmUserProfile.CompleteFirmUserProfileCommand</summary>
+
     public class CompleteFirmUserProfileRequest
     {
         [Required(ErrorMessage = "Your full name is required.")]

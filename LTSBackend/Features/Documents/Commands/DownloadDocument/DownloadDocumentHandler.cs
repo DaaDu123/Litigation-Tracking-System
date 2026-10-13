@@ -11,13 +11,13 @@ namespace LTSBackend.Features.Documents.Commands.DownloadDocument;
 public class DownloadDocumentHandler(AppDbContext _context, IDocumentPermissionService _permissionService, IFileService _fileService,
     ICurrentUserService _currentUser, ILogger<DownloadDocumentHandler> _logger) : IRequestHandler<DownloadDocumentCommand, DocumentDownloadDTO>
 {
-    // =====================================================
-    // HANDLE — checks download permission and streams the file back
-    // Calls CanUserAccessDocumentAsync (which is where a Restricted-mode
-    // Moharrir gets blocked even if they can see the document in a list),
-    // then reads the raw bytes from secure disk storage and returns them
-    // with a resolved content type.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<DocumentDownloadDTO> Handle(DownloadDocumentCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Document download request - ID: {DocumentId}, User: {UserId}",request.DocumentID,request.UserID);
@@ -30,9 +30,9 @@ public class DownloadDocumentHandler(AppDbContext _context, IDocumentPermissionS
             throw new UnauthorizedException("You don't have permission to download this document. " + "If you are a restricted Moharrir, contact your administrator to grant access.");
         }
 
-        // Include Case so we have its FirmID for the storage-layer ownership check below.
-        // (Document itself is also tenant-filtered by EF Core's HasQueryFilter on
-        // Case.FirmID == RequestFirmId, so this Include also re-confirms that filter fired.)
+
+
+
         var document = await _context.Documents.AsNoTracking().Include(x => x.Case).FirstOrDefaultAsync(x => x.DocumentID == request.DocumentID, cancellationToken);
 
         if (document == null)
@@ -41,11 +41,11 @@ public class DownloadDocumentHandler(AppDbContext _context, IDocumentPermissionS
             throw new NotFoundException($"Document {request.DocumentID} not found");
         }
 
-        // Defense-in-depth: re-confirm the document's own case belongs to the
-        // caller's firm even though the EF query filter already enforces this,
-        // before we ever touch the file on disk. SuperAdmin is platform-level
-        // (FirmID is null on their own account) and is intentionally exempt,
-        // same as the EF Core tenant query filter's BypassTenantFilter rule.
+
+
+
+
+
         if (document.Case == null || (!_currentUser.IsSuperAdmin && document.Case.FirmID != _currentUser.FirmID))
         {
             _logger.LogWarning("Download denied: document {DocumentId} does not belong to the caller's firm", request.DocumentID);
@@ -87,7 +87,7 @@ public class DownloadDocumentHandler(AppDbContext _context, IDocumentPermissionS
         return downloadDto;
     }
 
-    // Maps a file extension to its HTTP content type for the download response.
+
     private static string GetContentType(string fileName)
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();

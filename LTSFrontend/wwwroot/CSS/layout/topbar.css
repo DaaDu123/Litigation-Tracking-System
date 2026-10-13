@@ -75,9 +75,9 @@
   font-weight: 700;
 }
 
-/* ==========================================================================
-   Responsive — top bar
-   ========================================================================== */
+
+
+
 .lts-topbar {
   min-height: var(--lts-topbar-h);
   padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
@@ -99,7 +99,7 @@
   flex: 0 0 auto;
 }
 
-/* Availability pill (FirmAdmin) was squeezed inside a 2.2rem circle. */
+
 .lts-availability-btn {
   width: auto;
   min-width: 2.2rem;
@@ -143,8 +143,8 @@
     gap: 0.4rem;
   }
 
-  /* The firm-admin status text duplicates info available elsewhere and is the
-     widest item in the bar — hide the read-only variant on tablets/phones. */
+
+
   .lts-topbar-right > .badge {
     display: none;
   }

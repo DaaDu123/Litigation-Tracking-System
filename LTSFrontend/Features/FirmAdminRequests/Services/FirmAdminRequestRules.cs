@@ -1,7 +1,7 @@
 using LTSFrontend.Features.FirmAdminRequests.DTOs;
 
 namespace LTSFrontend.Features.FirmAdminRequests.Services
-{    
+{
     public static class FirmAdminRequestRules
     {
         public const string PendingMessage = "Your request is awaiting approval.";
@@ -12,7 +12,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
         {
             var phase = ToPhase(latestFirmRequest?.Status);
 
-            // 1. A Firm Admin request that is already pending/approved always wins.
+
             if (phase == FirmRequestPhase.Pending)
             {
                 return new FirmRequestEligibility(phase, false, false,
@@ -40,7 +40,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
                     latestFirmRequest);
             }
 
-            // 2. The other admin path (Super Admin) is occupied -> block.
+
             if (AdminRequestStatuses.OccupiesAdminPath(superAdminRequestStatus))
             {
                 var state = string.Equals(superAdminRequestStatus, AdminRequestStatuses.Approved, StringComparison.OrdinalIgnoreCase)
@@ -54,7 +54,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
                     latestFirmRequest);
             }
 
-            // 3. Previous Firm Admin request was rejected -> may submit a brand-new one.
+
             if (phase == FirmRequestPhase.Rejected)
             {
                 return new FirmRequestEligibility(phase, true, false,
@@ -64,7 +64,7 @@ namespace LTSFrontend.Features.FirmAdminRequests.Services
                     latestFirmRequest);
             }
 
-            // 4. Nothing yet.
+
             return new FirmRequestEligibility(FirmRequestPhase.NoRequest, true, false,
                 "Create your own firm",
                 "Request Firm Admin access to set up and manage your own firm workspace.",

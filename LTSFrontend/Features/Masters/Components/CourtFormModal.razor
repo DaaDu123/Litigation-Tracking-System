@@ -1,5 +1,5 @@
-@* Create / Edit modal for the Court master. Opened imperatively from Courts.razor
-   via @ref: _formModal.OpenForCreate() / OpenForEdit(court). *@
+
+
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject ICourtService CourtService
@@ -106,7 +106,7 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
     private bool _isOpen;
     private bool _isSaving;

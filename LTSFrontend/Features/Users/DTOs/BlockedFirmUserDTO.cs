@@ -1,6 +1,6 @@
 namespace LTSFrontend.Features.Users.DTOs
 {
-    /// <summary>Mirrors LTSBackend.Features.Users.DTOs.BlockedFirmUserDTO</summary>
+
     public class BlockedFirmUserDTO
     {
         public int UserID { get; set; }

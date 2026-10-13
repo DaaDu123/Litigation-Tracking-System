@@ -21,7 +21,7 @@ public class RefreshToken
     [Required]
     public int UserID { get; set; }
 
-    // Foreign Key & Navigation Property
+
     [ForeignKey(nameof(UserID))]
     public User User { get; set; } = null!;
 }

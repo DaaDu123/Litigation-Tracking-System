@@ -4,7 +4,7 @@ namespace LTSBackend.Features.Cases.Queries.GetCaseStatusHistory;
 
 public class GetCaseStatusHistoryValidator : AbstractValidator<GetCaseStatusHistoryQuery>
 {
-    // Requires a valid CaseID.
+
     public GetCaseStatusHistoryValidator()
     {
         RuleFor(x => x.CaseID)

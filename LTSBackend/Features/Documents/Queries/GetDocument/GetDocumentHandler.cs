@@ -10,17 +10,17 @@ namespace LTSBackend.Features.Documents.Queries.GetDocument;
 
 public class GetDocumentHandler(AppDbContext _context, IDocumentPermissionService _permissionService, ILogger<GetDocumentHandler> _logger) : IRequestHandler<GetDocumentQuery, DocumentDetailDTO?>
 {
-    // =====================================================
-    // HANDLE — checks view permission and returns a document's metadata
-    // Calls CanUserAccessDocumentAsync (View), then returns the
-    // document's metadata only — file bytes are served separately via
-    // DownloadDocumentHandler.
-    // =====================================================
+
+
+
+
+
+
     public async Task<DocumentDetailDTO?> Handle(GetDocumentQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Get document request - ID: {DocumentId}, User: {UserId}", request.DocumentID, request.UserID);
 
-        // 1. Check user permissions
+
         bool canView = await _permissionService.CanUserAccessDocumentAsync(request.UserID,request.DocumentID,"View",cancellationToken);
 
         if (!canView)
@@ -29,7 +29,7 @@ public class GetDocumentHandler(AppDbContext _context, IDocumentPermissionServic
             throw new UnauthorizedException("You don't have permission to view this document");
         }
 
-        // 2. Fetch document
+
         var document = await _context.Documents
             .AsNoTracking()
             .Include(x => x.DocumentType)
@@ -42,7 +42,7 @@ public class GetDocumentHandler(AppDbContext _context, IDocumentPermissionServic
             throw new NotFoundException($"Document {request.DocumentID} not found");
         }
 
-        // 3. Map to DTO
+
         var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserID == document.UploadedBy, cancellationToken);
 
         string? approvedByName = null;

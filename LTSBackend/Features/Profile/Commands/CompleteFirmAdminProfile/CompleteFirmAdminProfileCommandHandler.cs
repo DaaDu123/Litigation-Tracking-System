@@ -12,16 +12,16 @@ namespace LTSBackend.Features.Profile.Commands.CompleteFirmAdminProfile;
 public class CompleteFirmAdminProfileCommandHandler(AppDbContext _context, ICurrentUserService _currentUser, IAuditService _auditService,
     ILogger<CompleteFirmAdminProfileCommandHandler> _logger) : IRequestHandler<CompleteFirmAdminProfileCommand, ProfileCompletionResultDTO>
 {
-    // =====================================================
-    // HANDLE — mandatory Firm Admin profile completion, run once
-    // immediately after first login. Normalizes Phone/CNIC via
-    // PakistaniFormat (same normalization used everywhere else, so
-    // uniqueness can never be bypassed by reformatting), re-validates
-    // uniqueness against every OTHER user, replaces the Firm's
-    // placeholder name/contact details, and flips IsProfileCompleted.
-    // This is the ONLY place IsProfileCompleted is set true for a Firm
-    // Admin - not duplicated anywhere else.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
     public async Task<ProfileCompletionResultDTO> Handle(CompleteFirmAdminProfileCommand request, CancellationToken cancellationToken)
     {
         if (_currentUser.UserID is null)

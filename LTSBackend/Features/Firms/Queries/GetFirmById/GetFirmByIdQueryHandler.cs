@@ -7,9 +7,9 @@ namespace LTSBackend.Features.Firms.Queries.GetFirmById;
 
 public class GetFirmByIdQueryHandler(AppDbContext _context) : IRequestHandler<GetFirmByIdQuery, FirmDTO?>
 {
-    // =====================================================
-    // HANDLE — fetches a single firm workspace's details by ID
-    // =====================================================
+
+
+
     public async Task<FirmDTO?> Handle(GetFirmByIdQuery request, CancellationToken cancellationToken)
     {
         return await _context.Firms

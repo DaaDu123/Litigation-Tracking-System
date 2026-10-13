@@ -8,13 +8,13 @@ namespace LTSBackend.Features.CaseStatuses.Commands.UpdateCaseStatus;
 
 public sealed class UpdateCaseStatusHandler(AppDbContext _context, ICurrentUserService _currentUser, ILogger<UpdateCaseStatusHandler> _logger) : IRequestHandler<UpdateCaseStatusCommand, bool>
 {
-    // =====================================================
-    // HANDLE — edits an existing case status
-    // Ownership check: a FirmAdmin may only edit their OWN firm's custom
-    // case status — never a global one or another firm's (returns
-    // NotFound rather than Forbidden, so its existence isn't disclosed).
-    // Also re-checks name uniqueness before saving.
-    // =====================================================
+
+
+
+
+
+
+
     public async Task<bool> Handle(UpdateCaseStatusCommand request, CancellationToken cancellationToken)
     {
         request = request with { StatusName = request.StatusName.Trim(), ColorCode = request.ColorCode.Trim() };

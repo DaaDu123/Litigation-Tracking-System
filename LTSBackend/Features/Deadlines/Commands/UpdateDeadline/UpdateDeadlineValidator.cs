@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Deadlines.Commands.UpdateDeadline
 {
     public class UpdateDeadlineValidator : AbstractValidator<UpdateDeadlineCommand>
     {
-        // Requires a valid DeadlineID plus the same type/due-date/ReminderDays
-        // rules as CreateDeadlineValidator.
+
+
         public UpdateDeadlineValidator()
         {
             RuleFor(x => x.Deadline).NotNull();

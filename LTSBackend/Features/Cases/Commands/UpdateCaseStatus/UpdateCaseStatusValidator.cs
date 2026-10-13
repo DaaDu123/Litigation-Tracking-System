@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Cases.Commands.UpdateCaseStatus;
 
 public class UpdateCaseStatusValidator : AbstractValidator<UpdateCaseStatusCommand>
 {
-    // Requires a valid CaseID and NewStatusID, with an optional
-    // length-capped Remarks.
+
+
     public UpdateCaseStatusValidator()
     {
         RuleFor(x => x.CaseID)

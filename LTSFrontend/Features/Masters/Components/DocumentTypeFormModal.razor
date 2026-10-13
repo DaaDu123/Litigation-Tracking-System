@@ -1,5 +1,5 @@
-@* Create / Edit modal for the Document Type master. Opened imperatively from
-   DocumentTypes.razor via @ref: _formModal.OpenForCreate() / OpenForEdit(type). *@
+
+
 @using LTSFrontend.Features.Masters.DTOs
 @using LTSFrontend.Features.Masters.Services
 @inject IDocumentTypeService DocumentTypeService
@@ -88,12 +88,12 @@
 </div>
 
 @code {
-    [Parameter] public EventCallback<bool> OnSaved { get; set; } // bool = wasEdit
+    [Parameter] public EventCallback<bool> OnSaved { get; set; }
 
-    /// <summary>Raised after a NEW type is created, with its DocumentTypeID (lets callers e.g. the Upload Document page auto-select it).</summary>
+
     [Parameter] public EventCallback<int> OnCreated { get; set; }
 
-    /// <summary>Hide the Active switch when creating (new types are always created Active). The Master Data page leaves it on.</summary>
+
     [Parameter] public bool ShowActiveSwitch { get; set; } = true;
 
     private bool _isOpen;

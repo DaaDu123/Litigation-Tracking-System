@@ -206,7 +206,7 @@
 
     private bool IsCasesRoute => CurrentPath == "/cases" || CurrentPath.StartsWith("/cases/");
 
-    // "All Cases" owns the list plus case details/create/edit/documents, i.e. every Cases route except My Assigned.
+
     private bool IsAllCasesRoute => IsCasesRoute && !IsMyAssignedRoute;
 
     private void SyncGroupsWithRoute()
@@ -227,7 +227,7 @@
         Nav.LocationChanged += HandleLocationChanged;
         FirmRequestStatus.OnChange += HandleFirmRequestStatusChanged;
 
-        // Only role-less users ever see the entry, so only they need the status.
+
         if (string.IsNullOrEmpty(Session.Role))
             await FirmRequestStatus.EnsureLoadedAsync();
     }

@@ -8,7 +8,7 @@ public class JwtSettings
     public int ExpiryMinutes { get; set; } = 60;
     public int RefreshTokenDays { get; set; } = 7;
 
-    /// <summary>When > 0, the refresh-token lifetime in MINUTES (overrides RefreshTokenDays). 0 = use RefreshTokenDays.</summary>
+
     public int RefreshTokenMinutes { get; set; } = 0;
     public bool UseSecureCookies { get; set; } = true;
 }

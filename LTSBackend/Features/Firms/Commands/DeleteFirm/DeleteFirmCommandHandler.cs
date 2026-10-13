@@ -8,12 +8,12 @@ namespace LTSBackend.Features.Firms.Commands.DeleteFirm;
 public class DeleteFirmCommandHandler(AppDbContext _context, ILogger<DeleteFirmCommandHandler> _logger)
     : IRequestHandler<DeleteFirmCommand, bool>
 {
-    // =====================================================
-    // HANDLE — permanently removes a firm workspace
-    // Soft-deletes the firm (IsDeleted + IsBlocked), and deactivates
-    // every user under it so none of them can log in. Intended to run
-    // after the firm's data has already been exported.
-    // =====================================================
+
+
+
+
+
+
     public async Task<bool> Handle(DeleteFirmCommand request, CancellationToken cancellationToken)
     {
         var firm = await _context.Firms.FirstOrDefaultAsync(x => x.FirmID == request.FirmID, cancellationToken);
@@ -26,7 +26,7 @@ public class DeleteFirmCommandHandler(AppDbContext _context, ILogger<DeleteFirmC
         firm.DeletedBy = request.ActingUserID;
         firm.UpdatedAt = DateTime.UtcNow;
 
-        // Deactivate every user under this firm too so they can't login.
+
         var users = await _context.Users.Where(u => u.FirmID == firm.FirmID).ToListAsync(cancellationToken);
         foreach (var u in users)
         {

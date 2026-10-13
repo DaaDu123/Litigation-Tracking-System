@@ -13,27 +13,27 @@ namespace LTSBackend.Features.Auth.Register;
 
 public class RegisterHandler(AppDbContext _context, IPasswordService _passwordService, IEmailService _emailService, IAuditService _auditService, ILogger<RegisterHandler> _logger) : IRequestHandler<RegisterCommand, RegisterResponseDTO>
 {
-    // =====================================================
-    // HANDLE — Anonymous Firm User self-registration (Email + Password only)
-    // Creates the account immediately with NO firm and NO role
-    // (FirmID = null, RoleID = null) - it becomes a real row right away,
-    // rather than a pending request, because a Firm User needs to log in,
-    // land on their own dashboard, and complete their profile BEFORE they
-    // ever pick a firm to request. IsActive stays false until the emailed
-    // Registration OTP is verified (VerifyOtpHandler), matching the
-    // existing pattern used everywhere else in this codebase.
-    //
-    // IMPORTANT - idempotent retry for a "stuck" unverified account:
-    // if the OTP email failed to send the first time (SMTP misconfigured,
-    // provider hiccup, etc.), the user is left with a real, unverified
-    // row and no way to reach a "resend" screen from Register itself -
-    // registering again with the same email would otherwise dead-end on
-    // "Email already exists." Instead, when the existing row for this
-    // email is still unverified (IsActive == false), this quietly treats
-    // the retry as a resend: refreshes the password (in case they mistyped
-    // it originally) and issues a fresh OTP, rather than blocking. Only a
-    // genuinely ACTIVE (already-verified) account blocks re-registration.
-    // =====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public async Task<RegisterResponseDTO> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting Firm User registration for email: {Email}", request.Email);
@@ -60,17 +60,17 @@ public class RegisterHandler(AppDbContext _context, IPasswordService _passwordSe
 
         if (existingUser != null)
         {
-            // Unverified row from a previous attempt whose OTP email never
-            // arrived - reuse it instead of creating a duplicate/blocking.
+
+
             existingUser.PasswordHash = _passwordService.HashPassword(request.Password);
             user = existingUser;
             _logger.LogInformation("Re-registering unverified account (previous OTP email likely failed): {UserId}", user.UserID);
         }
         else
         {
-            // 2. Create the user account - no firm, no role, profile
-            // incomplete, until they complete their profile and are later
-            // accepted into a firm via UserJoinRequest.
+
+
+
             var placeholderName = email.Split('@')[0];
 
             user = new User
@@ -81,7 +81,7 @@ public class RegisterHandler(AppDbContext _context, IPasswordService _passwordSe
                 PasswordHash = _passwordService.HashPassword(request.Password),
                 RoleID = null,
                 FirmID = null,
-                IsActive = false, // becomes true once the Registration OTP is verified
+                IsActive = false,
                 IsProfileCompleted = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -93,8 +93,8 @@ public class RegisterHandler(AppDbContext _context, IPasswordService _passwordSe
 
         _logger.LogInformation("Firm User account ready (pending email verification): {UserId}", user.UserID);
 
-        // 3. Invalidate any previous unused Registration OTP for this
-        // email (mirrors ResendOtpHandler) before issuing a fresh one.
+
+
         var oldOtps = await _context.UserOtps.Where(x => x.Email == email && !x.IsUsed && x.Purpose == OtpPurpose.Registration).ToListAsync(cancellationToken);
         if (oldOtps.Count > 0)
             _context.UserOtps.RemoveRange(oldOtps);
@@ -127,15 +127,15 @@ public class RegisterHandler(AppDbContext _context, IPasswordService _passwordSe
         {
             _logger.LogError(ex, "Failed to send OTP email to: {Email}", email);
 
-            // IMPORTANT: do NOT throw here. The account and OTP row above
-            // are already saved either way, and the Register page itself
-            // has no "Resend OTP" action - only the verify-otp screen
-            // does. Throwing would strand the user on Register with no
-            // way forward. Instead, let them proceed to verify-otp (same
-            // as the success path) where they can use its working Resend
-            // OTP button once the email problem is fixed - the response
-            // message below is adjusted so it doesn't falsely claim the
-            // email was sent.
+
+
+
+
+
+
+
+
+
             return new RegisterResponseDTO
             {
                 UserID = user.UserID,

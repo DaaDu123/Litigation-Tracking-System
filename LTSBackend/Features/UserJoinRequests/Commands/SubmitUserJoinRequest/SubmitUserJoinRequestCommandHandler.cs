@@ -47,9 +47,9 @@ public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, ICurrent
         if (superAdminRequestPending)
             throw new ValidationException(["You have already sent an access request to the Super Admin. You can only have one access request at a time, so you cannot request a Firm Admin."]);
 
-        // A live Blocked record (no later Unblocked event) for this
-        // specific user+firm pair means "cannot re-request this firm".
-        // Being merely Removed does not block re-requesting.
+
+
+
         var lastEventForFirm = await _context.FirmMembershipEvents.AsNoTracking().IgnoreQueryFilters()
             .Where(x => x.UserID == userId && x.FirmID == request.FirmID)
             .OrderByDescending(x => x.PerformedAtUtc)
@@ -71,9 +71,9 @@ public class SubmitUserJoinRequestCommandHandler(AppDbContext _context, ICurrent
 
         _context.UserJoinRequests.Add(joinRequest);
 
-        // DB-level guarantee (UserAccessRequestSlots PK): the slot and the request
-        // commit in ONE SaveChanges, so even two simultaneous submissions (to
-        // different Firm Admins, or Firm Admin + Super Admin) can never both succeed.
+
+
+
         await AccessRequestSlot.AcquireAsync(_context, userId, UserAccessRequestSlot.TargetFirmAdmin, cancellationToken);
 
         try

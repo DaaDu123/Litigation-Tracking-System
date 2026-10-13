@@ -8,7 +8,7 @@ public static class LoggingExtensions
         builder.Logging.AddConsole();
         builder.Logging.AddDebug();
 
-        // Windows Event Log only makes sense outside local dev, and only on Windows.
+
         if (!builder.Environment.IsDevelopment() && OperatingSystem.IsWindows())
         {
             builder.Logging.AddEventLog();

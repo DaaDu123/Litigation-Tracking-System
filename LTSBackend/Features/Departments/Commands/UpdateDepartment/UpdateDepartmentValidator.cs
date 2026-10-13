@@ -4,8 +4,8 @@ namespace LTSBackend.Features.Departments.Commands.UpdateDepartment;
 
 public class UpdateDepartmentValidator : AbstractValidator<UpdateDepartmentCommand>
 {
-    // Requires a valid DepartmentID plus the same name/code/description
-    // rules as CreateDepartmentValidator.
+
+
     public UpdateDepartmentValidator()
     {
         RuleFor(x => x.DepartmentID)
