@@ -62,8 +62,7 @@ else
         {
             // Redirect before Router/AuthorizeRouteView can render the requested
             // protected page (Dashboard, Cases, Masters, etc.).
-            var returnUrl = Uri.EscapeDataString(currentUri.PathAndQuery);
-            Navigation.NavigateTo($"/login?returnUrl={returnUrl}", replace: true);
+            Navigation.NavigateTo("/login", replace: true);
         }
 
         _authReady = true;
@@ -102,8 +101,6 @@ else
             return;
         }
 
-        var currentUri = new Uri(Navigation.Uri);
-        var returnUrl = Uri.EscapeDataString(currentUri.PathAndQuery);
-        Navigation.NavigateTo($"/login?returnUrl={returnUrl}", replace: true);
+        Navigation.NavigateTo("/login", replace: true);
     }
 }
