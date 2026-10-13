@@ -3,8 +3,10 @@
 
 @if (!_authReady)
 {
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-        <span class="spinner-border text-primary"></span>
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;" aria-label="Checking session">
+        <span class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Checking session...</span>
+        </span>
     </div>
 }
 else
@@ -17,7 +19,7 @@ else
                 </NotAuthorized>
                 <Authorizing>
                     <div class="d-flex justify-content-center align-items-center" style="min-height: 60vh;">
-                        <span class="spinner-border text-primary"></span>
+                        <span class="spinner-border text-primary" role="status"></span>
                     </div>
                 </Authorizing>
             </AuthorizeRouteView>
@@ -40,24 +42,56 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
-            var currentPath = new Uri(Navigation.Uri).AbsolutePath;
-            if (_isAuthenticated && (currentPath.Equals("/login", StringComparison.OrdinalIgnoreCase)
-                || currentPath.Equals("/register", StringComparison.OrdinalIgnoreCase)))
-            {
-                Navigation.NavigateTo("/", replace: true);
-            }
-            else if (!_isAuthenticated && currentPath == "/")
-            {
-                Navigation.NavigateTo("/login", replace: true);
-            }
+        if (!firstRender)
+            return;
 
-            _authReady = true;
-            StateHasChanged();
+        // ProtectedLocalStorage requires an interactive render, so restore/check the
+        // session before allowing Router to render any protected page.
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+
+        var currentUri = new Uri(Navigation.Uri);
+        var currentPath = currentUri.AbsolutePath;
+
+        if (_isAuthenticated &&
+            (IsPath(currentPath, "/login") || IsPath(currentPath, "/register")))
+        {
+            Navigation.NavigateTo("/", replace: true);
         }
+        else if (!_isAuthenticated && !IsPublicPath(currentPath))
+        {
+            // Redirect before Router/AuthorizeRouteView can render the requested
+            // protected page (Dashboard, Cases, Masters, etc.).
+            var returnUrl = Uri.EscapeDataString(currentUri.PathAndQuery);
+            Navigation.NavigateTo($"/login?returnUrl={returnUrl}", replace: true);
+        }
+
+        _authReady = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static bool IsPath(string currentPath, string expectedPath) =>
+        string.Equals(currentPath, expectedPath, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPublicPath(string path)
+    {
+        // Routes that are intentionally available without an authenticated session.
+        string[] publicPaths =
+        {
+            "/login",
+            "/register",
+            "/forgot-password",
+            "/reset-password",
+            "/verify-otp",
+            "/request-firm-admin",
+            "/features",
+            "/benefits",
+            "/pricing",
+            "/security",
+            "/contact"
+        };
+
+        return publicPaths.Any(p => IsPath(path, p));
     }
 
     private void RedirectToAccessPage()
