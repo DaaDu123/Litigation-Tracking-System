@@ -1,4 +1,4 @@
-@inject NavigationManager Navigation
+﻿@inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject LTSFrontend.State.ProfileCompletionState ProfileState
 @inject ILogger<Routes> Logger
@@ -6,11 +6,28 @@
 
 @if (!_authReady)
 {
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;" aria-label="Checking session">
-        <span class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Checking session...</span>
-        </span>
-    </div>
+    @if (ShowLoginDuringStartup)
+    {
+        <LayoutView Layout="typeof(LTSFrontend.Layout.LoginLayout)">
+            <LTSFrontend.Features.Auth.Pages.Login SuppressAuthenticatedRedirect="true" />
+        </LayoutView>
+    }
+    else if (IsPublicPath(CurrentPath))
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;" aria-label="Loading page">
+            <span class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </span>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;" aria-label="Checking session">
+            <span class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Checking session...</span>
+            </span>
+        </div>
+    }
 }
 else
 {
@@ -18,7 +35,7 @@ else
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
                 <NotAuthorized>
-                    @{ RedirectToAccessPage(); }
+                    <div></div>
                 </NotAuthorized>
                 <Authorizing>
                     <div class="d-flex justify-content-center align-items-center" style="min-height: 60vh;">
@@ -42,77 +59,84 @@ else
 @code {
     private bool _authReady;
     private bool _isAuthenticated;
-    private string? _redirectTarget;
+    private bool _startupCheckComplete;
+    private bool _redirectInProgress;
+    private string CurrentPath => new Uri(Navigation.Uri).AbsolutePath;
+    private bool ShowLoginDuringStartup =>
+        IsPath(CurrentPath, "/") || IsPath(CurrentPath, "/login") || !IsPublicPath(CurrentPath);
 
     protected override void OnInitialized()
     {
         AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
+        Navigation.LocationChanged += HandleLocationChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-            return;
-
-        // ProtectedLocalStorage requires an interactive render, so restore/check the
-        // session before allowing Router to render any protected page.
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
-
-        // A session restored from browser storage is only a candidate until the
-        // backend accepts an authenticated request. Keep Router hidden meanwhile.
-        if (_isAuthenticated)
+        if (firstRender && !_startupCheckComplete)
         {
+            _startupCheckComplete = true;
+
             try
             {
-                await ProfileState.EnsureLoadedAsync();
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+
+                if (_isAuthenticated)
+                {
+                    try
+                    {
+                        await ProfileState.EnsureLoadedAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogWarning(ex, "Restored session validation failed; clearing it before routing.");
+                        if (AuthStateProvider is LTSFrontend.Core.Auth.CustomAuthStateProvider provider)
+                            await provider.MarkUserAsLoggedOutAsync();
+
+                        ProfileState.Reset();
+                        _isAuthenticated = false;
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Logger.LogWarning(ex, "Restored session validation failed; clearing it before routing.");
-                var provider = (LTSFrontend.Core.Auth.CustomAuthStateProvider)AuthStateProvider;
-                await provider.MarkUserAsLoggedOutAsync();
-                ProfileState.Reset();
+                Logger.LogWarning(ex, "Could not restore authentication state; treating visitor as anonymous.");
                 _isAuthenticated = false;
             }
-        }
 
-        var currentUri = new Uri(Navigation.Uri);
-        var currentPath = currentUri.AbsolutePath;
+            var path = CurrentPath;
+            if (_isAuthenticated && (IsPath(path, "/login") || IsPath(path, "/register")))
+            {
+                NavigateOnce("/");
+                return;
+            }
 
-        if (_isAuthenticated &&
-            (IsPath(currentPath, "/login") || IsPath(currentPath, "/register")))
-        {
-            RedirectAndWait("/");
-            return;
-        }
-        else if (!_isAuthenticated && !IsPublicPath(currentPath))
-        {
-            // Do not expose the originally requested protected route during the
-            // interval between requesting navigation and LocationChanged.
-            RedirectAndWait("/login");
-            return;
-        }
+            if (!_isAuthenticated && !IsPublicPath(path))
+            {
+                NavigateOnce("/login");
+                return;
+            }
 
-        _authReady = true;
-        await InvokeAsync(StateHasChanged);
+            _authReady = true;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
-    private void RedirectAndWait(string target)
+    private void NavigateOnce(string target)
     {
-        _redirectTarget = target;
-        Navigation.LocationChanged += HandleLocationChanged;
+        if (_redirectInProgress)
+            return;
+
+        _redirectInProgress = true;
+        // Navigation is only initiated after the first interactive render. This
+        // avoids NavigationException during server prerendering.
         Navigation.NavigateTo(target, replace: true);
     }
 
     private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args)
     {
-        if (_redirectTarget is null || !IsPath(new Uri(args.Location).AbsolutePath, _redirectTarget))
-            return;
-
-        _redirectTarget = null;
-        Navigation.LocationChanged -= HandleLocationChanged;
-        _authReady = true;
+        _redirectInProgress = false;
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -120,9 +144,16 @@ else
     {
         _ = InvokeAsync(async () =>
         {
-            var state = await stateTask;
-            _isAuthenticated = state.User.Identity?.IsAuthenticated == true;
-            StateHasChanged();
+            try
+            {
+                var state = await stateTask;
+                _isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Authentication state notification failed.");
+            }
         });
     }
 
@@ -131,7 +162,6 @@ else
 
     private static bool IsPublicPath(string path)
     {
-        // Routes that are intentionally available without an authenticated session.
         string[] publicPaths =
         {
             "/login",
@@ -148,17 +178,6 @@ else
         };
 
         return publicPaths.Any(p => IsPath(path, p));
-    }
-
-    private void RedirectToAccessPage()
-    {
-        if (_isAuthenticated)
-        {
-            Navigation.NavigateTo("/access-denied", replace: true);
-            return;
-        }
-
-        Navigation.NavigateTo("/login", replace: true);
     }
 
     public void Dispose()
