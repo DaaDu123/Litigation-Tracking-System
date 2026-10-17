@@ -68,7 +68,8 @@
         </div>
 
         <div class="auth-hero-right">
-            <div class="auth-form-card">
+            <div class="auth-form-card auth-form-card--profile">
+                <div class="auth-form-content">
                 @if (!_checked)
                 {
                     <div class="text-center py-4">
@@ -77,10 +78,13 @@
                 }
                 else
                 {
-                    <h2><i class="bi bi-person-check me-2"></i>Complete Your Profile</h2>
-                    <p class="auth-subtitle">
-                        @(IsFirmAdmin ? "Firm Admin setup" : "Just a couple of quick details")
-                    </p>
+                    <div class="profile-card-head">
+                        <span class="profile-card-icon"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <h2>Complete Your Profile</h2>
+                            <p class="auth-subtitle">@(IsFirmAdmin ? "Firm Admin setup" : "Just a couple of quick details")</p>
+                        </div>
+                    </div>
 
                     @if (!string.IsNullOrWhiteSpace(_errorMessage))
                     {
@@ -94,15 +98,15 @@
 
                             <div class="auth-section-title">Your Details</div>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                            <div class="row gx-3">
+                                <div class="col-12 col-sm-6 mb-3">
                                     <label class="form-label">Your Full Name</label>
                                     <input class="form-control" @bind="_adminModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
                                     <ValidationMessage For="() => _adminModel.FullName" class="text-danger small" />
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-12 col-sm-6 mb-3">
                                     <label class="form-label">Contact Number</label>
-                                    <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                    <input class="form-control" placeholder="03XXXXXXXXX" inputmode="tel"
                                            @bind:get="_adminModel.Phone" @bind:set="v => _adminModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
                                            disabled="@_isBusy" required />
                                     <ValidationMessage For="() => _adminModel.Phone" class="text-danger small" />
@@ -118,33 +122,33 @@
 
                             <div class="auth-section-title">Firm Details</div>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                            <div class="row gx-3">
+                                <div class="col-12 col-sm-6 mb-3">
                                     <label class="form-label">Firm Name</label>
                                     <input class="form-control" @bind="_adminModel.FirmName" @bind:event="oninput" disabled="@_isBusy" required />
                                     <ValidationMessage For="() => _adminModel.FirmName" class="text-danger small" />
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Firm Address <span class="text-muted fw-normal">(optional)</span></label>
+                                <div class="col-12 col-sm-6 mb-3">
+                                    <label class="form-label">Firm Address <span class="profile-optional">(optional)</span></label>
                                     <input class="form-control" @bind="_adminModel.Address" @bind:event="oninput" disabled="@_isBusy" />
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Firm Contact Email <span class="text-muted fw-normal">(optional)</span></label>
+                            <div class="row gx-3">
+                                <div class="col-12 col-sm-6 mb-3">
+                                    <label class="form-label">Firm Contact Email <span class="profile-optional">(optional)</span></label>
                                     <input class="form-control" @bind="_adminModel.ContactEmail" @bind:event="oninput" disabled="@_isBusy" />
                                     <ValidationMessage For="() => _adminModel.ContactEmail" class="text-danger small" />
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Firm Contact Phone <span class="text-muted fw-normal">(optional)</span></label>
-                                    <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                <div class="col-12 col-sm-6 mb-3">
+                                    <label class="form-label">Firm Contact Phone <span class="profile-optional">(optional)</span></label>
+                                    <input class="form-control" placeholder="03XXXXXXXXX" inputmode="tel"
                                            @bind:get="_adminModel.ContactPhone" @bind:set="v => _adminModel.ContactPhone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
                                            disabled="@_isBusy" />
                                     <ValidationMessage For="() => _adminModel.ContactPhone" class="text-danger small" />
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+                            <button type="submit" class="btn btn-auth-primary profile-submit" disabled="@_isBusy">
                                 @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
                                 Complete Profile
                             </button>
@@ -155,15 +159,15 @@
                         <EditForm Model="_userModel" OnValidSubmit="HandleCompleteFirmUserAsync">
                             <DataAnnotationsValidator />
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                            <div class="row gx-3">
+                                <div class="col-12 col-sm-6 mb-3">
                                     <label class="form-label">Full Name</label>
                                     <input class="form-control" @bind="_userModel.FullName" @bind:event="oninput" disabled="@_isBusy" required />
                                     <ValidationMessage For="() => _userModel.FullName" class="text-danger small" />
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-12 col-sm-6 mb-3">
                                     <label class="form-label">Contact Number</label>
-                                    <input class="form-control" placeholder="03XXXXXXXXX or +923XXXXXXXXX" inputmode="tel"
+                                    <input class="form-control" placeholder="03XXXXXXXXX" inputmode="tel"
                                            @bind:get="_userModel.Phone" @bind:set="v => _userModel.Phone = InputSanitizers.SanitizePhone(v)" @bind:event="oninput"
                                            disabled="@_isBusy" required />
                                     <ValidationMessage For="() => _userModel.Phone" class="text-danger small" />
@@ -177,13 +181,14 @@
                                 <ValidationMessage For="() => _userModel.CNIC" class="text-danger small" />
                             </div>
 
-                            <button type="submit" class="btn btn-auth-primary" disabled="@_isBusy">
+                            <button type="submit" class="btn btn-auth-primary profile-submit" disabled="@_isBusy">
                                 @if (_isBusy) { <span class="spinner-border spinner-border-sm me-2"></span> }
                                 Complete Profile
                             </button>
                         </EditForm>
                     }
                 }
+                </div>
             </div>
         </div>
     </div>
