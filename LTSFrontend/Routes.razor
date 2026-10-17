@@ -1,5 +1,8 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject LTSFrontend.State.ProfileCompletionState ProfileState
+@inject ILogger<Routes> Logger
+@implements IDisposable
 
 @if (!_authReady)
 {
@@ -39,6 +42,12 @@ else
 @code {
     private bool _authReady;
     private bool _isAuthenticated;
+    private string? _redirectTarget;
+
+    protected override void OnInitialized()
+    {
+        AuthStateProvider.AuthenticationStateChanged += HandleAuthenticationStateChanged;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -50,23 +59,71 @@ else
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
 
+        // A session restored from browser storage is only a candidate until the
+        // backend accepts an authenticated request. Keep Router hidden meanwhile.
+        if (_isAuthenticated)
+        {
+            try
+            {
+                await ProfileState.EnsureLoadedAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Restored session validation failed; clearing it before routing.");
+                var provider = (LTSFrontend.Core.Auth.CustomAuthStateProvider)AuthStateProvider;
+                await provider.MarkUserAsLoggedOutAsync();
+                ProfileState.Reset();
+                _isAuthenticated = false;
+            }
+        }
+
         var currentUri = new Uri(Navigation.Uri);
         var currentPath = currentUri.AbsolutePath;
 
         if (_isAuthenticated &&
             (IsPath(currentPath, "/login") || IsPath(currentPath, "/register")))
         {
-            Navigation.NavigateTo("/", replace: true);
+            RedirectAndWait("/");
+            return;
         }
         else if (!_isAuthenticated && !IsPublicPath(currentPath))
         {
-            // Redirect before Router/AuthorizeRouteView can render the requested
-            // protected page (Dashboard, Cases, Masters, etc.).
-            Navigation.NavigateTo("/login", replace: true);
+            // Do not expose the originally requested protected route during the
+            // interval between requesting navigation and LocationChanged.
+            RedirectAndWait("/login");
+            return;
         }
 
         _authReady = true;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void RedirectAndWait(string target)
+    {
+        _redirectTarget = target;
+        Navigation.LocationChanged += HandleLocationChanged;
+        Navigation.NavigateTo(target, replace: true);
+    }
+
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs args)
+    {
+        if (_redirectTarget is null || !IsPath(new Uri(args.Location).AbsolutePath, _redirectTarget))
+            return;
+
+        _redirectTarget = null;
+        Navigation.LocationChanged -= HandleLocationChanged;
+        _authReady = true;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleAuthenticationStateChanged(Task<AuthenticationState> stateTask)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            var state = await stateTask;
+            _isAuthenticated = state.User.Identity?.IsAuthenticated == true;
+            StateHasChanged();
+        });
     }
 
     private static bool IsPath(string currentPath, string expectedPath) =>
@@ -102,5 +159,11 @@ else
         }
 
         Navigation.NavigateTo("/login", replace: true);
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= HandleAuthenticationStateChanged;
+        Navigation.LocationChanged -= HandleLocationChanged;
     }
 }

@@ -160,13 +160,16 @@ else
 
     private async Task HandleLogoutAsync()
     {
-        await AuthService.LogoutAsync();
+        // Start revocation while the access token is still available. The client
+        // session and route can switch to login immediately while this request runs.
+        var logoutTask = AuthService.LogoutAsync();
 
         var provider = (CustomAuthStateProvider)AuthStateProvider;
         await provider.MarkUserAsLoggedOutAsync();
         ProfileState.Reset();
 
-        Navigation.NavigateTo("/login", forceLoad: true);
+        Navigation.NavigateTo("/login", replace: true);
+        await logoutTask;
     }
 
     public void Dispose()
