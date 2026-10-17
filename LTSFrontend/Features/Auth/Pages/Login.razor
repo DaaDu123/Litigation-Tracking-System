@@ -58,8 +58,6 @@
 </EditForm>
 
 @code {
-    [Parameter] public bool SuppressAuthenticatedRedirect { get; set; }
-
     [SupplyParameterFromQuery(Name = "returnUrl")]
     private string? ReturnUrl { get; set; }
 
@@ -71,7 +69,7 @@
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (!SuppressAuthenticatedRedirect && authState.User.Identity?.IsAuthenticated == true)
+        if (authState.User.Identity?.IsAuthenticated == true)
             Navigation.NavigateTo("/", replace: true);
     }
 
